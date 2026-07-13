@@ -1,4 +1,12 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
+  # Docker Compose 자동 실행 해제
+  docker:
+    compose:
+      enabled: false
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3307/${MYSQL_DATABASE}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
