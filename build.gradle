@@ -50,3 +50,22 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.register('provisionSuperAdmin', JavaExec) {
+    group = 'application'
+    description = 'Provision the one-time SUPER_ADMIN account using an interactive password prompt.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.bp20.backend.api.admin.bootstrap.SuperAdminProvisioningCli'
+    standardInput = System.in
+
+    doFirst {
+        if (!project.hasProperty('adminEmail') || !project.hasProperty('adminName')) {
+            throw new GradleException('Use -PadminEmail=<email> -PadminName=<name> [-PadminPhone=<phone>].')
+        }
+        args "--email=${project.property('adminEmail')}", "--name=${project.property('adminName')}"
+        if (project.hasProperty('adminPhone')) {
+            args "--phone-number=${project.property('adminPhone')}"
+        }
+    }
+}
