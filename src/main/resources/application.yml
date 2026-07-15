@@ -9,7 +9,7 @@ spring:
   # JPA 세팅
   jpa:
     hibernate:
-      ddl-auto: create            # 필요 시 수정
+      ddl-auto: ${JPA_DDL_AUTO:update}
     properties:
       hibernate:
         format_sql: true          # 로그에 DB 쿼리 출력 시 포맷팅
@@ -27,7 +27,7 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   level:
     root: info                            # 기본 로그는 INFO 레벨
-    com.outthedoor: debug                 # 애플리케이션 로그는 DEBUG 레벨
+    com.bp20: debug                       # 애플리케이션 로그는 DEBUG 레벨
     org.hibernate.SQL: debug              # JPA 쿼리 로깅
     org.hibernate.orm.jdbc.bind: trace    # SQL 바인딩 파라미터의 실제 값 로깅
 
