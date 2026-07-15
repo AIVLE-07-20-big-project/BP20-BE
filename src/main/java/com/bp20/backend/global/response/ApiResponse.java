@@ -18,12 +18,12 @@ public class ApiResponse<T> {
     /***
      * 성공 응답 시 데이터와 함께 HTTP 상태 코드와 메시지를 포함한 ResponseEntity 생성
      *
-     * @param status 성공 응답 코드 SuccessStatus enum
+     * @param status 성공 응답 코드 SuccessCode enum
      * @param data 응답 본문에 포함할 데이터
      * @param <T> 응답 데이터 타입
      * @return HTTP 상태 코드와 함께 ApiResponse를 감싼 ResponseEntity
      */
-    public static <T> ResponseEntity<ApiResponse<T>> success(SuccessStatus status, T data) {
+    public static <T> ResponseEntity<ApiResponse<T>> success(SuccessCode status, T data) {
         ApiResponse<T> response = ApiResponse.<T>builder()
                 .status(status.getStatusCode())
                 .success(true)
@@ -36,10 +36,10 @@ public class ApiResponse<T> {
     /**
      * 데이터 없이 성공 여부와 메시지만 포함한 ApiResponse를 ResponseEntity로 생성
      *
-     * @param status 성공 응답 상태를 나타내는 SuccessStatus enum
+     * @param status 성공 응답 상태를 나타내는 SuccessCode enum
      * @return HTTP 상태 코드와 함께 ApiResponse<Void>를 감싼 ResponseEntity
      */
-    public static ResponseEntity<ApiResponse<Void>> successOnly(SuccessStatus status) {
+    public static ResponseEntity<ApiResponse<Void>> successOnly(SuccessCode status) {
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .status(status.getStatusCode())
                 .success(true)
@@ -64,12 +64,12 @@ public class ApiResponse<T> {
     }
 
     /**
-     * ErrorStatus enum을 기반으로 실패 응답을 ApiResponse 객체로 생성. 데이터는 포함하지 않습니다.
+     * ErrorCode enum을 기반으로 실패 응답을 ApiResponse 객체로 생성. 데이터는 포함하지 않습니다.
      *
-     * @param status 실패 상태를 나타내는 ErrorStatus enum
+     * @param status 실패 상태를 나타내는 ErrorCode enum
      * @return 실패 정보를 담은 ApiResponse<Void> 객체
      */
-    public static ApiResponse<Void> failOnly(ErrorStatus status) {
+    public static ApiResponse<Void> failOnly(ErrorCode status) {
         return ApiResponse.<Void>builder()
                 .status(status.getStatusCode())
                 .success(false)

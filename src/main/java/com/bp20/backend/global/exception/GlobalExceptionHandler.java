@@ -1,8 +1,7 @@
-package com.bp20.backend.global.exeption.advice;
+package com.bp20.backend.global.exception;
 
-import com.bp20.backend.global.exeption.BaseException;
 import com.bp20.backend.global.response.ApiResponse;
-import com.bp20.backend.global.response.ErrorStatus;
+import com.bp20.backend.global.response.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -12,14 +11,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @RestControllerAdvice
 @Slf4j
-public class GlobalExceptionAdvice {
+public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException e) {
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException e) {
 
         return ResponseEntity
                 .status(e.getStatusCode())
-                .body(ApiResponse.failOnly(e.getErrorStatus()));
+                .body(ApiResponse.failOnly(e.getErrorCode()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -30,11 +29,11 @@ public class GlobalExceptionAdvice {
                 .stream()
                 .findFirst()
                 .map(this::formatFieldError)
-                .orElse(ErrorStatus.BAD_REQUEST_INVALID_INPUT.getMessage());
+                .orElse(ErrorCode.BAD_REQUEST_INVALID_INPUT.getMessage());
 
         return ResponseEntity
-                .status(ErrorStatus.BAD_REQUEST_INVALID_INPUT.getStatusCode())
-                .body(ApiResponse.fail(ErrorStatus.BAD_REQUEST_INVALID_INPUT.getStatusCode(), message));
+                .status(ErrorCode.BAD_REQUEST_INVALID_INPUT.getStatusCode())
+                .body(ApiResponse.fail(ErrorCode.BAD_REQUEST_INVALID_INPUT.getStatusCode(), message));
     }
 
     @ExceptionHandler(Exception.class)
@@ -44,7 +43,7 @@ public class GlobalExceptionAdvice {
 
         return ResponseEntity
                 .status(500)
-                .body(ApiResponse.fail(500, ErrorStatus.INTERNAL_SERVER_ERROR.getMessage()));
+                .body(ApiResponse.fail(500, ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
     }
 
     private String formatFieldError(FieldError error) {
