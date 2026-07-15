@@ -1,6 +1,13 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3307/${MYSQL_DATABASE}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER}       # 본인 MySQL 사용자 이름으로 변경
-    password: ${MYSQL_PASSWORD}   # 본인 MySQL 비밀번호로 변경
+    # Docker Compose exposes MySQL on host port 3307.
+    # Every value can be overridden with an environment variable.
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3307}/${MYSQL_DATABASE:bp20}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:bp20user}
+    password: ${MYSQL_PASSWORD:bp20password}
+
+  # Run Docker Compose explicitly with `docker compose up -d mysql`.
+  docker:
+    compose:
+      enabled: false

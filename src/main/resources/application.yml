@@ -9,7 +9,7 @@ spring:
   # JPA ??
   jpa:
     hibernate:
-      ddl-auto: create            # 필요 시 수정
+      ddl-auto: ${JPA_DDL_AUTO:update} # 로컬 재실행 시 데이터 유지, 환경변수로 변경 가능
     properties:
       hibernate:
         format_sql: true          # 로그에 DB 쿼리 출력 시 포맷팅
@@ -54,3 +54,10 @@ springdoc:
     try-it-out-enabled: true
     persist-authorization: true
   show-actuator: true
+
+# AI 서비스 연동 설정
+ai:
+  effect-verification:
+    base-url: ${EFFECT_VERIFICATION_AI_URL:http://localhost:8000}
+
+    
