@@ -1,4 +1,4 @@
-package com.bp20.backend.global.filter;
+package com.bp20.backend.global.logging;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -40,14 +40,12 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
             long elapsed = System.currentTimeMillis() - startTime;
 
             String uri = request.getRequestURI();
-            String queryString = request.getQueryString();
             String clientIp = resolveClientIp(request);
 
-            log.info("[{}] {} {}{} status={} elapsed={}ms ip={}",
+            log.info("[{}] {} {} status={} elapsed={}ms ip={}",
                     requestId,
                     request.getMethod(),
                     uri,
-                    queryString != null ? "?" + queryString : "",
                     response.getStatus(),
                     elapsed,
                     clientIp
