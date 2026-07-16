@@ -2,5 +2,5 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://mysql_bp20:3306/${MYSQL_DATABASE}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER}       # 본인 MySQL 사용자 이름으로 변경
-    password: ${MYSQL_PASSWORD}   # 본인 MySQL 비밀번호로 변경
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
