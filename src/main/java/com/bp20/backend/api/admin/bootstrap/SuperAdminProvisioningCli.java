@@ -6,9 +6,11 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.Console;
 import java.io.InputStreamReader;
+import java.sql.Connection;
 import java.util.Arrays;
 
 public final class SuperAdminProvisioningCli {
@@ -23,10 +25,17 @@ public final class SuperAdminProvisioningCli {
                 .web(WebApplicationType.NONE)
                 .properties("spring.main.banner-mode=off")
                 .run()) {
+            printTargetDatabase(context.getBean(DataSource.class));
             User user = context.getBean(SuperAdminProvisioningService.class).provision(
                     options.email(), password, options.name(), options.phoneNumber()
             );
             System.out.printf("Super administrator created: id=%d, email=%s%n", user.getId(), user.getEmail());
+        }
+    }
+
+    private static void printTargetDatabase(DataSource dataSource) throws Exception {
+        try (Connection connection = dataSource.getConnection()) {
+            System.out.printf("Target database: %s%n", connection.getMetaData().getURL());
         }
     }
 

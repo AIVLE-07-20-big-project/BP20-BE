@@ -53,9 +53,13 @@ tasks.named('test') {
 
 tasks.register('provisionSuperAdmin', JavaExec) {
     group = 'application'
-    description = 'Provision the one-time SUPER_ADMIN account using an interactive password prompt.'
+    description = 'Provision the one-time SUPER_ADMIN account using the configured Spring datasource.'
     dependsOn classes
-    classpath = sourceSets.main.runtimeClasspath
+    // DevTools restarts the CLI main class without the original arguments.
+    // Exclude it so the provisioning command runs exactly once with its arguments intact.
+    classpath = sourceSets.main.runtimeClasspath.filter {
+        !it.name.startsWith('spring-boot-devtools-')
+    }
     mainClass = 'com.bp20.backend.api.admin.bootstrap.SuperAdminProvisioningCli'
     standardInput = System.in
 
@@ -68,4 +72,15 @@ tasks.register('provisionSuperAdmin', JavaExec) {
             args "--phone-number=${project.property('adminPhone')}"
         }
     }
+}
+
+tasks.register('generatePasswordHash', JavaExec) {
+    group = 'application'
+    description = 'Generate a BCrypt password hash for the manual provisioning SQL.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath.filter {
+        !it.name.startsWith('spring-boot-devtools-')
+    }
+    mainClass = 'com.bp20.backend.api.admin.bootstrap.PasswordHashGeneratorCli'
+    standardInput = System.in
 }
