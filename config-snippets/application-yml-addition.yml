@@ -1,0 +1,21 @@
+# ============================================================
+# application.yml 에 추가할 내용 (공통 - local/docker 둘 다 적용됨)
+# ============================================================
+#
+# 기존 application.yml 맨 아래에 다음을 추가하세요:
+
+ocr-service:
+  base-url: ${OCR_SERVICE_BASE_URL:http://localhost:8000}
+
+# ------------------------------------------------------------------
+# application-local.yml 에는 그대로 두거나 (기본값 localhost:8000 사용),
+# 로컬에서 Python 서비스를 다른 포트로 띄웠다면 여기서 오버라이드 가능:
+#
+# ocr-service:
+#   base-url: http://localhost:8000
+#
+# ------------------------------------------------------------------
+# application-docker.yml 에는 docker-compose 서비스명으로 지정 (아래 compose.yaml 참고):
+#
+# ocr-service:
+#   base-url: http://ocr_service_bp20:8000

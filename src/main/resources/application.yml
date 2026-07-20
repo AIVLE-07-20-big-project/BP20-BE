@@ -54,3 +54,7 @@ springdoc:
     try-it-out-enabled: true
     persist-authorization: true
   show-actuator: true
+
+# 영수증 OCR / 가계부·원가분석 Python 마이크로서비스 연동 설정
+ocr-service:
+  base-url: ${OCR_SERVICE_BASE_URL:http://localhost:8000}

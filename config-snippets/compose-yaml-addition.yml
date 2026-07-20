@@ -1,0 +1,41 @@
+# ============================================================
+# 기존 compose.yaml의 services: 아래에 추가할 내용
+# (springboot 서비스의 depends_on에도 ocr_service를 추가하세요)
+# ============================================================
+
+  # Python OCR/가계부/원가분석 서비스
+  ocr_service:
+    build: ./ocr_service          # ocr_service 폴더를 이 레포 루트에 같이 두는 경우
+    container_name: ocr_service_bp20
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - network_bp20
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ------------------------------------------------------------------
+# springboot 서비스 정의는 이렇게 바뀝니다 (depends_on에 ocr_service 추가):
+#
+#   springboot:
+#     build: .
+#     container_name: spring_boot_bp20
+#     restart: always
+#     ports:
+#       - "8081:8080"
+#     env_file:
+#       - .env
+#     environment:
+#       SPRING_PROFILES_ACTIVE: docker
+#       OCR_SERVICE_BASE_URL: http://ocr_service_bp20:8000
+#     depends_on:
+#       mysql:
+#         condition: service_healthy
+#       ocr_service:
+#         condition: service_healthy
+#     networks:
+#       - network_bp20

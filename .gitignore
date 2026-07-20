@@ -46,3 +46,7 @@ out/
 
 ### macOS
 .DS_Store
+
+ocr_service/
+
+cafe_synthetic_data/
