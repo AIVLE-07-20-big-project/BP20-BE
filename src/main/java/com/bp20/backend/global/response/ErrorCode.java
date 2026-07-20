@@ -27,15 +27,13 @@ public enum ErrorCode {
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     NOT_FOUND_STORE(HttpStatus.NOT_FOUND, "매장을 찾을 수 없습니다."),
-    NOT_FOUND_ADMIN_INVITATION(HttpStatus.NOT_FOUND, "관리자 초대를 찾을 수 없습니다."),
-    NOT_FOUND_STORE_OWNER_INVITATION(HttpStatus.NOT_FOUND, "점주 초대를 찾을 수 없습니다."),
+    NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
 
     CONFLICT_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     CONFLICT_DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다."),
     CONFLICT_STORE_OWNER_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "이미 매장이 연결된 점주입니다."),
-    CONFLICT_EXPIRED_ADMIN_INVITATION(HttpStatus.CONFLICT, "관리자 초대가 만료되었거나 더 이상 유효하지 않습니다."),
-    CONFLICT_EXPIRED_STORE_OWNER_INVITATION(HttpStatus.CONFLICT, "점주 초대가 만료되었거나 더 이상 유효하지 않습니다."),
+    CONFLICT_EXPIRED_SIGNUP_INVITATION(HttpStatus.CONFLICT, "회원가입 초대가 만료되었거나 더 이상 유효하지 않습니다."),
     CONFLICT_DUPLICATE_RECEIPT(HttpStatus.CONFLICT, "동일한 거래로 보이는 영수증이 이미 등록되어 있습니다."),
 
     OCR_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "OCR/분석 서비스와 통신할 수 없습니다."),
