@@ -60,7 +60,7 @@ tasks.register('provisionSuperAdmin', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath.filter {
         !it.name.startsWith('spring-boot-devtools-')
     }
-    mainClass = 'com.bp20.backend.api.admin.bootstrap.SuperAdminProvisioningCli'
+    mainClass = 'com.bp20.backend.api.iam.admin.bootstrap.SuperAdminProvisioningCli'
     standardInput = System.in
 
     doFirst {
@@ -81,6 +81,6 @@ tasks.register('generatePasswordHash', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath.filter {
         !it.name.startsWith('spring-boot-devtools-')
     }
-    mainClass = 'com.bp20.backend.api.admin.bootstrap.PasswordHashGeneratorCli'
+    mainClass = 'com.bp20.backend.api.iam.admin.bootstrap.PasswordHashGeneratorCli'
     standardInput = System.in
 }

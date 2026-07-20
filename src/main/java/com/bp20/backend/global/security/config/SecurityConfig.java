@@ -48,14 +48,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/auth/admin-invitations/accept",
-                                "/api/auth/store-owner-invitations/accept",
+                                "/api/auth/signup",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers("/api/iam/invitation/store-owner")
+                        .hasAuthority(Permission.ADMIN_MANAGE.name())
+                        .requestMatchers("/api/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                         .requestMatchers("/api/admin/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                         .requestMatchers("/api/admin/**").hasAuthority(Permission.ADMIN_MANAGE.name())
                         .requestMatchers("/api/store-owner/**").hasAuthority(Permission.STORE_OWNER_ACCESS.name())

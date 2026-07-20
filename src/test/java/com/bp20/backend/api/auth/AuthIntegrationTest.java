@@ -1,19 +1,20 @@
 package com.bp20.backend.api.auth;
 
-import com.bp20.backend.api.admin.dto.request.CreateStoreOwnerInvitationRequest;
-import com.bp20.backend.api.admin.dto.response.StoreOwnerInvitationResponse;
-import com.bp20.backend.api.admin.service.AdminStoreOwnerInvitationService;
 import com.bp20.backend.api.auth.dto.request.LoginRequest;
-import com.bp20.backend.api.auth.dto.request.AcceptStoreOwnerInvitationRequest;
+import com.bp20.backend.api.auth.dto.request.SignupRequest;
 import com.bp20.backend.api.auth.dto.response.LoginResponse;
 import com.bp20.backend.api.auth.dto.response.MeResponse;
-import com.bp20.backend.api.auth.service.AuthService;
-import com.bp20.backend.api.auth.service.StoreOwnerInvitationAcceptanceService;
+import com.bp20.backend.api.auth.dto.response.SignupResponse;
+import com.bp20.backend.api.auth.service.LoginService;
+import com.bp20.backend.api.auth.service.SignupService;
+import com.bp20.backend.api.iam.invitation.dto.request.InvitationRequest;
+import com.bp20.backend.api.iam.invitation.dto.response.InvitationResponse;
+import com.bp20.backend.api.iam.invitation.service.InvitationService;
 import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.domain.UserRole;
 import com.bp20.backend.api.user.repository.UserRepository;
-import com.bp20.backend.global.security.jwt.JwtTokenProvider;
 import com.bp20.backend.global.exception.ApiException;
+import com.bp20.backend.global.security.jwt.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,14 +31,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class AuthIntegrationTest {
 
-    @Autowired
-    private AuthService authService;
+    private static final String PASSWORD = "Passw0rd!234";
 
     @Autowired
-    private AdminStoreOwnerInvitationService invitationService;
+    private LoginService loginService;
 
     @Autowired
-    private StoreOwnerInvitationAcceptanceService invitationAcceptanceService;
+    private SignupService signupService;
+
+    @Autowired
+    private InvitationService invitationService;
 
     @Autowired
     private UserRepository userRepository;
@@ -49,14 +52,14 @@ class AuthIntegrationTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @Test
-    void storeOwnerCanLoginAndTokenContainsOnlyStandardClaims() {
-        createStoreOwner("Auth.Owner@Example.com", "123-45-67890");
+    void storeOwnerCanSignupAndLoginWithInvitation() {
+        signupStoreOwner("auth.owner@example.com");
 
-        LoginResponse loginResponse = authService.login(new LoginRequest(
+        LoginResponse loginResponse = loginService.login(new LoginRequest(
                 "Auth.Owner@Example.com",
-                "Passw0rd!23"
+                PASSWORD
         ));
-        MeResponse me = authService.getMe(
+        MeResponse me = loginService.getMe(
                 jwtTokenProvider.extractUserId(loginResponse.accessToken())
         );
 
@@ -71,33 +74,61 @@ class AuthIntegrationTest {
     }
 
     @Test
-    void loginFailsWithWrongPassword() {
-        createStoreOwner("wrong-password@example.com", "987-65-43210");
+    void signupRoleIsDeterminedByAdminInvitation() {
+        User superAdmin = userRepository.save(User.createSuperAdmin(
+                "signup-super-admin@example.com",
+                "Super Admin",
+                null,
+                passwordEncoder.encode(PASSWORD)
+        ));
+        InvitationResponse invitation = invitationService.inviteAdmin(
+                superAdmin.getId(),
+                new InvitationRequest("new-admin@example.com", PASSWORD),
+                "127.0.0.1"
+        );
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest(
+        SignupResponse signupResponse = signupService.signup(
+                new SignupRequest(
+                        "new-admin@example.com",
+                        invitation.temporaryPassword(),
+                        PASSWORD,
+                        "New Admin",
+                        null
+                ),
+                "127.0.0.1"
+        );
+
+        assertThat(signupResponse.role()).isEqualTo(UserRole.ADMIN);
+        assertThat(signupResponse.accessToken()).isNotBlank();
+    }
+
+    @Test
+    void loginFailsWithWrongPassword() {
+        signupStoreOwner("wrong-password@example.com");
+
+        assertThatThrownBy(() -> loginService.login(new LoginRequest(
                 "wrong-password@example.com",
                 "wrong-password"
         ))).isInstanceOf(ApiException.class);
     }
 
-    private void createStoreOwner(String email, String uniqueSuffix) {
-        String inviterEmail = "auth-inviter-" + uniqueSuffix.replace("-", "") + "@example.com";
+    private void signupStoreOwner(String email) {
         User inviter = userRepository.save(User.createAdmin(
-                inviterEmail,
+                "inviter-" + email,
                 "Auth Inviter",
                 null,
-                passwordEncoder.encode("Passw0rd!23")
+                passwordEncoder.encode(PASSWORD)
         ));
-        StoreOwnerInvitationResponse invitation = invitationService.createInvitation(
+        InvitationResponse invitation = invitationService.inviteStoreOwner(
                 inviter.getId(),
-                new CreateStoreOwnerInvitationRequest(email, "Passw0rd!23"),
+                new InvitationRequest(email, PASSWORD),
                 "127.0.0.1"
         );
-        invitationAcceptanceService.acceptInvitation(
-                new AcceptStoreOwnerInvitationRequest(
+        signupService.signup(
+                new SignupRequest(
                         email,
                         invitation.temporaryPassword(),
-                        "Passw0rd!23",
+                        PASSWORD,
                         "Auth Owner",
                         null
                 ),
