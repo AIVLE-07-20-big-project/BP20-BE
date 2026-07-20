@@ -5,6 +5,7 @@ import com.bp20.backend.effectverification.dto.request.ExecutionRegistrationRequ
 import com.bp20.backend.effectverification.dto.request.VerificationCompletionRequest;
 import com.bp20.backend.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.effectverification.dto.response.VerificationExecutionResponse;
+import com.bp20.backend.effectverification.entity.VerificationStatus;
 import com.bp20.backend.effectverification.service.EffectVerificationLifecycleService;
 import com.bp20.backend.effectverification.service.EffectVerificationService;
 import jakarta.validation.Valid;
@@ -57,6 +58,16 @@ public class EffectVerificationController {
             @RequestParam(name = "store_id", required = false) Long storeId
     ) {
         return ResponseEntity.ok(lifecycleService.getDueExecutions(storeId));
+    }
+
+    @GetMapping("/executions")
+    public ResponseEntity<List<VerificationExecutionResponse>> getExecutionHistory(
+            @RequestParam(name = "store_id") Long storeId,
+            @RequestParam(name = "status", required = false) VerificationStatus status
+    ) {
+        return ResponseEntity.ok(
+                lifecycleService.getExecutionHistory(storeId, status)
+        );
     }
 
     @PostMapping("/verify")

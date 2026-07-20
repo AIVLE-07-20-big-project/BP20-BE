@@ -25,4 +25,11 @@ public interface EffectVerificationExecutionRepository
             VerificationStatus status,
             LocalDateTime dueAt
     );
+
+    List<EffectVerificationExecution> findByStoreIdOrderByExecutedAtDesc(Long storeId);
+
+    List<EffectVerificationExecution> findByStoreIdAndStatusOrderByExecutedAtDesc(
+            Long storeId,
+            VerificationStatus status
+    );
 }

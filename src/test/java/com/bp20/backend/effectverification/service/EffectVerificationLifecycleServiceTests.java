@@ -21,6 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -134,6 +135,95 @@ class EffectVerificationLifecycleServiceTests {
                 );
     }
 
+    @Test
+    void getExecutionHistoryFiltersByStoreAndStatus() {
+        EffectVerificationExecution execution = savedExecution(
+                LocalDateTime.of(2026, 7, 1, 10, 0)
+        );
+        when(executionRepository.findByStoreIdAndStatusOrderByExecutedAtDesc(
+                1L,
+                VerificationStatus.COLLECTING
+        )).thenReturn(List.of(execution));
+
+        List<VerificationExecutionResponse> responses =
+                lifecycleService.getExecutionHistory(1L, VerificationStatus.COLLECTING);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().getStoreId()).isEqualTo(1L);
+        assertThat(responses.getFirst().getStatus()).isEqualTo(VerificationStatus.COLLECTING);
+        verify(executionRepository).findByStoreIdAndStatusOrderByExecutedAtDesc(
+                1L,
+                VerificationStatus.COLLECTING
+        );
+        verify(executionRepository, never()).findByStoreIdOrderByExecutedAtDesc(1L);
+    }
+
+    @Test
+    void reviewExecutionCompletesWithStoredReviewBaseline() {
+        LocalDateTime executedAt = LocalDateTime.of(2026, 7, 1, 10, 0);
+        ExecutionRegistrationRequest registration = new ExecutionRegistrationRequest();
+        registration.setStoreId(1L);
+        registration.setRecommendationId(200L);
+        registration.setRecommendationType(RecommendationType.REVIEW);
+        registration.setCondition(new VerificationCondition(
+                14,
+                null,
+                null,
+                true,
+                "waiting_time"
+        ));
+        registration.setBefore(reviewPeriod(3.8, 40.0));
+        registration.setExecutedAt(executedAt);
+
+        when(executionRepository.existsByAiRecommendationId(200L)).thenReturn(false);
+        when(executionRepository.save(any(EffectVerificationExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        lifecycleService.registerExecution(registration);
+
+        ArgumentCaptor<EffectVerificationExecution> executionCaptor =
+                ArgumentCaptor.forClass(EffectVerificationExecution.class);
+        verify(executionRepository).save(executionCaptor.capture());
+        EffectVerificationExecution saved = executionCaptor.getValue();
+        when(executionRepository.findByAiRecommendationId(200L))
+                .thenReturn(Optional.of(saved));
+
+        EffectVerificationResponse aiResponse = new EffectVerificationResponse();
+        aiResponse.setVerifiedDate(executedAt.plusDays(15));
+        when(verificationService.verifyEffect(any(EffectVerificationRequest.class)))
+                .thenReturn(aiResponse);
+
+        VerificationCompletionRequest completion = new VerificationCompletionRequest();
+        completion.setAfter(reviewPeriod(4.4, 18.0));
+        completion.setCollectedAt(executedAt.plusDays(15));
+
+        lifecycleService.completeVerification(200L, completion);
+
+        ArgumentCaptor<EffectVerificationRequest> requestCaptor =
+                ArgumentCaptor.forClass(EffectVerificationRequest.class);
+        verify(verificationService).verifyEffect(requestCaptor.capture());
+        EffectVerificationRequest sent = requestCaptor.getValue();
+        assertThat(sent.getRecommendationType()).isEqualTo(RecommendationType.REVIEW);
+        assertThat(sent.getCondition().getTargetAspect()).isEqualTo("waiting_time");
+        assertThat(sent.getBefore().getReview().getAverageRating()).isEqualTo(3.8);
+        assertThat(sent.getAfter().getReview().getAverageRating()).isEqualTo(4.4);
+        assertThat(saved.getStatus()).isEqualTo(VerificationStatus.VERIFIED);
+    }
+
+    @Test
+    void reviewRegistrationRejectsMissingTargetAspect() {
+        ExecutionRegistrationRequest request = new ExecutionRegistrationRequest();
+        request.setStoreId(1L);
+        request.setRecommendationId(201L);
+        request.setRecommendationType(RecommendationType.REVIEW);
+        request.setCondition(new VerificationCondition(14, null, null, true, null));
+        request.setBefore(reviewPeriod(3.8, 40.0));
+
+        assertThatThrownBy(() -> lifecycleService.registerExecution(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("requires target_aspect");
+    }
+
     private ExecutionRegistrationRequest registrationRequest(LocalDateTime executedAt) {
         ExecutionRegistrationRequest request = new ExecutionRegistrationRequest();
         request.setStoreId(1L);
@@ -170,5 +260,19 @@ class EffectVerificationLifecycleServiceTests {
                 5_000_000.0
         );
         return new PeriodMetrics(sales, null);
+    }
+
+    private PeriodMetrics reviewPeriod(double averageRating, double negativeRate) {
+        ReviewMetrics review = new ReviewMetrics(
+                averageRating,
+                negativeRate,
+                20,
+                negativeRate,
+                0.9,
+                50,
+                25.0,
+                5_000_000.0
+        );
+        return new PeriodMetrics(null, review);
     }
 }

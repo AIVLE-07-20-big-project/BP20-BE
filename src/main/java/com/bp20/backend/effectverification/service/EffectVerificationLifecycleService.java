@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ public class EffectVerificationLifecycleService {
         }
 
         validateMetrics(request.getRecommendationType(), request.getBefore(), "before");
+        validateCondition(request.getRecommendationType(), request.getCondition());
         int periodDays = resolvePeriodDays(request.getCondition());
         LocalDateTime executedAt = request.getExecutedAt() != null
                 ? request.getExecutedAt()
@@ -135,6 +137,23 @@ public class EffectVerificationLifecycleService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<VerificationExecutionResponse> getExecutionHistory(
+            Long storeId,
+            VerificationStatus status
+    ) {
+        List<EffectVerificationExecution> executions = status == null
+                ? executionRepository.findByStoreIdOrderByExecutedAtDesc(storeId)
+                : executionRepository.findByStoreIdAndStatusOrderByExecutedAtDesc(
+                        storeId,
+                        status
+                );
+
+        return executions.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private EffectVerificationExecution findExecution(Long recommendationId) {
         return executionRepository.findByAiRecommendationId(recommendationId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -156,6 +175,33 @@ public class EffectVerificationLifecycleService {
             );
         }
         return periodDays;
+    }
+
+    private void validateCondition(
+            RecommendationType recommendationType,
+            VerificationCondition condition
+    ) {
+        boolean hasStartHour = condition.getStartHour() != null;
+        boolean hasEndHour = condition.getEndHour() != null;
+        if (hasStartHour != hasEndHour) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "start_hour and end_hour must be provided together"
+            );
+        }
+        if (hasStartHour && condition.getStartHour().equals(condition.getEndHour())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "start_hour and end_hour must be different"
+            );
+        }
+        if (recommendationType == RecommendationType.REVIEW
+                && !StringUtils.hasText(condition.getTargetAspect())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "REVIEW recommendation requires target_aspect"
+            );
+        }
     }
 
     private void validateMetrics(
