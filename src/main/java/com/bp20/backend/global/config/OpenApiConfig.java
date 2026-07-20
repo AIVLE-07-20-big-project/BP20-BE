@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.models.OpenAPI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,11 +13,7 @@ import org.springframework.context.annotation.Configuration;
                 title = "Big Project 20조 백엔드 API",
                 description = "Big Project 20조 서비스의 인증, IAM, 점주 및 매장 관리 API 문서입니다.",
                 version = "1.0.0"
-        ),
-        servers = {
-                @Server(url = "http://localhost:8080", description = "로컬 개발 서버"),
-                @Server(url = "http://localhost:8081", description = "로컬 Docker 개발 서버")
-        }
+        )
 )
 @SecurityScheme(
         name = "bearerAuth",
