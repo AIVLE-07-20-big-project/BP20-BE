@@ -1,8 +1,6 @@
 package com.bp20.backend.api.ai.client;
 
-import com.bp20.backend.api.ai.dto.request.AgentRunRequest;
 import com.bp20.backend.api.ai.dto.request.AgentRunResumeRequest;
-import com.bp20.backend.api.ai.dto.request.CampaignLogRequest;
 import com.bp20.backend.global.exception.FastApiException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -28,12 +26,6 @@ public class FastApiClient {
 
     public FastApiClient(RestClient fastApiRestClient) {
         this.restClient = fastApiRestClient;
-    }
-
-    public Map<String, Object> createReport(
-            MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd
-    ) {
-        return postMultipart("/api/v1/reports", multipartBody(file, trdarCd, svcIndutyCd, yyquCd));
     }
 
     public Map<String, Object> createAnalysis(
@@ -75,15 +67,11 @@ public class FastApiClient {
                 .body(MAP_TYPE));
     }
 
-    public Map<String, Object> createAnalysisReport(String analysisId) {
+    public Map<String, Object> createRecommendation(String analysisId) {
         return exchange(() -> restClient.post()
-                .uri("/api/v1/analyses/{analysisId}/reports", analysisId)
+                .uri("/api/v1/analyses/{analysisId}/recommendations", analysisId)
                 .retrieve()
                 .body(MAP_TYPE));
-    }
-
-    public Map<String, Object> createAgentRun(AgentRunRequest request) {
-        return postJson("/api/v1/agent-runs", request);
     }
 
     public Map<String, Object> getAgentRun(String threadId) {
@@ -95,17 +83,6 @@ public class FastApiClient {
 
     public Map<String, Object> resumeAgentRun(String threadId, AgentRunResumeRequest request) {
         return postJson("/api/v1/agent-runs/{threadId}/resume", request, threadId);
-    }
-
-    public Map<String, Object> createCampaignLog(CampaignLogRequest request) {
-        return postJson("/api/v1/campaign-logs", request);
-    }
-
-    public Map<String, Object> getCampaignLogQuality() {
-        return exchange(() -> restClient.get()
-                .uri("/api/v1/campaign-logs/quality")
-                .retrieve()
-                .body(MAP_TYPE));
     }
 
     private Map<String, Object> postMultipart(String uri, MultiValueMap<String, Object> body) {
