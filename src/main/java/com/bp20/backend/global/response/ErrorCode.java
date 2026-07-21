@@ -13,6 +13,7 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_EMAIL(HttpStatus.BAD_REQUEST, "이메일 형식이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 형식이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_ROLE(HttpStatus.BAD_REQUEST, "사용자 역할이 올바르지 않습니다."),
+    BAD_REQUEST_INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "CSV 파일만 업로드할 수 있습니다."),
 
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     UNAUTHORIZED_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
