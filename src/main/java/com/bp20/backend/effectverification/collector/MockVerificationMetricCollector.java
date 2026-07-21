@@ -130,24 +130,57 @@ public class MockVerificationMetricCollector implements VerificationMetricCollec
                         periodParams
                 ),
                 percentage(
-                        "SELECT COUNT(*) FROM MockReview WHERE StoreID = ? AND CreatedAt >= ? AND CreatedAt < ? AND Negative = TRUE",
+                        """
+                        SELECT COUNT(*) FROM MockReview review
+                        WHERE review.StoreID = ? AND review.CreatedAt >= ? AND review.CreatedAt < ?
+                          AND EXISTS (
+                              SELECT 1 FROM MockReviewAspectSentiment sentiment
+                              WHERE sentiment.ReviewID = review.ReviewID
+                                AND sentiment.Sentiment IN ('부정', 'negative')
+                          )
+                        """,
                         periodParams,
                         "SELECT COUNT(*) FROM MockReview WHERE StoreID = ? AND CreatedAt >= ? AND CreatedAt < ?",
                         periodParams
                 ),
                 number(
-                        "SELECT COUNT(*) FROM MockReview WHERE StoreID = ? AND CreatedAt >= ? AND CreatedAt < ? AND TargetAspect = ?",
+                        """
+                        SELECT COUNT(*)
+                        FROM MockReviewAspectSentiment sentiment
+                        JOIN MockReview review ON review.ReviewID = sentiment.ReviewID
+                        WHERE review.StoreID = ? AND review.CreatedAt >= ? AND review.CreatedAt < ?
+                          AND sentiment.Aspect = ?
+                        """,
                         Integer.class,
                         aspectParams
                 ),
                 percentage(
-                        "SELECT COUNT(*) FROM MockReview WHERE StoreID = ? AND CreatedAt >= ? AND CreatedAt < ? AND TargetAspect = ? AND Negative = TRUE",
+                        """
+                        SELECT COUNT(*)
+                        FROM MockReviewAspectSentiment sentiment
+                        JOIN MockReview review ON review.ReviewID = sentiment.ReviewID
+                        WHERE review.StoreID = ? AND review.CreatedAt >= ? AND review.CreatedAt < ?
+                          AND sentiment.Aspect = ?
+                          AND sentiment.Sentiment IN ('부정', 'negative')
+                        """,
                         aspectParams,
-                        "SELECT COUNT(*) FROM MockReview WHERE StoreID = ? AND CreatedAt >= ? AND CreatedAt < ? AND TargetAspect = ?",
+                        """
+                        SELECT COUNT(*)
+                        FROM MockReviewAspectSentiment sentiment
+                        JOIN MockReview review ON review.ReviewID = sentiment.ReviewID
+                        WHERE review.StoreID = ? AND review.CreatedAt >= ? AND review.CreatedAt < ?
+                          AND sentiment.Aspect = ?
+                        """,
                         aspectParams
                 ),
                 number(
-                        "SELECT COALESCE(AVG(ABS(AspectSentimentScore)), 0) FROM MockReview WHERE StoreID = ? AND CreatedAt >= ? AND CreatedAt < ? AND TargetAspect = ?",
+                        """
+                        SELECT COALESCE(AVG(sentiment.Confidence) / 100, 0)
+                        FROM MockReviewAspectSentiment sentiment
+                        JOIN MockReview review ON review.ReviewID = sentiment.ReviewID
+                        WHERE review.StoreID = ? AND review.CreatedAt >= ? AND review.CreatedAt < ?
+                          AND sentiment.Aspect = ?
+                        """,
                         Double.class,
                         aspectParams
                 ),
@@ -249,4 +282,3 @@ public class MockVerificationMetricCollector implements VerificationMetricCollec
         }
     }
 }
-

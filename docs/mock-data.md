@@ -40,8 +40,15 @@ store_id=1
 type=REVIEW
 from=2026-06-01T00:00:00
 to=2026-06-15T00:00:00
-target_aspect=대기시간
+target_aspect=waiting_time
 ```
+
+Use the aspect code returned by the ABSA API. The final list of aspect codes
+still needs to be confirmed with the owning team.
+
+The live integration test on 2026-07-21 classified `대기시간이 너무 길어요`
+as the `convenience` aspect, so the waiting-time mock recommendation currently
+uses that code.
 
 ## Scenarios
 
@@ -61,8 +68,28 @@ current numeric key while the team decides the final customer-response contract.
 - `MockOrders`
 - `MockCouponIssue`
 - `MockReview`
+- `MockReviewAspectSentiment`
 - `MockRecommendation`
 
 Public review data may later replace `MockReview`. Sales, customer visits,
 coupon use, and repeat visits cannot normally be recovered from public review
 pages and therefore remain synthetic until a real data source is available.
+
+## Review sentiment integration
+
+Configure the teammate's ABSA server URL at runtime. Localtunnel addresses are
+temporary, so they are never hard-coded in source control.
+
+```bat
+set REVIEW_SENTIMENT_AI_URL=https://modern-apples-divide.loca.lt
+```
+
+With the `local,mock` profiles active, analyze and persist one seeded review:
+
+```text
+POST /api/mock/reviews/{reviewId}/analyze
+```
+
+The original confidence (`0..100`) and normalized sentiment score (`-1..1`) are
+both stored. Positive results become a positive score, neutral results become
+zero, and negative results become a negative score.

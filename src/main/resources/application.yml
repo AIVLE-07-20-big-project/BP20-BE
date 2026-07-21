@@ -59,5 +59,7 @@ springdoc:
 ai:
   effect-verification:
     base-url: ${EFFECT_VERIFICATION_AI_URL:http://localhost:8000}
+  review-sentiment:
+    base-url: ${REVIEW_SENTIMENT_AI_URL:http://localhost:8001}
 
     

@@ -1,5 +1,6 @@
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE MockCouponIssue;
+TRUNCATE TABLE MockReviewAspectSentiment;
 TRUNCATE TABLE MockReview;
 TRUNCATE TABLE MockOrders;
 TRUNCATE TABLE MockVisit;
@@ -95,6 +96,24 @@ INSERT INTO MockReview (ReviewID, StoreID, CustomerID, CreatedAt, Rating, Conten
     (13,3,301,'2026-06-17 18:00:00',2.0,'여전히 너무 오래 기다려요',TRUE,'대기시간',-0.900),
     (14,3,302,'2026-06-23 18:00:00',3.0,'개선이 필요해요',TRUE,'대기시간',-0.500);
 
+INSERT INTO MockReviewAspectSentiment
+    (ReviewID, Aspect, Sentiment, Confidence, SentimentScore) VALUES
+    (1,'waiting_time','부정',98.000,-0.9800),
+    (2,'waiting_time','부정',94.000,-0.9400),
+    (3,'food','긍정',91.000,0.9100),
+    (4,'waiting_time','긍정',97.000,0.9700),
+    (5,'waiting_time','긍정',90.000,0.9000),
+    (5,'service','긍정',88.000,0.8800),
+    (6,'service','긍정',96.000,0.9600),
+    (7,'waiting_time','부정',93.000,-0.9300),
+    (8,'food','중립',82.000,0.0000),
+    (9,'waiting_time','부정',78.000,-0.7800),
+    (10,'service','긍정',84.000,0.8400),
+    (11,'waiting_time','부정',91.000,-0.9100),
+    (12,'food','긍정',89.000,0.8900),
+    (13,'waiting_time','부정',99.000,-0.9900),
+    (14,'waiting_time','부정',86.000,-0.8600);
+
 INSERT INTO MockRecommendation (
     RecommendationID, DecisionID, StoreID, RecommendationType, ActionID,
     TargetStartHour, TargetEndHour, TargetCustomerGroup, TargetAspect,
@@ -102,5 +121,4 @@ INSERT INTO MockRecommendation (
 ) VALUES
     (10001,'11111111-1111-1111-1111-111111111111',1,'SALES','REVISIT_COUPON',14,17,'DORMANT_CUSTOMER',NULL,TRUE,'2026-06-15 10:00:00'),
     (10002,'22222222-2222-2222-2222-222222222222',2,'SALES','REVISIT_COUPON',14,17,'DORMANT_CUSTOMER',NULL,TRUE,'2026-06-15 10:00:00'),
-    (10003,'33333333-3333-3333-3333-333333333333',3,'REVIEW','REDUCE_WAITING_TIME',NULL,NULL,NULL,'대기시간',TRUE,'2026-06-15 10:00:00');
-
+    (10003,'33333333-3333-3333-3333-333333333333',3,'REVIEW','REDUCE_WAITING_TIME',NULL,NULL,NULL,'convenience',TRUE,'2026-06-15 10:00:00');

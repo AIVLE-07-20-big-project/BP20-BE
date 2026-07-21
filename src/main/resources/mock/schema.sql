@@ -75,6 +75,19 @@ CREATE TABLE IF NOT EXISTS MockReview (
     INDEX IX_MockReview_Aspect (StoreID, TargetAspect, CreatedAt)
 );
 
+CREATE TABLE IF NOT EXISTS MockReviewAspectSentiment (
+    ReviewAspectSentimentID BIGINT PRIMARY KEY AUTO_INCREMENT,
+    ReviewID BIGINT NOT NULL,
+    Aspect VARCHAR(50) NOT NULL,
+    Sentiment VARCHAR(20) NOT NULL,
+    Confidence DECIMAL(6, 3) NOT NULL,
+    SentimentScore DECIMAL(5, 4) NOT NULL,
+    CONSTRAINT FK_MockReviewAspectSentiment_Review
+        FOREIGN KEY (ReviewID) REFERENCES MockReview(ReviewID),
+    INDEX IX_MockReviewAspectSentiment_Review (ReviewID),
+    INDEX IX_MockReviewAspectSentiment_Aspect (Aspect, Sentiment)
+);
+
 CREATE TABLE IF NOT EXISTS MockRecommendation (
     RecommendationID BIGINT PRIMARY KEY,
     DecisionID VARCHAR(36) NOT NULL UNIQUE,
@@ -90,4 +103,3 @@ CREATE TABLE IF NOT EXISTS MockRecommendation (
     CONSTRAINT FK_MockRecommendation_Store
         FOREIGN KEY (StoreID) REFERENCES MockStore(StoreID)
 );
-
