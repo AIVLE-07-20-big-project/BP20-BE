@@ -13,6 +13,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(FastApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFastApiException(FastApiException e) {
+        log.warn("[FastApiException] status={}, message={}", e.getStatusCode(), e.getMessage());
+        return ResponseEntity
+                .status(e.getStatusCode())
+                .body(ApiResponse.fail(e.getStatusCode(), e.getMessage()));
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException e) {
 
