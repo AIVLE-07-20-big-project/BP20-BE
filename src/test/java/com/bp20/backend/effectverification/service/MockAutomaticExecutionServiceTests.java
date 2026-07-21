@@ -5,6 +5,8 @@ import com.bp20.backend.effectverification.dto.request.ExecutionRegistrationRequ
 import com.bp20.backend.effectverification.dto.request.PeriodMetrics;
 import com.bp20.backend.effectverification.dto.request.RecommendationType;
 import com.bp20.backend.effectverification.dto.request.SalesMetrics;
+import com.bp20.backend.effectverification.dto.request.VerificationCompletionRequest;
+import com.bp20.backend.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.effectverification.dto.response.VerificationExecutionResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -131,6 +133,74 @@ class MockAutomaticExecutionServiceTests {
                 .isEqualTo("convenience");
     }
 
+    @Test
+    void salesCompletionCollectsPostExecutionPeriodAndCompletesLifecycle() {
+        LocalDateTime executedAt = LocalDateTime.of(2026, 6, 15, 10, 0);
+        mockRecommendation(new MockAutomaticExecutionService.MockRecommendation(
+                10001L,
+                1L,
+                RecommendationType.SALES,
+                14,
+                17,
+                null,
+                true,
+                executedAt
+        ));
+        PeriodMetrics after = new PeriodMetrics(
+                new SalesMetrics(72_000.0, 5, 14_400.0, 50.0,
+                        100.0, 1, 0, 93_000.0),
+                null
+        );
+        when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
+                .thenReturn(after);
+        when(lifecycleService.completeVerification(anyLong(), any()))
+                .thenReturn(new EffectVerificationResponse());
+
+        service.completeAutomatically(10001L);
+
+        verify(metricCollector).collect(
+                eq(1L),
+                eq(RecommendationType.SALES),
+                eq(executedAt),
+                eq(executedAt.plusDays(14)),
+                any()
+        );
+        ArgumentCaptor<VerificationCompletionRequest> captor =
+                ArgumentCaptor.forClass(VerificationCompletionRequest.class);
+        verify(lifecycleService).completeVerification(eq(10001L), captor.capture());
+        assertThat(captor.getValue().getAfter()).isSameAs(after);
+        assertThat(captor.getValue().getCollectedAt())
+                .isEqualTo(executedAt.plusDays(14));
+    }
+
+    @Test
+    void reviewCompletionAnalyzesPostExecutionReviewsBeforeCollection() {
+        LocalDateTime executedAt = LocalDateTime.of(2026, 6, 15, 10, 0);
+        mockRecommendation(new MockAutomaticExecutionService.MockRecommendation(
+                10003L,
+                3L,
+                RecommendationType.REVIEW,
+                null,
+                null,
+                "convenience",
+                true,
+                executedAt
+        ));
+        when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
+                .thenReturn(new PeriodMetrics(null, null));
+        when(lifecycleService.completeVerification(anyLong(), any()))
+                .thenReturn(new EffectVerificationResponse());
+
+        service.completeAutomatically(10003L);
+
+        verify(reviewSentimentService).analyzePending(
+                3L,
+                executedAt,
+                executedAt.plusDays(14)
+        );
+        verify(lifecycleService).completeVerification(eq(10003L), any());
+    }
+
     @SuppressWarnings("unchecked")
     private void mockRecommendation(
             MockAutomaticExecutionService.MockRecommendation recommendation
@@ -142,4 +212,3 @@ class MockAutomaticExecutionServiceTests {
         )).thenReturn(recommendation);
     }
 }
-

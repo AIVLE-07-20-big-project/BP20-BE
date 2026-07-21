@@ -109,3 +109,13 @@ POST /api/mock/effect-verifications/executions/{recommendationId}/register-auto
 The automatic registration reads the mock recommendation, calculates the
 14-day baseline window, analyzes pending reviews for REVIEW recommendations,
 aggregates the matching metrics, and then creates a `COLLECTING` execution.
+
+Complete the 14-day post-execution collection and run effect verification:
+
+```text
+POST /api/mock/effect-verifications/executions/{recommendationId}/complete-auto
+```
+
+For REVIEW recommendations, pending post-execution reviews are analyzed before
+the metrics are collected. The existing lifecycle service then stores the AI
+result and changes the execution status to `VERIFIED` or `FAILED`.

@@ -1,6 +1,7 @@
 package com.bp20.backend.effectverification.controller;
 
 import com.bp20.backend.effectverification.dto.response.VerificationExecutionResponse;
+import com.bp20.backend.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.effectverification.service.MockAutomaticExecutionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -26,5 +27,13 @@ public class MockAutomaticExecutionController {
                 automaticExecutionService.registerAutomatically(recommendationId)
         );
     }
-}
 
+    @PostMapping("/{recommendationId}/complete-auto")
+    public ResponseEntity<EffectVerificationResponse> completeAutomatically(
+            @PathVariable Long recommendationId
+    ) {
+        return ResponseEntity.ok(
+                automaticExecutionService.completeAutomatically(recommendationId)
+        );
+    }
+}

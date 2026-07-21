@@ -4,7 +4,9 @@ import com.bp20.backend.effectverification.collector.VerificationMetricCollector
 import com.bp20.backend.effectverification.dto.request.ExecutionRegistrationRequest;
 import com.bp20.backend.effectverification.dto.request.PeriodMetrics;
 import com.bp20.backend.effectverification.dto.request.RecommendationType;
+import com.bp20.backend.effectverification.dto.request.VerificationCompletionRequest;
 import com.bp20.backend.effectverification.dto.request.VerificationCondition;
+import com.bp20.backend.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.effectverification.dto.response.VerificationExecutionResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -15,13 +17,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 
 @Service
 @Profile("mock")
 @RequiredArgsConstructor
 public class MockAutomaticExecutionService {
 
-    private static final int BASELINE_PERIOD_DAYS = 14;
+    private static final int VERIFICATION_PERIOD_DAYS = 14;
 
     private final JdbcTemplate jdbcTemplate;
     private final VerificationMetricCollector metricCollector;
@@ -30,23 +35,12 @@ public class MockAutomaticExecutionService {
 
     public VerificationExecutionResponse registerAutomatically(Long recommendationId) {
         MockRecommendation recommendation = findRecommendation(recommendationId);
-        if (!recommendation.executed() || recommendation.executedAt() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Recommendation has not been executed"
-            );
-        }
+        validateExecuted(recommendation);
 
         LocalDateTime baselineFrom = recommendation.executedAt()
-                .minusDays(BASELINE_PERIOD_DAYS);
+                .minusDays(VERIFICATION_PERIOD_DAYS);
         LocalDateTime baselineTo = recommendation.executedAt();
-        VerificationCondition condition = new VerificationCondition(
-                BASELINE_PERIOD_DAYS,
-                recommendation.targetStartHour(),
-                recommendation.targetEndHour(),
-                true,
-                recommendation.targetAspect()
-        );
+        VerificationCondition condition = conditionOf(recommendation);
 
         if (recommendation.type() == RecommendationType.REVIEW) {
             reviewSentimentService.analyzePending(
@@ -74,6 +68,36 @@ public class MockAutomaticExecutionService {
         return lifecycleService.registerExecution(request);
     }
 
+    public EffectVerificationResponse completeAutomatically(Long recommendationId) {
+        MockRecommendation recommendation = findRecommendation(recommendationId);
+        validateExecuted(recommendation);
+
+        LocalDateTime collectionFrom = recommendation.executedAt();
+        LocalDateTime collectionTo = recommendation.executedAt()
+                .plusDays(VERIFICATION_PERIOD_DAYS);
+        VerificationCondition condition = conditionOf(recommendation);
+
+        if (recommendation.type() == RecommendationType.REVIEW) {
+            reviewSentimentService.analyzePending(
+                    recommendation.storeId(),
+                    collectionFrom,
+                    collectionTo
+            );
+        }
+
+        PeriodMetrics after = metricCollector.collect(
+                recommendation.storeId(),
+                recommendation.type(),
+                collectionFrom,
+                collectionTo,
+                condition
+        );
+        VerificationCompletionRequest request = new VerificationCompletionRequest();
+        request.setAfter(after);
+        request.setCollectedAt(collectionTo);
+        return lifecycleService.completeVerification(recommendationId, request);
+    }
+
     private MockRecommendation findRecommendation(Long recommendationId) {
         try {
             return jdbcTemplate.queryForObject(
@@ -84,27 +108,49 @@ public class MockAutomaticExecutionService {
                     FROM MockRecommendation
                     WHERE RecommendationID = ?
                     """,
-                    (resultSet, rowNumber) -> new MockRecommendation(
-                            resultSet.getLong("RecommendationID"),
-                            resultSet.getLong("StoreID"),
-                            RecommendationType.valueOf(
-                                    resultSet.getString("RecommendationType")
-                            ),
-                            (Integer) resultSet.getObject("TargetStartHour"),
-                            (Integer) resultSet.getObject("TargetEndHour"),
-                            resultSet.getString("TargetAspect"),
-                            resultSet.getBoolean("Executed"),
-                            resultSet.getTimestamp("ExecutedAt") == null
-                                    ? null
-                                    : resultSet.getTimestamp("ExecutedAt")
-                                    .toLocalDateTime()
-                    ),
+                    (resultSet, rowNumber) -> mapRecommendation(resultSet),
                     recommendationId
             );
         } catch (EmptyResultDataAccessException exception) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "Mock recommendation not found"
+            );
+        }
+    }
+
+    private MockRecommendation mapRecommendation(ResultSet resultSet)
+            throws SQLException {
+        Timestamp executedAt = resultSet.getTimestamp("ExecutedAt");
+        return new MockRecommendation(
+                resultSet.getLong("RecommendationID"),
+                resultSet.getLong("StoreID"),
+                RecommendationType.valueOf(
+                        resultSet.getString("RecommendationType")
+                ),
+                (Integer) resultSet.getObject("TargetStartHour"),
+                (Integer) resultSet.getObject("TargetEndHour"),
+                resultSet.getString("TargetAspect"),
+                resultSet.getBoolean("Executed"),
+                executedAt == null ? null : executedAt.toLocalDateTime()
+        );
+    }
+
+    private VerificationCondition conditionOf(MockRecommendation recommendation) {
+        return new VerificationCondition(
+                VERIFICATION_PERIOD_DAYS,
+                recommendation.targetStartHour(),
+                recommendation.targetEndHour(),
+                true,
+                recommendation.targetAspect()
+        );
+    }
+
+    private void validateExecuted(MockRecommendation recommendation) {
+        if (!recommendation.executed() || recommendation.executedAt() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Recommendation has not been executed"
             );
         }
     }
@@ -121,4 +167,3 @@ public class MockAutomaticExecutionService {
     ) {
     }
 }
-
