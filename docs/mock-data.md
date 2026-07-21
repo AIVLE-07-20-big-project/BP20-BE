@@ -70,6 +70,7 @@ current numeric key while the team decides the final customer-response contract.
 - `MockReview`
 - `MockReviewAspectSentiment`
 - `MockRecommendation`
+- `MockRecommendationStrategyWeight`
 
 Public review data may later replace `MockReview`. Sales, customer visits,
 coupon use, and repeat visits cannot normally be recovered from public review
@@ -119,3 +120,30 @@ POST /api/mock/effect-verifications/executions/{recommendationId}/complete-auto
 For REVIEW recommendations, pending post-execution reviews are analyzed before
 the metrics are collected. The existing lifecycle service then stores the AI
 result and changes the execution status to `VERIFIED` or `FAILED`.
+
+## Scheduler and recommendation feedback
+
+The mock scheduler is disabled by default. Enable it only when the effect
+verification AI is running:
+
+```bat
+set EFFECT_VERIFICATION_SCHEDULER_ENABLED=true
+```
+
+It checks due `COLLECTING` and `FAILED` executions every 60 seconds and retries
+up to three attempts. A manual run is also available:
+
+```text
+POST /api/mock/effect-verifications/scheduler/run
+```
+
+Successful verification updates a provisional strategy weight. This is a mock
+contract until the customer-response team confirms its recommendation format:
+
+- `EFFECTIVE`: `+0.2`
+- `INCONCLUSIVE`: no change
+- `INEFFECTIVE`: `-0.2`
+
+```text
+GET /api/mock/recommendation-strategy-weights?store_id=1
+```

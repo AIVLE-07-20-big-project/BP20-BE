@@ -103,3 +103,15 @@ CREATE TABLE IF NOT EXISTS MockRecommendation (
     CONSTRAINT FK_MockRecommendation_Store
         FOREIGN KEY (StoreID) REFERENCES MockStore(StoreID)
 );
+
+CREATE TABLE IF NOT EXISTS MockRecommendationStrategyWeight (
+    StoreID BIGINT NOT NULL,
+    ActionID VARCHAR(50) NOT NULL,
+    Weight DECIMAL(4, 2) NOT NULL DEFAULT 1.00,
+    LastEffectScore DECIMAL(6, 2) NOT NULL,
+    LastVerdict VARCHAR(30) NOT NULL,
+    UpdatedAt DATETIME NOT NULL,
+    PRIMARY KEY (StoreID, ActionID),
+    CONSTRAINT FK_MockRecommendationStrategyWeight_Store
+        FOREIGN KEY (StoreID) REFERENCES MockStore(StoreID)
+);

@@ -4,6 +4,7 @@ TRUNCATE TABLE MockReviewAspectSentiment;
 TRUNCATE TABLE MockReview;
 TRUNCATE TABLE MockOrders;
 TRUNCATE TABLE MockVisit;
+TRUNCATE TABLE MockRecommendationStrategyWeight;
 TRUNCATE TABLE MockRecommendation;
 TRUNCATE TABLE MockCustomer;
 TRUNCATE TABLE MockStore;

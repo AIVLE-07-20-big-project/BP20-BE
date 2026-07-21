@@ -83,6 +83,7 @@ public class EffectVerificationLifecycleService {
         }
 
         execution.markReady(writeJson(request.getAfter()));
+        execution.beginAttempt(LocalDateTime.now());
         executionRepository.save(execution);
 
         EffectVerificationRequest verificationRequest = new EffectVerificationRequest();
@@ -247,6 +248,8 @@ public class EffectVerificationLifecycleService {
                 .verificationDueAt(execution.getVerificationDueAt())
                 .verifiedAt(execution.getVerifiedAt())
                 .failureReason(execution.getFailureReason())
+                .attemptCount(execution.getAttemptCount())
+                .lastAttemptAt(execution.getLastAttemptAt())
                 .build();
     }
 }

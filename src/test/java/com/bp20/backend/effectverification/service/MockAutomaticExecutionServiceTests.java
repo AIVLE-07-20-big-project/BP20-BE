@@ -43,6 +43,9 @@ class MockAutomaticExecutionServiceTests {
     @Mock
     private EffectVerificationLifecycleService lifecycleService;
 
+    @Mock
+    private MockRecommendationFeedbackService feedbackService;
+
     private MockAutomaticExecutionService service;
 
     @BeforeEach
@@ -51,7 +54,8 @@ class MockAutomaticExecutionServiceTests {
                 jdbcTemplate,
                 metricCollector,
                 reviewSentimentService,
-                lifecycleService
+                lifecycleService,
+                feedbackService
         );
     }
 
@@ -168,6 +172,7 @@ class MockAutomaticExecutionServiceTests {
         ArgumentCaptor<VerificationCompletionRequest> captor =
                 ArgumentCaptor.forClass(VerificationCompletionRequest.class);
         verify(lifecycleService).completeVerification(eq(10001L), captor.capture());
+        verify(feedbackService).apply(eq(10001L), any());
         assertThat(captor.getValue().getAfter()).isSameAs(after);
         assertThat(captor.getValue().getCollectedAt())
                 .isEqualTo(executedAt.plusDays(14));
@@ -199,6 +204,7 @@ class MockAutomaticExecutionServiceTests {
                 executedAt.plusDays(14)
         );
         verify(lifecycleService).completeVerification(eq(10003L), any());
+        verify(feedbackService).apply(eq(10003L), any());
     }
 
     @SuppressWarnings("unchecked")

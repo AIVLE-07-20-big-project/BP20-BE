@@ -32,6 +32,7 @@ public class MockAutomaticExecutionService {
     private final VerificationMetricCollector metricCollector;
     private final MockReviewSentimentService reviewSentimentService;
     private final EffectVerificationLifecycleService lifecycleService;
+    private final MockRecommendationFeedbackService feedbackService;
 
     public VerificationExecutionResponse registerAutomatically(Long recommendationId) {
         MockRecommendation recommendation = findRecommendation(recommendationId);
@@ -95,7 +96,19 @@ public class MockAutomaticExecutionService {
         VerificationCompletionRequest request = new VerificationCompletionRequest();
         request.setAfter(after);
         request.setCollectedAt(collectionTo);
-        return lifecycleService.completeVerification(recommendationId, request);
+        EffectVerificationResponse response = lifecycleService
+                .completeVerification(recommendationId, request);
+        feedbackService.apply(recommendationId, response);
+        return response;
+    }
+
+    public boolean supportsRecommendation(Long recommendationId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM MockRecommendation WHERE RecommendationID = ?",
+                Integer.class,
+                recommendationId
+        );
+        return count != null && count > 0;
     }
 
     private MockRecommendation findRecommendation(Long recommendationId) {

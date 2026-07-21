@@ -32,4 +32,9 @@ public interface EffectVerificationExecutionRepository
             Long storeId,
             VerificationStatus status
     );
+
+    List<EffectVerificationExecution> findByStatusInAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+            List<VerificationStatus> statuses,
+            LocalDateTime dueAt
+    );
 }

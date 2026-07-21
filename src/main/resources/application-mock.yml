@@ -8,3 +8,8 @@ spring:
       data-locations: classpath:mock/data.sql
       continue-on-error: false
 
+effect-verification:
+  scheduler:
+    enabled: ${EFFECT_VERIFICATION_SCHEDULER_ENABLED:false}
+    fixed-delay-ms: ${EFFECT_VERIFICATION_SCHEDULER_DELAY_MS:60000}
+    max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}

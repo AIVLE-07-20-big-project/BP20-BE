@@ -58,6 +58,13 @@ public class EffectVerificationExecution {
     @Column(name = "FailureReason", columnDefinition = "TEXT")
     private String failureReason;
 
+    @Builder.Default
+    @Column(name = "AttemptCount", nullable = false)
+    private Integer attemptCount = 0;
+
+    @Column(name = "LastAttemptAt")
+    private LocalDateTime lastAttemptAt;
+
     public void markReady(String afterMetricsJson) {
         this.afterMetricsJson = afterMetricsJson;
         this.status = VerificationStatus.READY;
@@ -73,5 +80,10 @@ public class EffectVerificationExecution {
     public void markFailed(String failureReason) {
         this.status = VerificationStatus.FAILED;
         this.failureReason = failureReason;
+    }
+
+    public void beginAttempt(LocalDateTime attemptedAt) {
+        this.attemptCount = this.attemptCount == null ? 1 : this.attemptCount + 1;
+        this.lastAttemptAt = attemptedAt;
     }
 }

@@ -34,4 +34,10 @@ public class VerificationExecutionResponse {
 
     @JsonProperty("failure_reason")
     private String failureReason;
+
+    @JsonProperty("attempt_count")
+    private Integer attemptCount;
+
+    @JsonProperty("last_attempt_at")
+    private LocalDateTime lastAttemptAt;
 }
