@@ -1,6 +1,6 @@
 package com.bp20.backend.api.ai.client;
 
-import com.bp20.backend.api.ai.dto.request.AgentRunRequest;
+import com.bp20.backend.api.ai.dto.request.AgentRunResumeRequest;
 import com.bp20.backend.global.exception.FastApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,17 +34,9 @@ class FastApiClientTest {
     }
 
     @Test
-    void createAgentRunCallsFastApiWithExpectedJson() {
-        server.expect(requestTo("http://fastapi:8000/api/v1/agent-runs"))
+    void createRecommendationUsesSelectedAnalysis() {
+        server.expect(requestTo("http://fastapi:8000/api/v1/analyses/analysis-id/recommendations"))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().json("""
-                        {
-                          "trdar_cd": "3120189",
-                          "svc_induty_cd": "CS100010",
-                          "yyqu_cd": 20261
-                        }
-                        """))
                 .andRespond(withSuccess("""
                         {
                           "thread_id": "test-thread-id",
@@ -53,9 +45,7 @@ class FastApiClientTest {
                         }
                         """, MediaType.APPLICATION_JSON));
 
-        Map<String, Object> response = client.createAgentRun(
-                new AgentRunRequest("3120189", "CS100010", 20261)
-        );
+        Map<String, Object> response = client.createRecommendation("analysis-id");
 
         assertThat(response.get("thread_id")).isEqualTo("test-thread-id");
         assertThat(response.get("상태")).isEqualTo("승인 대기");
@@ -63,16 +53,16 @@ class FastApiClientTest {
     }
 
     @Test
-    void createAnalysisReportCallsFastApiWithoutUploadingAgain() {
-        server.expect(requestTo("http://fastapi:8000/api/v1/analyses/analysis-id/reports"))
-                .andExpect(method(HttpMethod.POST))
+    void getAnalysisCallsFastApiWithAnalysisId() {
+        server.expect(requestTo("http://fastapi:8000/api/v1/analyses/analysis-id"))
+                .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess("""
-                        {"thread_id":"analysis-id","상태":"리포트 생성 완료"}
+                        {"analysis_id":"analysis-id","report":{"매출":"감소"}}
                         """, MediaType.APPLICATION_JSON));
 
-        Map<String, Object> response = client.createAnalysisReport("analysis-id");
+        Map<String, Object> response = client.getAnalysis("analysis-id");
 
-        assertThat(response.get("상태")).isEqualTo("리포트 생성 완료");
+        assertThat(response.get("analysis_id")).isEqualTo("analysis-id");
         server.verify();
     }
 
@@ -98,12 +88,33 @@ class FastApiClientTest {
                     assertThat(body).contains("a,b\n1,2");
                 })
                 .andRespond(withSuccess("""
-                        {"thread_id":"analysis-id"}
+                        {"analysis_id":"analysis-id","report":{},"warnings":[]}
                         """, MediaType.APPLICATION_JSON));
 
         Map<String, Object> response = client.createAnalysis(file, "3110003", "CS100008", null);
 
-        assertThat(response.get("thread_id")).isEqualTo("analysis-id");
+        assertThat(response.get("analysis_id")).isEqualTo("analysis-id");
+        server.verify();
+    }
+
+    @Test
+    void resumeAgentRunSendsEnglishDecisionFields() {
+        server.expect(requestTo("http://fastapi:8000/api/v1/agent-runs/thread-id/resume"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("""
+                        {"decision":"edit","modificationPlan":"쿠폰발행"}
+                        """))
+                .andRespond(withSuccess("""
+                        {"thread_id":"thread-id","상태":"검증 완료 — 승인 대기"}
+                        """, MediaType.APPLICATION_JSON));
+
+        Map<String, Object> response = client.resumeAgentRun(
+                "thread-id",
+                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행")
+        );
+
+        assertThat(response.get("thread_id")).isEqualTo("thread-id");
         server.verify();
     }
 
