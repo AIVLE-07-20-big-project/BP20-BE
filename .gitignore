@@ -46,3 +46,6 @@ out/
 
 ### macOS
 .DS_Store
+
+### Local development docs ###
+/docs/
