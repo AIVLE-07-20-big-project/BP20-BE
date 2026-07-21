@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:mock/schema.sql
+      data-locations: classpath:mock/data.sql
+      continue-on-error: false
+
