@@ -93,3 +93,19 @@ POST /api/mock/reviews/{reviewId}/analyze
 The original confidence (`0..100`) and normalized sentiment score (`-1..1`) are
 both stored. Positive results become a positive score, neutral results become
 zero, and negative results become a negative score.
+
+Analyze every review without a stored ABSA result in a period:
+
+```text
+POST /api/mock/reviews/analyze-pending
+```
+
+Register a recommendation without manually supplying `before` metrics:
+
+```text
+POST /api/mock/effect-verifications/executions/{recommendationId}/register-auto
+```
+
+The automatic registration reads the mock recommendation, calculates the
+14-day baseline window, analyzes pending reviews for REVIEW recommendations,
+aggregates the matching metrics, and then creates a `COLLECTING` execution.

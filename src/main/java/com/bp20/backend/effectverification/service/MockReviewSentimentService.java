@@ -3,6 +3,7 @@ package com.bp20.backend.effectverification.service;
 import com.bp20.backend.effectverification.client.ReviewSentimentApiClient;
 import com.bp20.backend.effectverification.dto.response.AspectSentimentResponse;
 import com.bp20.backend.effectverification.dto.response.ReviewAnalysisStorageResponse;
+import com.bp20.backend.effectverification.dto.response.ReviewBatchAnalysisResponse;
 import com.bp20.backend.effectverification.dto.response.ReviewSentimentResponse;
 import com.bp20.backend.effectverification.dto.response.StoredAspectSentimentResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Locale;
+import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 @Service
 @Profile("mock")
@@ -68,6 +71,42 @@ public class MockReviewSentimentService {
         );
     }
 
+    @Transactional
+    public ReviewBatchAnalysisResponse analyzePending(
+            Long storeId,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        if (!from.isBefore(to)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "from must be before to"
+            );
+        }
+
+        List<Long> reviewIds = jdbcTemplate.queryForList(
+                """
+                SELECT review.ReviewID
+                FROM MockReview review
+                WHERE review.StoreID = ?
+                  AND review.CreatedAt >= ? AND review.CreatedAt < ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM MockReviewAspectSentiment sentiment
+                      WHERE sentiment.ReviewID = review.ReviewID
+                  )
+                ORDER BY review.CreatedAt ASC, review.ReviewID ASC
+                """,
+                Long.class,
+                storeId,
+                Timestamp.valueOf(from),
+                Timestamp.valueOf(to)
+        );
+        List<ReviewAnalysisStorageResponse> results = reviewIds.stream()
+                .map(this::analyzeAndStore)
+                .toList();
+        return new ReviewBatchAnalysisResponse(results.size(), results);
+    }
+
     private String findReviewText(Long reviewId) {
         try {
             return jdbcTemplate.queryForObject(
@@ -115,4 +154,3 @@ public class MockReviewSentimentService {
         );
     }
 }
-

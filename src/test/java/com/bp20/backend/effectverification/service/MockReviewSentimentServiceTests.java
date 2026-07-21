@@ -12,9 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,5 +64,36 @@ class MockReviewSentimentServiceTests {
                 1L
         );
     }
-}
 
+    @Test
+    void analyzePendingProcessesOnlyReviewsWithoutStoredResults() {
+        LocalDateTime from = LocalDateTime.of(2026, 6, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 6, 15, 0, 0);
+        when(jdbcTemplate.queryForList(
+                anyString(),
+                eq(Long.class),
+                eq(1L),
+                any(),
+                any()
+        )).thenReturn(List.of(15L));
+        when(jdbcTemplate.queryForObject(anyString(), eq(String.class), eq(15L)))
+                .thenReturn("서비스는 보통이었어요");
+        when(sentimentApiClient.analyze(anyString())).thenReturn(
+                new ReviewSentimentResponse(
+                        "서비스는 보통이었어요",
+                        List.of(new AspectSentimentResponse(
+                                "service",
+                                "중립",
+                                90.0
+                        ))
+                )
+        );
+
+        var response = service.analyzePending(1L, from, to);
+
+        assertThat(response.analyzedCount()).isEqualTo(1);
+        assertThat(response.results().getFirst().reviewId()).isEqualTo(15L);
+        assertThat(response.results().getFirst().results().getFirst().sentimentScore())
+                .isZero();
+    }
+}
