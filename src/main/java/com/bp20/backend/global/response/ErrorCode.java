@@ -28,6 +28,8 @@ public enum ErrorCode {
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     NOT_FOUND_STORE(HttpStatus.NOT_FOUND, "매장을 찾을 수 없습니다."),
+    NOT_FOUND_AI_ANALYSIS(HttpStatus.NOT_FOUND, "매출 분석 결과를 찾을 수 없습니다."),
+    NOT_FOUND_AI_AGENT_RUN(HttpStatus.NOT_FOUND, "AI 에이전트 실행을 찾을 수 없습니다."),
     NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
 
     CONFLICT_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
