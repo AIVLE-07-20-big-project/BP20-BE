@@ -29,10 +29,9 @@ public enum SuccessCode {
     SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석을 완료했습니다."),
     SUCCESS_AI_ANALYSIS_GET(HttpStatus.OK, "매출 분석 결과를 조회했습니다."),
     SUCCESS_AI_RECOMMENDATION_CREATE(HttpStatus.OK, "고객 대응방안 추천과 검증을 시작했습니다."),
+    SUCCESS_AI_RECOMMENDATION_GET(HttpStatus.OK, "AI 전략 추천 이력을 조회했습니다."),
     SUCCESS_AI_AGENT_RUN_GET(HttpStatus.OK, "AI 에이전트 실행을 조회했습니다."),
     SUCCESS_AI_AGENT_RUN_RESUME(HttpStatus.OK, "AI 에이전트 실행을 재개했습니다."),
-    SUCCESS_STORE_UPDATE(HttpStatus.OK, "매장 정보를 수정했습니다."),
-
     SUCCESS_RECEIPT_PARSE(HttpStatus.OK, "영수증 OCR 인식을 완료했습니다."),
     SUCCESS_RECEIPT_CREATE(HttpStatus.CREATED, "영수증을 저장했습니다."),
     SUCCESS_RECEIPT_GET(HttpStatus.OK, "영수증 정보를 조회했습니다."),
