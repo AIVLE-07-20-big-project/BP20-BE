@@ -29,6 +29,9 @@ dependencies {
     // MySQL
     runtimeOnly 'com.mysql:mysql-connector-j'
 
+    // OCR 서비스(Python) 호출용 HTTP 클라이언트
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
