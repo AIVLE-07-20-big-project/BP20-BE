@@ -7,8 +7,8 @@ import com.bp20.backend.api.receipt.dto.response.BudgetOverageResponse;
 import com.bp20.backend.api.receipt.dto.response.ExpenseAnomalyResponse;
 import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
 import com.bp20.backend.global.exception.ApiException;
+import com.bp20.backend.global.config.OcrServiceProperties;
 import com.bp20.backend.global.response.ErrorCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -32,10 +32,18 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OcrServiceClient {
 
     private final RestClient ocrServiceRestClient;
+
+    public OcrServiceClient(
+            RestClient.Builder externalRestClientBuilder,
+            OcrServiceProperties properties
+    ) {
+        this.ocrServiceRestClient = externalRestClientBuilder.clone()
+                .baseUrl(properties.baseUrl())
+                .build();
+    }
 
     /**
      * 영수증 이미지를 Python 서비스로 보내 OCR 결과를 받는다. (DB 저장은 하지 않음 - 미리보기 용도)
