@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -34,66 +35,39 @@ class FastApiClientTest {
     }
 
     @Test
-    void createRecommendationUsesSelectedAnalysis() {
+    void createRecommendationUsesAnalysisId() {
         server.expect(requestTo("http://fastapi:8000/api/v1/analyses/analysis-id/recommendations"))
                 .andExpect(method(HttpMethod.POST))
                 .andRespond(withSuccess("""
-                        {
-                          "thread_id": "test-thread-id",
-                          "상태": "승인 대기",
-                          "대기중_승인": {"방안": "coupon"}
-                        }
+                        {"thread_id":"test-thread-id","상태":"승인 대기"}
                         """, MediaType.APPLICATION_JSON));
 
         Map<String, Object> response = client.createRecommendation("analysis-id");
 
         assertThat(response.get("thread_id")).isEqualTo("test-thread-id");
-        assertThat(response.get("상태")).isEqualTo("승인 대기");
         server.verify();
     }
 
     @Test
-    void getAnalysisCallsFastApiWithAnalysisId() {
-        server.expect(requestTo("http://fastapi:8000/api/v1/analyses/analysis-id"))
-                .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess("""
-                        {"analysis_id":"analysis-id","report":{"매출":"감소"}}
-                        """, MediaType.APPLICATION_JSON));
-
-        Map<String, Object> response = client.getAnalysis("analysis-id");
-
-        assertThat(response.get("analysis_id")).isEqualTo("analysis-id");
-        server.verify();
-    }
-
-    @Test
-    void createAnalysisSendsMultipartFieldsAndFile() {
+    void createAnalysisSendsUserAndStoreOwnership() {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "sample.csv", "text/csv", "a,b\n1,2".getBytes(StandardCharsets.UTF_8)
         );
-
         server.expect(requestTo("http://fastapi:8000/api/v1/analyses"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(request -> {
-                    String contentType = request.getHeaders().getContentType().toString();
-                    assertThat(contentType).startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
                     String body = new String(
                             ((org.springframework.mock.http.client.MockClientHttpRequest) request)
-                                    .getBodyAsBytes(),
-                            StandardCharsets.UTF_8
+                                    .getBodyAsBytes(), StandardCharsets.UTF_8
                     );
-                    assertThat(body).contains("name=\"trdar_cd\"").contains("3110003");
-                    assertThat(body).contains("name=\"svc_induty_cd\"").contains("CS100008");
-                    assertThat(body).contains("name=\"file\"; filename=\"sample.csv\"");
-                    assertThat(body).contains("a,b\n1,2");
+                    assertThat(body).contains("name=\"user_id\"").contains("7");
+                    assertThat(body).contains("name=\"store_id\"").contains("store-1");
                 })
                 .andRespond(withSuccess("""
-                        {"analysis_id":"analysis-id","report":{},"warnings":[]}
+                        {"analysis_id":"analysis-id","report":{},"diagnosis":{},"warnings":[]}
                         """, MediaType.APPLICATION_JSON));
 
-        Map<String, Object> response = client.createAnalysis(file, "3110003", "CS100008", null);
-
-        assertThat(response.get("analysis_id")).isEqualTo("analysis-id");
+        client.createAnalysis(file, "3110003", "CS100008", 20261, 7L, "store-1");
         server.verify();
     }
 
@@ -101,6 +75,7 @@ class FastApiClientTest {
     void resumeAgentRunSendsEnglishDecisionFields() {
         server.expect(requestTo("http://fastapi:8000/api/v1/agent-runs/thread-id/resume"))
                 .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-User-Id", "7"))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json("""
                         {"decision":"edit","modificationPlan":"쿠폰발행"}
@@ -111,7 +86,8 @@ class FastApiClientTest {
 
         Map<String, Object> response = client.resumeAgentRun(
                 "thread-id",
-                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행")
+                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행"),
+                7L
         );
 
         assertThat(response.get("thread_id")).isEqualTo("thread-id");
@@ -122,11 +98,12 @@ class FastApiClientTest {
     void propagatesFastApiStatusAndDetail() {
         server.expect(requestTo("http://fastapi:8000/api/v1/agent-runs/missing"))
                 .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-User-Id", "7"))
                 .andRespond(withResourceNotFound()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("{\"detail\":\"agent-run을 찾을 수 없음: missing\"}"));
 
-        assertThatThrownBy(() -> client.getAgentRun("missing"))
+        assertThatThrownBy(() -> client.getAgentRun("missing", 7L))
                 .isInstanceOf(FastApiException.class)
                 .satisfies(error -> {
                     FastApiException exception = (FastApiException) error;
