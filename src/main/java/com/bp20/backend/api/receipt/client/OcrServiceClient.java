@@ -6,9 +6,9 @@ import com.bp20.backend.api.receipt.domain.ReceiptItem;
 import com.bp20.backend.api.receipt.dto.response.BudgetOverageResponse;
 import com.bp20.backend.api.receipt.dto.response.ExpenseAnomalyResponse;
 import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
+import com.bp20.backend.global.config.OcrServiceProperties;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -29,13 +29,22 @@ import java.util.List;
 /**
  * 영수증 OCR + 가계부/원가분석 Python 마이크로서비스 호출 클라이언트.
  * 이 서비스는 상태를 갖지 않으므로(stateless), 매 호출마다 필요한 데이터를 전부 함께 보낸다.
+ *
+ * HTTP 클라이언트 자체(타임아웃, HttpClient5 등)는 팀 공용 설정인
+ * {@link com.bp20.backend.global.config.ExternalRestClientConfig}의 빌더를 그대로 재사용하고,
+ * 이 클래스에서는 OCR 서비스의 base-url만 지정해서 clone해 쓴다.
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OcrServiceClient {
 
     private final RestClient ocrServiceRestClient;
+
+    public OcrServiceClient(RestClient.Builder externalRestClientBuilder, OcrServiceProperties properties) {
+        this.ocrServiceRestClient = externalRestClientBuilder.clone()
+                .baseUrl(properties.baseUrl())
+                .build();
+    }
 
     /**
      * 영수증 이미지를 Python 서비스로 보내 OCR 결과를 받는다. (DB 저장은 하지 않음 - 미리보기 용도)

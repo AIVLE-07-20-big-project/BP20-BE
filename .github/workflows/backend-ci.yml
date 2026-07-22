@@ -1,0 +1,40 @@
+name: Backend CI
+
+# main으로의 PR, 그리고 main에 직접 push될 때마다 실행
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: JDK 21 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle 캐시
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      # 테스트는 로컬 MySQL 등 의존성이 필요해서 제외하고, 컴파일만 검증한다.
+      # (테스트 DB까지 CI에 붙이는 건 팀 내에서 별도로 정할 필요가 있음)
+      - name: 빌드 (테스트 제외)
+        run: ./gradlew build -x test --no-daemon
