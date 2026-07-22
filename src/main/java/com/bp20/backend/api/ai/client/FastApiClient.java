@@ -29,19 +29,28 @@ public class FastApiClient {
     }
 
     public Map<String, Object> createAnalysis(
-            MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd
+            MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
+            Long userId, String storeId
     ) {
-        return postMultipart("/api/v1/analyses", multipartBody(file, trdarCd, svcIndutyCd, yyquCd));
+        return postMultipart("/api/v1/analyses",
+                multipartBody(file, trdarCd, svcIndutyCd, yyquCd, userId, storeId));
     }
 
     private MultiValueMap<String, Object> multipartBody(
-            MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd
+            MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
+            Long userId, String storeId
     ) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("trdar_cd", trdarCd);
         body.add("svc_induty_cd", svcIndutyCd);
         if (yyquCd != null) {
             body.add("yyqu_cd", yyquCd.toString());
+        }
+        if (userId != null) {
+            body.add("user_id", userId.toString());
+        }
+        if (storeId != null && !storeId.isBlank()) {
+            body.add("store_id", storeId);
         }
         body.add("file", toResource(file));
         return body;
@@ -60,13 +69,6 @@ public class FastApiClient {
         }
     }
 
-    public Map<String, Object> getAnalysis(String analysisId) {
-        return exchange(() -> restClient.get()
-                .uri("/api/v1/analyses/{analysisId}", analysisId)
-                .retrieve()
-                .body(MAP_TYPE));
-    }
-
     public Map<String, Object> createRecommendation(String analysisId) {
         return exchange(() -> restClient.post()
                 .uri("/api/v1/analyses/{analysisId}/recommendations", analysisId)
@@ -74,30 +76,30 @@ public class FastApiClient {
                 .body(MAP_TYPE));
     }
 
-    public Map<String, Object> getAgentRun(String threadId) {
+    public Map<String, Object> getAgentRun(String threadId, Long userId) {
         return exchange(() -> restClient.get()
                 .uri("/api/v1/agent-runs/{threadId}", threadId)
+                .header("X-User-Id", userId.toString())
                 .retrieve()
                 .body(MAP_TYPE));
     }
 
-    public Map<String, Object> resumeAgentRun(String threadId, AgentRunResumeRequest request) {
-        return postJson("/api/v1/agent-runs/{threadId}/resume", request, threadId);
+    public Map<String, Object> resumeAgentRun(
+            String threadId, AgentRunResumeRequest request, Long userId
+    ) {
+        return exchange(() -> restClient.post()
+                .uri("/api/v1/agent-runs/{threadId}/resume", threadId)
+                .header("X-User-Id", userId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(MAP_TYPE));
     }
 
     private Map<String, Object> postMultipart(String uri, MultiValueMap<String, Object> body) {
         return exchange(() -> restClient.post()
                 .uri(uri)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(body)
-                .retrieve()
-                .body(MAP_TYPE));
-    }
-
-    private Map<String, Object> postJson(String uri, Object body, Object... uriVariables) {
-        return exchange(() -> restClient.post()
-                .uri(uri, uriVariables)
-                .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
                 .body(MAP_TYPE));
