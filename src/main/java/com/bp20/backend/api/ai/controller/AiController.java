@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.List;
 
 @Validated
 @RestController
@@ -69,6 +70,16 @@ public class AiController {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_AI_RECOMMENDATION_CREATE,
                 aiService.createRecommendation(currentUser.id(), analysisId)
+        );
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getRecommendations(
+            @AuthenticationPrincipal SecurityPrincipal currentUser
+    ) {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_AI_RECOMMENDATION_GET,
+                aiService.getRecommendations(currentUser.id())
         );
     }
 
