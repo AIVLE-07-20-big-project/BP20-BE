@@ -38,11 +38,12 @@ class FastApiClientTest {
     void createRecommendationUsesAnalysisId() {
         server.expect(requestTo("http://fastapi:8000/api/v1/analyses/analysis-id/recommendations"))
                 .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-User-Id", "7"))
                 .andRespond(withSuccess("""
                         {"thread_id":"test-thread-id","상태":"승인 대기"}
                         """, MediaType.APPLICATION_JSON));
 
-        Map<String, Object> response = client.createRecommendation("analysis-id");
+        Map<String, Object> response = client.createRecommendation("analysis-id", 7L);
 
         assertThat(response.get("thread_id")).isEqualTo("test-thread-id");
         server.verify();
