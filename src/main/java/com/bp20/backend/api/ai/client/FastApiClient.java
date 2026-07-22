@@ -69,9 +69,10 @@ public class FastApiClient {
         }
     }
 
-    public Map<String, Object> createRecommendation(String analysisId) {
+    public Map<String, Object> createRecommendation(String analysisId, Long userId) {
         return exchange(() -> restClient.post()
                 .uri("/api/v1/analyses/{analysisId}/recommendations", analysisId)
+                .header("X-User-Id", userId.toString())
                 .retrieve()
                 .body(MAP_TYPE));
     }
