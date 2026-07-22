@@ -1,6 +1,6 @@
-# BP20-BE 변경사항 상세 정리 (최신 main pull 기준)
+# BP20-BE 변경사항 상세 정리 (최신 main pull 기준, 최종본)
 
-`https://github.com/AIVLE-07-20-big-project/BP20-BE`에서 새로 받은 최신 `main` 대비, 이번에 커밋하기 전까지 적용한 모든 변경사항입니다.
+`https://github.com/AIVLE-07-20-big-project/BP20-BE`에서 새로 받은 최신 `main` 대비, 이번에 커밋한 모든 변경사항입니다.
 
 ---
 
@@ -9,8 +9,8 @@
 | 구분 | 개수 | 내용 |
 |---|---|---|
 | 수정된 파일 | 7개 | 아래 표 참고 |
-| 삭제된 파일 | 1개 | 루트 `Dockerfile` |
-| 신규 파일 | 1개 | `.github/workflows/backend-ci.yml` |
+| 삭제된 파일 | 0개 | (`Dockerfile` 삭제를 검토했으나 최종적으로 보류 — 이유는 맨 아래 참고) |
+| 신규 파일 | 0개 | (CI 워크플로우 추가를 검토했으나 최종적으로 보류 — 이유는 맨 아래 참고) |
 
 ---
 
@@ -53,7 +53,7 @@
 +     }
 ```
 
-**변경 2 — Swagger 자물쇠 표시 추가** (이번 라운드에 새로 발견된 문제): 이 컨트롤러들은 인증 기능이 생기기 전에 만들어서 `@SecurityRequirement` 표시가 없었습니다. 그 결과 Swagger UI가 "이 엔드포인트는 인증 불필요"로 착각해 Authorize에 입력한 토큰을 요청에 자동으로 안 실어 보내, 실제로는 인증이 필요한데도 계속 401만 떴습니다. (참고: 이건 `ReceiptController`, `ReceiptAnalyticsController`, `BudgetController` 공통 문제라 3번, 4번, 5번에도 동일하게 적용)
+**변경 2 — Swagger 자물쇠 표시 추가**: 이 컨트롤러들은 인증 기능이 생기기 전에 만들어서 `@SecurityRequirement` 표시가 없었습니다. 그 결과 Swagger UI가 "이 엔드포인트는 인증 불필요"로 착각해 Authorize에 입력한 토큰을 요청에 자동으로 안 실어 보내, 실제로는 인증이 필요한데도 계속 401만 떴습니다. (`ReceiptController`, `ReceiptAnalyticsController`, `BudgetController` 공통 — 4·5·6번에도 동일 적용)
 
 ---
 
@@ -120,7 +120,7 @@
 
 ### 7. `src/main/java/com/bp20/backend/api/receipt/dto/request/ReceiptCreateRequest.java`
 
-**문제**: 실제 저장 테스트 중 발견 — `force` 필드가 원시타입 `boolean`으로 되어있어서, 요청 JSON에 이 필드를 빠뜨리면 `Cannot map null into type boolean`이라는 500 에러가 났습니다. 매번 이 필드를 빠뜨리는 실수가 나올 수 있는 구조였습니다.
+**문제**: 실제 저장 테스트 중 발견 — `force` 필드가 원시타입 `boolean`으로 되어있어서, 요청 JSON에 이 필드를 빠뜨리면 `Cannot map null into type boolean`이라는 500 에러가 났습니다.
 
 **변경**: `boolean` → `Boolean`(래퍼 타입)으로 바꾸고, 컴팩트 생성자로 `null`이면 자동으로 `false` 처리:
 ```diff
@@ -134,19 +134,15 @@
 +     }
   }
 ```
-`ReceiptService.java`에서 `request.force()`를 쓰는 부분은 `Boolean`이 자동으로 `boolean`으로 언박싱되어 **코드 수정 없이 그대로 호환**됩니다.
+`ReceiptService.java`의 `request.force()` 사용 부분은 `Boolean`이 자동으로 `boolean`으로 언박싱되어 **코드 수정 없이 그대로 호환**됩니다.
 
 ---
 
-## 삭제된 파일 1개
+## `compose.yaml` — 파일 수정 아니지만 함께 반영
 
-### `Dockerfile` (레포 루트)
+**변경 이유**: 팀 결정 — Spring Boot는 더 이상 Docker 컨테이너로 실행하지 않기로 함 (MySQL만 Docker로 계속 띄우고, Spring Boot는 `gradlew bootRun`으로 직접 실행).
 
-**이유**: 팀 결정 — **Spring Boot는 더 이상 Docker 컨테이너로 실행하지 않기로 함** (MySQL만 Docker로 계속 띄우고, Spring Boot는 `gradlew bootRun`으로 직접 실행). 이 파일은 Spring Boot를 이미지로 빌드하던 용도라 완전히 쓸모없어져서 삭제.
-
-### 관련 수정: `compose.yaml`
-
-파일 자체는 유지하되, 안에 있던 `springboot` 서비스 블록만 제거 (MySQL 서비스는 그대로):
+**변경 내용**: `mysql` 서비스는 유지, `springboot` 서비스 블록만 제거.
 ```diff
   services:
     mysql:
@@ -161,15 +157,24 @@
 
 ---
 
-## 신규 파일 1개
+## 검토했지만 최종적으로 손대지 않은 것 (중요)
 
-### `.github/workflows/backend-ci.yml`
+### `Dockerfile` (레포 루트) — 삭제하지 않음
 
-**목적**: 이번에 겪은 사건(PR 리뷰 중 로컬에서만 고치고 push 안 한 코드가 그대로 merge됨)이 재발하지 않도록, **PR을 올리거나 `main`에 push될 때마다 자동으로 `gradlew build`를 돌려서 컴파일 여부를 검증**하는 CI 워크플로우.
+처음엔 "Spring Boot를 Docker로 안 쓰니 필요 없다"고 판단해서 삭제를 검토했지만, **확인해보니 팀원이 이미 만들어둔 CI 파이프라인(`chore/ci-pipeline`, PR #7)의 `docker-build` job이 이 파일을 그대로 참조하고 있었습니다**:
+```yaml
+docker-build:
+  ...
+  - name: Build Docker image
+    uses: docker/build-push-action@v7
+    with:
+      file: ./Dockerfile
+```
+"로컬 개발에서 Docker로 Spring Boot를 안 띄운다"는 것과 "CI에서 배포용 이미지를 빌드해본다"는 것은 별개일 수 있어 판단을 보류했습니다. **`Dockerfile`은 원본 그대로 유지**했습니다.
 
-- 트리거: `main`으로의 PR, `main`에 직접 push
-- 내용: JDK 21 설치 → Gradle 캐시 복원 → `./gradlew build -x test` (테스트는 로컬 MySQL 등 인프라 필요해 제외, 컴파일만 검증)
-- **참고**: GitHub 저장소 설정(Settings → Branches)에서 이 체크를 "머지 전 필수 통과 조건"으로 지정해야 실효성이 생김 (아직 미설정 상태라면 별도로 설정 필요)
+### `.github/workflows/backend-ci.yml` — 추가하지 않음
+
+이번 사건(로컬에서만 고치고 push 안 한 코드가 그대로 merge됨) 재발 방지용으로 간단한 CI를 만들어뒀었는데, **이미 팀원이 훨씬 더 완성도 높은 CI**(테스트 포함 빌드 + 의존성 취약점 검사 + Docker 이미지 빌드까지)를 만들어서 `main`에 merge해뒀다는 걸 확인했습니다. 중복 추가하지 않았습니다.
 
 ---
 
