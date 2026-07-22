@@ -55,13 +55,13 @@ class AiServiceTest {
         );
         when(analysisRepository.findByAnalysisIdAndUserId("analysis-1", 7L))
                 .thenReturn(Optional.of(analysis));
-        when(client.createRecommendation("analysis-1"))
+        when(client.createRecommendation("analysis-1", 7L))
                 .thenReturn(Map.of("thread_id", "thread-1", "상태", "승인 대기"));
 
         Map<String, Object> result = service.createRecommendation(7L, "analysis-1");
 
         assertThat(result.get("thread_id")).isEqualTo("thread-1");
-        verify(client).createRecommendation("analysis-1");
+        verify(client).createRecommendation("analysis-1", 7L);
         verify(runRepository).save(argThat((AiRecommendationRun run) ->
                 run.getThreadId().equals("thread-1") && run.getUserId().equals(7L)));
     }
