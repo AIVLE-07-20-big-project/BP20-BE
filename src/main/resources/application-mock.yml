@@ -9,6 +9,7 @@ spring:
       continue-on-error: false
 
 effect-verification:
+  mock-public-access: true
   scheduler:
     enabled: ${EFFECT_VERIFICATION_SCHEDULER_ENABLED:false}
     fixed-delay-ms: ${EFFECT_VERIFICATION_SCHEDULER_DELAY_MS:60000}
