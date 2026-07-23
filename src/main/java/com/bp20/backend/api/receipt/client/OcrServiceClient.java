@@ -40,14 +40,10 @@ public class OcrServiceClient {
 
     private final RestClient ocrServiceRestClient;
 
-feat/receipt-ocr-integration-v2
-    public OcrServiceClient(RestClient.Builder externalRestClientBuilder, OcrServiceProperties properties) {
-  
     public OcrServiceClient(
             RestClient.Builder externalRestClientBuilder,
             OcrServiceProperties properties
-    ) { 
-      main
+    ) {
         this.ocrServiceRestClient = externalRestClientBuilder.clone()
                 .baseUrl(properties.baseUrl())
                 .build();
