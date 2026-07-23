@@ -1,68 +1,81 @@
 server:
   port: 8080
 
-  # 프로파일 세팅
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}   # 기본 활성 프로파일 (application-local.yml 사용)
-
-  # JPA 세팅
-  jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
-    properties:
-      hibernate:
-        format_sql: true          # 로그에 DB 쿼리 출력 시 포맷팅
-    open-in-view: false
-
 spring:
   application:
     name: bp20-backend
+
+  datasource:
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:bp20}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: aivle
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  profiles:
+    active: local
+
+  main:
+    web-application-type: servlet
+    banner-mode: console
 
   servlet:
     multipart:
       max-file-size: 20MB
       max-request-size: 50MB
 
-  main:
-    banner-mode: console
+weather:
+  api:
+    service-key: 89dc6a0054ee9c0cc56f127e002d03b2a67b62eff51753d2b30d58ef7b470700
+    asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
 
-# Logging
+ai:
+  server-url: ${AI_SERVER_URL:http://localhost:8000}
+
+llm:
+  server-url: ${LLM_SERVER_URL:http://localhost:8001}
+
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
   level:
-    root: info                            # 기본 로그는 INFO 레벨
-    com.bp20: debug                       # 애플리케이션 로그는 DEBUG 레벨
-    org.hibernate.SQL: debug              # JPA 쿼리 로깅
-    org.hibernate.orm.jdbc.bind: trace    # SQL 바인딩 파라미터의 실제 값 로깅
+    root: INFO
+    com.bp20.backend: DEBUG
     org.springframework.boot: INFO
     org.springframework.web: INFO
 
-# Spring Actuator 세팅
 management:
   endpoints:
     web:
       exposure:
-        include: health     # health만 외부 노출 (헬스체킹용)
+        include: health
+
   endpoint:
     health:
       show-details: always
 
-# Spring Docs (Swagger UI) 세팅
 springdoc:
   api-docs:
     path: /v3/api-docs
     enabled: true
+
   swagger-ui:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
     try-it-out-enabled: true
     persist-authorization: true
+
   show-actuator: true
-
-ai:
-  server-url: http://localhost:8000
-
-llm:
-  server-url: http://localhost:8001

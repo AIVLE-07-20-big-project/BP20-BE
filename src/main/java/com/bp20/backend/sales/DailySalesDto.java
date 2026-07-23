@@ -2,7 +2,7 @@ package com.bp20.backend.sales;
 
 import java.time.LocalDate;
 
-public record DailySaleData(
+public record DailySalesDto(
         LocalDate saleDate,
         String productCode,
         String productName,

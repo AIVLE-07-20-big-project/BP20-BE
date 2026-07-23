@@ -1,6 +1,6 @@
 package com.bp20.backend.inventory;
 
-public record IngredientInventoryData(
+public record InventoryDataRequest(
         String ingredientName,
         long currentStock,
         long reservedStock,

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public record ProductData(
+public record ProductDataRequest(
         String productCode,
         String productName,
         String ingredient1,

@@ -1,9 +1,15 @@
 package com.bp20.backend.csv;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 
 import java.util.Map;
 
@@ -51,8 +57,8 @@ public class CsvUploadController {
     public Map<String, Object> uploadInventories(
             @RequestPart("file") MultipartFile file
     ) {
-        csvDataService.loadInventories(file);
 
+        csvDataService.loadInventories(file);
         return Map.of(
                 "message", "재고 CSV 업로드 완료",
                 "count", csvDataService.getInventories().size()

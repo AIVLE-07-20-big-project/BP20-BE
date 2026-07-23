@@ -1,15 +1,14 @@
 package com.bp20.backend.csv;
 
-import com.bp20.backend.inventory.IngredientInventoryData;
-import com.bp20.backend.product.ProductData;
-import com.bp20.backend.sales.DailySaleData;
-import lombok.Getter;
+import com.bp20.backend.inventory.InventoryDataRequest;
+import com.bp20.backend.product.ProductDataRequest;
+import com.bp20.backend.sales.DailySalesDto;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.input.BOMInputStream;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.apache.commons.io.input.BOMInputStream;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -19,21 +18,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@Getter
 public class CsvDataService {
 
     /*
-     * DB 대신 서버 메모리에 데이터 저장
+     * DB 대신 서버 메모리에 데이터를 저장한다.
      *
-     * 서버를 종료하면 데이터가 사라진다.
+     * 서버를 종료하면 데이터가 모두 사라진다.
      */
-    private List<ProductData> products = new ArrayList<>();
-    private List<DailySaleData> sales = new ArrayList<>();
-    private List<IngredientInventoryData> inventories =
+    private List<ProductDataRequest> products = new ArrayList<>();
+    private List<DailySalesDto> sales = new ArrayList<>();
+    private List<InventoryDataRequest> inventories =
             new ArrayList<>();
 
+    /**
+     * 상품 CSV 파일을 읽어 상품 데이터를 메모리에 저장한다.
+     */
     public void loadProducts(MultipartFile file) {
-        List<ProductData> result = new ArrayList<>();
+        List<ProductDataRequest> result = new ArrayList<>();
 
         try (
                 BufferedReader reader = createReader(file);
@@ -51,22 +52,24 @@ public class CsvDataService {
             );
 
             for (CSVRecord record : parser) {
-                result.add(
-                        new ProductData(
-                                record.get("product_code"),
-                                record.get("product_name"),
-                                getNullable(record, "ingredient1"),
-                                getNullable(record, "ingredient2"),
-                                getNullable(record, "ingredient3"),
-                                getNullable(record, "ingredient4"),
-                                getNullable(record, "ingredient5")
-                        )
+                ProductDataRequest product = new ProductDataRequest(
+                        record.get("product_code"),
+                        record.get("product_name"),
+                        getNullable(record, "ingredient1"),
+                        getNullable(record, "ingredient2"),
+                        getNullable(record, "ingredient3"),
+                        getNullable(record, "ingredient4"),
+                        getNullable(record, "ingredient5")
                 );
+
+                result.add(product);
             }
 
             /*
-             * 파일 전체 파싱에 성공한 뒤 기존 메모리 데이터를 교체한다.
-             * 중간에 오류가 나면 기존 데이터는 유지된다.
+             * CSV 파일 전체를 정상적으로 읽은 후
+             * 기존 상품 데이터를 새 데이터로 교체한다.
+             *
+             * 파일 처리 도중 오류가 발생하면 기존 데이터가 유지된다.
              */
             this.products = result;
 
@@ -78,8 +81,11 @@ public class CsvDataService {
         }
     }
 
+    /**
+     * 매출 CSV 파일을 읽어 일별 매출 데이터를 메모리에 저장한다.
+     */
     public void loadSales(MultipartFile file) {
-        List<DailySaleData> result = new ArrayList<>();
+        List<DailySalesDto> result = new ArrayList<>();
 
         try (
                 BufferedReader reader = createReader(file);
@@ -105,21 +111,23 @@ public class CsvDataService {
                 );
 
                 /*
-                 * sales_amount는 CSV 값을 그대로 신뢰하지 않고
-                 * 서버에서 다시 계산한다.
+                 * CSV 파일의 sales_amount 값을 그대로 사용하지 않고,
+                 * 판매 수량과 단가를 이용해 서버에서 다시 계산한다.
                  */
                 long salesAmount = quantity * unitPrice;
 
-                result.add(
-                        new DailySaleData(
-                                LocalDate.parse(record.get("sale_date")),
-                                record.get("product_code"),
-                                record.get("product_name"),
-                                quantity,
-                                unitPrice,
-                                salesAmount
-                        )
+                DailySalesDto sale = new DailySalesDto(
+                        LocalDate.parse(
+                                record.get("sale_date")
+                        ),
+                        record.get("product_code"),
+                        record.get("product_name"),
+                        quantity,
+                        unitPrice,
+                        salesAmount
                 );
+
+                result.add(sale);
             }
 
             this.sales = result;
@@ -132,8 +140,11 @@ public class CsvDataService {
         }
     }
 
+    /**
+     * 재고 CSV 파일을 읽어 원재료 재고 데이터를 메모리에 저장한다.
+     */
     public void loadInventories(MultipartFile file) {
-        List<IngredientInventoryData> result =
+        List<InventoryDataRequest> result =
                 new ArrayList<>();
 
         try (
@@ -141,7 +152,10 @@ public class CsvDataService {
                 CSVParser parser = createParser(reader)
         ) {
             /*
-             * 현재 CSV의 실제 헤더명에 맞게 수정해야 한다.
+             * 반드시 존재해야 하는 최소 헤더만 검사한다.
+             *
+             * reserved_stock, incoming_stock, safety_stock,
+             * order_unit은 없을 경우 기본값을 사용한다.
              */
             validateHeaders(
                     parser,
@@ -150,9 +164,10 @@ public class CsvDataService {
             );
 
             for (CSVRecord record : parser) {
-                /*
-                 * CSV에 해당 컬럼이 없으면 기본값을 사용한다.
-                 */
+                long currentStock = Long.parseLong(
+                        record.get("current_stock")
+                );
+
                 long reservedStock = getLongOrDefault(
                         record,
                         "reserved_stock",
@@ -177,18 +192,17 @@ public class CsvDataService {
                         1
                 );
 
-                result.add(
-                        new IngredientInventoryData(
+                InventoryDataRequest inventory =
+                        new InventoryDataRequest(
                                 record.get("ingredient_name"),
-                                Long.parseLong(
-                                        record.get("current_stock")
-                                ),
+                                currentStock,
                                 reservedStock,
                                 incomingStock,
                                 safetyStock,
                                 orderUnit
-                        )
-                );
+                        );
+
+                result.add(inventory);
             }
 
             this.inventories = result;
@@ -201,6 +215,12 @@ public class CsvDataService {
         }
     }
 
+    /**
+     * MultipartFile을 UTF-8 BufferedReader로 변환한다.
+     *
+     * BOM이 포함된 UTF-8 CSV도 읽을 수 있도록
+     * BOMInputStream을 사용한다.
+     */
     private BufferedReader createReader(MultipartFile file)
             throws Exception {
 
@@ -212,7 +232,9 @@ public class CsvDataService {
 
         BOMInputStream bomInputStream =
                 BOMInputStream.builder()
-                        .setInputStream(file.getInputStream())
+                        .setInputStream(
+                                file.getInputStream()
+                        )
                         .get();
 
         return new BufferedReader(
@@ -223,6 +245,9 @@ public class CsvDataService {
         );
     }
 
+    /**
+     * CSV 첫 번째 줄을 헤더로 인식하는 CSVParser를 생성한다.
+     */
     private CSVParser createParser(BufferedReader reader)
             throws Exception {
 
@@ -234,6 +259,9 @@ public class CsvDataService {
                 .parse(reader);
     }
 
+    /**
+     * CSV 파일에 필수 헤더가 존재하는지 검사한다.
+     */
     private void validateHeaders(
             CSVParser parser,
             String... requiredHeaders
@@ -247,6 +275,11 @@ public class CsvDataService {
         }
     }
 
+    /**
+     * 선택 헤더의 문자열 값을 읽는다.
+     *
+     * 헤더가 없거나 값이 비어 있으면 null을 반환한다.
+     */
     private String getNullable(
             CSVRecord record,
             String header
@@ -257,11 +290,18 @@ public class CsvDataService {
 
         String value = record.get(header);
 
-        return value == null || value.isBlank()
-                ? null
-                : value.trim();
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
     }
 
+    /**
+     * 선택 헤더의 숫자 값을 읽는다.
+     *
+     * 헤더가 없거나 값이 비어 있으면 기본값을 반환한다.
+     */
     private long getLongOrDefault(
             CSVRecord record,
             String header,
@@ -277,6 +317,27 @@ public class CsvDataService {
             return defaultValue;
         }
 
-        return Long.parseLong(value);
+        return Long.parseLong(value.trim());
+    }
+
+    /**
+     * 현재 메모리에 저장된 상품 목록을 반환한다.
+     */
+    public List<ProductDataRequest> getProducts() {
+        return products;
+    }
+
+    /**
+     * 현재 메모리에 저장된 매출 목록을 반환한다.
+     */
+    public List<DailySalesDto> getSales() {
+        return sales;
+    }
+
+    /**
+     * 현재 메모리에 저장된 재고 목록을 반환한다.
+     */
+    public List<InventoryDataRequest> getInventories() {
+        return inventories;
     }
 }

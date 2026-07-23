@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>날씨 기반 발주 추천</title>
+    <style>
+        :root { color-scheme: light; font-family: system-ui, sans-serif; }
+        body { max-width: 1080px; margin: 40px auto; padding: 0 20px; color: #172033; }
+        section { border: 1px solid #d9dfeb; border-radius: 12px; padding: 20px; margin: 18px 0; }
+        .files { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+        label { display: grid; gap: 7px; font-weight: 650; }
+        button { border: 0; border-radius: 9px; padding: 12px 18px; background: #1463ff; color: white; font-weight: 700; cursor: pointer; }
+        button:disabled { opacity: .55; cursor: wait; }
+        .status { min-height: 24px; white-space: pre-wrap; }
+        .error { color: #bd1e2d; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e6eaf1; text-align: left; }
+        th { background: #f5f7fb; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+        .card { background: #f5f7fb; border-radius: 10px; padding: 14px; }
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+<h1>오늘·내일 날씨 기반 발주 추천</h1>
+<p>CSV 세 개를 선택한 뒤 실행하면 현재 위치를 확인하고, 기상청 예보와 재고를 반영해 발주량을 계산합니다.</p>
+
+<section>
+    <h2>1. 데이터 입력</h2>
+    <div class="files">
+        <label>상품 CSV<input id="products" type="file" accept=".csv,text/csv"></label>
+        <label>매출 CSV<input id="sales" type="file" accept=".csv,text/csv"></label>
+        <label>현재 재고 CSV<input id="inventories" type="file" accept=".csv,text/csv"></label>
+    </div>
+</section>
+
+<section>
+    <h2>2. 자동 추천 실행</h2>
+    <button id="run" type="button">내 위치로 발주 추천하기</button>
+    <p id="status" class="status" aria-live="polite"></p>
+</section>
+
+<section id="weatherSection" hidden>
+    <h2>오늘·내일 날씨</h2>
+    <div id="location"></div>
+    <div id="weather" class="cards"></div>
+</section>
+
+<section id="recommendationSection" hidden>
+    <h2>발주 추천</h2>
+    <div style="overflow-x:auto">
+        <table>
+            <thead><tr><th>재료</th><th>가용재고</th><th>예상 사용량</th><th>추천 발주량</th><th>발주 필요</th><th>신뢰도</th></tr></thead>
+            <tbody id="recommendations"></tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+    const $ = id => document.getElementById(id);
+    const status = $('status');
+    const runButton = $('run');
+
+    function setStatus(message, error = false) {
+        status.textContent = message;
+        status.className = error ? 'status error' : 'status';
+    }
+
+    async function upload(kind, file) {
+        const form = new FormData();
+        form.append('file', file);
+        const response = await fetch(`/api/csv/${kind}`, { method: 'POST', body: form });
+        if (!response.ok) throw new Error(`${kind} CSV 업로드 실패: ${await response.text()}`);
+    }
+
+    function currentPosition() {
+        if (!navigator.geolocation) return Promise.reject(new Error('이 브라우저는 위치 확인을 지원하지 않습니다.'));
+        return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+            resolve,
+            error => reject(new Error(`위치를 확인할 수 없습니다: ${error.message}`)),
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+        ));
+    }
+
+    function render(result) {
+        $('location').textContent = `위도 ${result.latitude.toFixed(5)}, 경도 ${result.longitude.toFixed(5)}`;
+        $('weather').innerHTML = result.weatherForecasts.map((item, index) => `
+            <article class="card">
+                <strong>${index === 0 ? '오늘' : '내일'}</strong>
+                <p>${item.forecastDateTime.replace('T', ' ')}</p>
+                <p>${item.temperature ?? '-'}℃ · ${item.sky ?? '-'} · 강수확률 ${item.rainProbability ?? '-'}%</p>
+                <p>습도 ${item.humidity ?? '-'}% · 풍속 ${item.windSpeed ?? '-'}m/s</p>
+            </article>`).join('');
+
+        $('recommendations').innerHTML = result.recommendations.map(item => `
+            <tr>
+                <td>${item.ingredientName}</td><td>${item.availableStock}</td><td>${item.expectedUsage}</td>
+                <td><strong>${item.recommendedOrderQuantity}</strong></td><td>${item.orderRequired ? '필요' : '불필요'}</td>
+                <td>${Math.round(item.confidenceScore * 100)}%</td>
+            </tr>`).join('');
+        $('weatherSection').hidden = false;
+        $('recommendationSection').hidden = false;
+    }
+
+    runButton.addEventListener('click', async () => {
+        const files = ['products', 'sales', 'inventories'].map(id => $(id).files[0]);
+        if (files.some(file => !file)) {
+            setStatus('상품, 매출, 현재 재고 CSV를 모두 선택해 주세요.', true);
+            return;
+        }
+
+        runButton.disabled = true;
+        try {
+            setStatus('CSV 데이터를 업로드하고 있습니다...');
+            await upload('products', files[0]);
+            await upload('sales', files[1]);
+            await upload('inventories', files[2]);
+
+            setStatus('현재 위치 권한을 확인하고 있습니다...');
+            const position = await currentPosition();
+            const { latitude, longitude } = position.coords;
+
+            setStatus('오늘·내일 날씨와 발주 추천을 계산하고 있습니다...');
+            const response = await fetch(`/api/order-recommendations/automatic?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`, { method: 'POST' });
+            if (!response.ok) throw new Error(await response.text());
+            render(await response.json());
+            setStatus('발주 추천이 완료되었습니다.');
+        } catch (error) {
+            setStatus(error.message || '발주 추천 중 오류가 발생했습니다.', true);
+        } finally {
+            runButton.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

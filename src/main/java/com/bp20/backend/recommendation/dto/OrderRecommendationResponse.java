@@ -1,4 +1,4 @@
-package com.bp20.backend.recommendation;
+package com.bp20.backend.recommendation.dto;
 
 public record OrderRecommendationResponse(
         String ingredientName,

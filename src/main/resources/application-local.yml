@@ -6,7 +6,19 @@ spring:
     compose:
       enabled: false
   datasource:
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:bp20}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: aivle
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+kma:
+  service-key: 89dc6a0054ee9c0cc56f127e002d03b2a67b62eff51753d2b30d58ef7b470700
+  forecast-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
