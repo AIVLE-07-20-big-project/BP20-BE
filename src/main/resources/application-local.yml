@@ -1,12 +1,16 @@
 spring:
   config:
     import: optional:file:.env[.properties]
-  # Docker Compose 자동 실행 해제
+
+  # Docker Compose는 명령어로 직접 실행합니다.
   docker:
     compose:
       enabled: false
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    # Docker Compose의 MySQL은 호스트 3307 포트를 사용합니다.
+    # 모든 값은 환경변수로 변경할 수 있습니다.
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3307}/${MYSQL_DATABASE:bp20}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:bp20user}
+    password: ${MYSQL_PASSWORD:bp20password}

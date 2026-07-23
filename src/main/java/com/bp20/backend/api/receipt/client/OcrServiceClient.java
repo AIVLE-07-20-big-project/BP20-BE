@@ -6,8 +6,8 @@ import com.bp20.backend.api.receipt.domain.ReceiptItem;
 import com.bp20.backend.api.receipt.dto.response.BudgetOverageResponse;
 import com.bp20.backend.api.receipt.dto.response.ExpenseAnomalyResponse;
 import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
-import com.bp20.backend.global.config.OcrServiceProperties;
 import com.bp20.backend.global.exception.ApiException;
+import com.bp20.backend.global.config.OcrServiceProperties;
 import com.bp20.backend.global.response.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -40,7 +40,14 @@ public class OcrServiceClient {
 
     private final RestClient ocrServiceRestClient;
 
+feat/receipt-ocr-integration-v2
     public OcrServiceClient(RestClient.Builder externalRestClientBuilder, OcrServiceProperties properties) {
+  
+    public OcrServiceClient(
+            RestClient.Builder externalRestClientBuilder,
+            OcrServiceProperties properties
+    ) { 
+      main
         this.ocrServiceRestClient = externalRestClientBuilder.clone()
                 .baseUrl(properties.baseUrl())
                 .build();
