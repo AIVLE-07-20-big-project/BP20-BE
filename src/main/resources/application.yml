@@ -1,15 +1,9 @@
-server:
-  port: 8080
-
 spring:
   application:
-    name: bp20-backend
+    name: backend
 
-  datasource:
-    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:bp20}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: root
-    password: aivle
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
   jackson:
     serialization:
@@ -17,51 +11,38 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${JPA_DDL_AUTO:update}
     properties:
       hibernate:
         format_sql: true
-
-  profiles:
-    active: local
+    open-in-view: false
 
   main:
     web-application-type: servlet
-    banner-mode: console
 
   servlet:
     multipart:
       max-file-size: 20MB
       max-request-size: 50MB
 
-weather:
-  api:
-    service-key: ${KMA_SERVICE_KEY}
-    asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
-
-ai:
-  server-url: ${AI_SERVER_URL:http://localhost:8000}
-
-llm:
-  server-url: ${LLM_SERVER_URL:http://localhost:8001}
+server:
+  port: 8080
+  forward-headers-strategy: framework
 
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-
   level:
-    root: INFO
-    com.bp20.backend: DEBUG
-    org.springframework.boot: INFO
-    org.springframework.web: INFO
+    root: info
+    com.bp20: debug
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
 
 management:
   endpoints:
     web:
       exposure:
         include: health
-
   endpoint:
     health:
       show-details: always
@@ -70,12 +51,43 @@ springdoc:
   api-docs:
     path: /v3/api-docs
     enabled: true
-
   swagger-ui:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
     try-it-out-enabled: true
     persist-authorization: true
-
   show-actuator: true
+
+# 기상청 단기예보 및 과거 ASOS 날씨
+weather:
+  api:
+    service-key: ${KMA_SERVICE_KEY}
+    asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
+
+# 발주량 예측 및 효과검증 AI 서비스
+ai:
+  server-url: ${AI_SERVER_URL:http://localhost:8000}
+  effect-verification:
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+  review-sentiment:
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+
+llm:
+  server-url: ${LLM_SERVER_URL:http://localhost:8001}
+
+# 영수증 OCR 및 원가 분석 서비스
+ocr-service:
+  base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-seconds: ${JWT_EXPIRATION_SECONDS}
+    admin-expiration-seconds: ${JWT_ADMIN_EXPIRATION_SECONDS}
+  iam:
+    invitation-expiration-hours: ${INVITATION_EXPIRATION_HOURS}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  fastapi:
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}

@@ -4,6 +4,7 @@ import com.bp20.backend.weather.dto.WeatherResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -53,8 +54,11 @@ public class WeatherService {
     @Value("${kma.forecast-url}")
     private String forecastUrl;
 
-    public WeatherService(RestClient.Builder restClientBuilder) {
-        this.restClient = restClientBuilder.build();
+    public WeatherService(
+            @Qualifier("restClientBuilder")
+            RestClient.Builder restClientBuilder
+    ) {
+        this.restClient = restClientBuilder.clone().build();
     }
 
     /**

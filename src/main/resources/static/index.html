@@ -24,10 +24,20 @@
 </head>
 <body>
 <h1>오늘·내일 날씨 기반 발주 추천</h1>
-<p>CSV 세 개를 선택한 뒤 실행하면 현재 위치를 확인하고, 기상청 예보와 재고를 반영해 발주량을 계산합니다.</p>
+<p>로그인 후 CSV 세 개를 선택하고 실행하면 현재 위치의 기상청 예보와 재고를 반영해 발주량을 계산합니다.</p>
 
 <section>
-    <h2>1. 데이터 입력</h2>
+    <h2>1. 로그인</h2>
+    <div class="files">
+        <label>이메일<input id="email" type="email" autocomplete="username"></label>
+        <label>비밀번호<input id="password" type="password" autocomplete="current-password"></label>
+    </div>
+    <p><button id="login" type="button">로그인</button></p>
+    <p id="loginStatus" class="status" aria-live="polite"></p>
+</section>
+
+<section>
+    <h2>2. 데이터 입력</h2>
     <div class="files">
         <label>상품 CSV<input id="products" type="file" accept=".csv,text/csv"></label>
         <label>매출 CSV<input id="sales" type="file" accept=".csv,text/csv"></label>
@@ -36,8 +46,8 @@
 </section>
 
 <section>
-    <h2>2. 자동 추천 실행</h2>
-    <button id="run" type="button">내 위치로 발주 추천하기</button>
+    <h2>3. 자동 추천 실행</h2>
+    <button id="run" type="button" disabled>내 위치로 발주 추천하기</button>
     <p id="status" class="status" aria-live="polite"></p>
 </section>
 
@@ -61,6 +71,8 @@
     const $ = id => document.getElementById(id);
     const status = $('status');
     const runButton = $('run');
+    const loginButton = $('login');
+    let accessToken = null;
 
     function setStatus(message, error = false) {
         status.textContent = message;
@@ -70,9 +82,44 @@
     async function upload(kind, file) {
         const form = new FormData();
         form.append('file', file);
-        const response = await fetch(`/api/csv/${kind}`, { method: 'POST', body: form });
+        const response = await fetch(`/api/csv/${kind}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}` },
+            body: form
+        });
         if (!response.ok) throw new Error(`${kind} CSV 업로드 실패: ${await response.text()}`);
     }
+
+    loginButton.addEventListener('click', async () => {
+        const email = $('email').value.trim();
+        const password = $('password').value;
+        const loginStatus = $('loginStatus');
+
+        loginButton.disabled = true;
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            if (!response.ok) throw new Error(await response.text());
+
+            const body = await response.json();
+            accessToken = body.data?.accessToken;
+            if (!accessToken) throw new Error('로그인 응답에 액세스 토큰이 없습니다.');
+
+            loginStatus.textContent = `${body.data.name}님으로 로그인했습니다.`;
+            loginStatus.className = 'status';
+            runButton.disabled = false;
+        } catch (error) {
+            accessToken = null;
+            runButton.disabled = true;
+            loginStatus.textContent = error.message || '로그인에 실패했습니다.';
+            loginStatus.className = 'status error';
+        } finally {
+            loginButton.disabled = false;
+        }
+    });
 
     function currentPosition() {
         if (!navigator.geolocation) return Promise.reject(new Error('이 브라우저는 위치 확인을 지원하지 않습니다.'));
@@ -122,7 +169,10 @@
             const { latitude, longitude } = position.coords;
 
             setStatus('오늘·내일 날씨와 발주 추천을 계산하고 있습니다...');
-            const response = await fetch(`/api/order-recommendations/automatic?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`, { method: 'POST' });
+            const response = await fetch(`/api/order-recommendations/automatic?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
             if (!response.ok) throw new Error(await response.text());
             render(await response.json());
             setStatus('발주 추천이 완료되었습니다.');

@@ -1,6 +1,7 @@
 package com.bp20.backend.llm;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -10,10 +11,11 @@ public class LlmClient {
     private final RestClient restClient;
 
     public LlmClient(
+            @Qualifier("restClientBuilder")
             RestClient.Builder builder,
             @Value("${llm.server-url}") String serverUrl
     ) {
-        this.restClient = builder
+        this.restClient = builder.clone()
                 .baseUrl(serverUrl)
                 .build();
     }

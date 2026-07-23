@@ -1,0 +1,44 @@
+spring:
+  profiles:
+    active: test
+  datasource:
+    url: jdbc:h2:mem:bp20-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  jwt:
+    secret: bp20-test-secret-key-with-at-least-32-characters
+    expiration-seconds: 7200
+    admin-expiration-seconds: 900
+  iam:
+    invitation-expiration-hours: 24
+  cors:
+    allowed-origins: http://localhost:3000
+  fastapi:
+    base-url: http://localhost:8000
+
+ai:
+  server-url: http://localhost:8000
+  effect-verification:
+    base-url: http://localhost:8000
+  review-sentiment:
+    base-url: http://localhost:8000
+
+ocr-service:
+  base-url: http://localhost:8000
+
+llm:
+  server-url: http://localhost:8001
+
+weather:
+  api:
+    service-key: test-kma-service-key
+    asos-hourly-url: https://example.invalid/asos
+
+kma:
+  forecast-url: https://example.invalid/forecast

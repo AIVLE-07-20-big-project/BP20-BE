@@ -6,6 +6,7 @@ import com.bp20.backend.weather.station.AsosStation;
 import com.bp20.backend.weather.station.AsosStationResolver;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -33,12 +34,13 @@ public class HistoricalWeatherService {
     private final String serviceKey;
 
     public HistoricalWeatherService(
+            @Qualifier("restClientBuilder")
             RestClient.Builder restClientBuilder,
             AsosStationResolver stationResolver,
             @Value("${weather.api.service-key}") String serviceKey,
             @Value("${weather.api.asos-hourly-url}") String asosHourlyUrl
     ) {
-        this.restClient = restClientBuilder
+        this.restClient = restClientBuilder.clone()
                 .baseUrl(asosHourlyUrl)
                 .build();
 
