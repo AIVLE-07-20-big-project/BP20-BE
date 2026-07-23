@@ -29,6 +29,10 @@ import java.util.List;
 /**
  * 영수증 OCR + 가계부/원가분석 Python 마이크로서비스 호출 클라이언트.
  * 이 서비스는 상태를 갖지 않으므로(stateless), 매 호출마다 필요한 데이터를 전부 함께 보낸다.
+ *
+ * HTTP 클라이언트 자체(타임아웃, HttpClient5 등)는 팀 공용 설정인
+ * {@link com.bp20.backend.global.config.ExternalRestClientConfig}의 빌더를 그대로 재사용하고,
+ * 이 클래스에서는 OCR 서비스의 base-url만 지정해서 clone해 쓴다.
  */
 @Slf4j
 @Component

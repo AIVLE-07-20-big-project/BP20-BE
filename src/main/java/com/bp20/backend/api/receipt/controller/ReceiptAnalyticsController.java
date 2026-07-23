@@ -5,6 +5,7 @@ import com.bp20.backend.api.receipt.dto.response.ExpenseAnomalyResponse;
 import com.bp20.backend.api.receipt.service.ReceiptAnalyticsService;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.response.SuccessCode;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -18,8 +19,9 @@ import java.util.List;
 
 @Tag(name = "ReceiptAnalytics", description = "AI 가계부(이상지출/예산초과/리포트) API")
 @RestController
-@RequestMapping("/api/analytics")
+@RequestMapping("/api/store-owner/analytics")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class ReceiptAnalyticsController {
 
     private final ReceiptAnalyticsService analyticsService;

@@ -5,6 +5,7 @@ import com.bp20.backend.api.budget.dto.response.BudgetResponse;
 import com.bp20.backend.api.budget.service.BudgetService;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.response.SuccessCode;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Budget", description = "카테고리별 월 예산 목표치 API")
 @RestController
-@RequestMapping("/api/budgets")
+@RequestMapping("/api/store-owner/budgets")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class BudgetController {
 
     private final BudgetService budgetService;
