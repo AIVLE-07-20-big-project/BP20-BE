@@ -52,3 +52,6 @@ ocr_service/
 cafe_synthetic_data/
 
 import_csv_to_backend.py
+
+### Local development docs ###
+/docs/
