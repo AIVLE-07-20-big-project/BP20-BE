@@ -24,7 +24,7 @@ ai:
   effect-verification:
     base-url: http://localhost:8000
   review-sentiment:
-    base-url: http://localhost:8001
+    base-url: http://localhost:8000
 
 ocr-service:
   base-url: http://localhost:8002
