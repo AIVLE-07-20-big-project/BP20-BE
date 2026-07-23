@@ -47,16 +47,17 @@ springdoc:
     persist-authorization: true
   show-actuator: true
 
-# AI 서비스 연동 설정
+# AI 서비스 연동 설정 (effect-verification, review-sentiment, ocr-service는
+# 라우터만 나뉜 동일한 FastAPI 앱이라 FASTAPI_BASE_URL 하나로 통일한다)
 ai:
   effect-verification:
-    base-url: ${EFFECT_VERIFICATION_AI_URL:http://localhost:8000}
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   review-sentiment:
-    base-url: ${REVIEW_SENTIMENT_AI_URL:http://localhost:8000}
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
 # 영수증 OCR 및 원가 분석 서비스 연동 설정
 ocr-service:
-  base-url: ${OCR_SERVICE_BASE_URL:http://localhost:8000}
+  base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
 app:
   jwt:
