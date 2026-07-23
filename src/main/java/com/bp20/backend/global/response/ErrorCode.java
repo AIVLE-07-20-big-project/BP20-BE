@@ -13,6 +13,7 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_EMAIL(HttpStatus.BAD_REQUEST, "이메일 형식이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 형식이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_ROLE(HttpStatus.BAD_REQUEST, "사용자 역할이 올바르지 않습니다."),
+    BAD_REQUEST_INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "CSV 파일만 업로드할 수 있습니다."),
 
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     UNAUTHORIZED_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
@@ -27,6 +28,8 @@ public enum ErrorCode {
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     NOT_FOUND_STORE(HttpStatus.NOT_FOUND, "매장을 찾을 수 없습니다."),
+    NOT_FOUND_AI_ANALYSIS(HttpStatus.NOT_FOUND, "매출 분석 결과를 찾을 수 없습니다."),
+    NOT_FOUND_AI_AGENT_RUN(HttpStatus.NOT_FOUND, "AI 에이전트 실행을 찾을 수 없습니다."),
     NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
 
