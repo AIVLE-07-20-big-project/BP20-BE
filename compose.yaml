@@ -23,6 +23,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # Spring Boot
+  springboot:
+    build: .
+    container_name: spring_boot_bp20
+    restart: always
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - network_bp20
+
 networks:
   network_bp20:
     driver: bridge
