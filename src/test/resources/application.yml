@@ -19,12 +19,14 @@ app:
     invitation-expiration-hours: 24
   cors:
     allowed-origins: http://localhost:3000
+  fastapi:
+    base-url: http://localhost:8000
 
 ai:
   effect-verification:
     base-url: http://localhost:8000
   review-sentiment:
-    base-url: http://localhost:8001
+    base-url: http://localhost:8000
 
 ocr-service:
-  base-url: http://localhost:8002
+  base-url: http://localhost:8000
