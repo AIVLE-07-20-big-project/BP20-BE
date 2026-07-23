@@ -52,7 +52,7 @@ ai:
   effect-verification:
     base-url: ${EFFECT_VERIFICATION_AI_URL:http://localhost:8000}
   review-sentiment:
-    base-url: ${REVIEW_SENTIMENT_AI_URL:http://localhost:8001}
+    base-url: ${REVIEW_SENTIMENT_AI_URL:http://localhost:8000}
 
 # 영수증 OCR 및 원가 분석 서비스 연동 설정
 ocr-service:
