@@ -37,7 +37,7 @@ spring:
 
 weather:
   api:
-    service-key: 89dc6a0054ee9c0cc56f127e002d03b2a67b62eff51753d2b30d58ef7b470700
+    service-key: ${KMA_SERVICE_KEY}
     asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
 
 ai:

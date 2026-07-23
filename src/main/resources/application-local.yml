@@ -20,5 +20,5 @@ spring:
     show-sql: true
 
 kma:
-  service-key: 89dc6a0054ee9c0cc56f127e002d03b2a67b62eff51753d2b30d58ef7b470700
+  service-key: ${KMA_SERVICE_KEY}
   forecast-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
