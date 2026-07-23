@@ -10,5 +10,10 @@ public interface EffectVerificationResultRepository
 
     Optional<EffectVerificationResult> findByAiRecommendationId(Long aiRecommendationId);
 
+    Optional<EffectVerificationResult> findByAiRecommendationIdAndUserId(
+            Long aiRecommendationId,
+            Long userId
+    );
+
     boolean existsByAiRecommendationId(Long aiRecommendationId);
 }

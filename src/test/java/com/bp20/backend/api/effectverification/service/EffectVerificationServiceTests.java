@@ -27,6 +27,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class EffectVerificationServiceTests {
 
+    private static final long USER_ID = 7L;
+
     @Mock
     private EffectVerificationApiClient apiClient;
 
@@ -48,12 +50,12 @@ class EffectVerificationServiceTests {
         EffectVerificationRequest request = new EffectVerificationRequest();
         EffectVerificationResponse aiResponse = createResponse();
         when(apiClient.verifyEffect(request)).thenReturn(aiResponse);
-        when(resultRepository.findByAiRecommendationId(1L))
+        when(resultRepository.findByAiRecommendationIdAndUserId(1L, USER_ID))
                 .thenReturn(Optional.empty());
         when(resultRepository.save(any(EffectVerificationResult.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        EffectVerificationResponse response = service.verifyEffect(request);
+        EffectVerificationResponse response = service.verifyEffect(USER_ID, request);
 
         ArgumentCaptor<EffectVerificationResult> captor =
                 ArgumentCaptor.forClass(EffectVerificationResult.class);
@@ -61,6 +63,7 @@ class EffectVerificationServiceTests {
         EffectVerificationResult saved = captor.getValue();
 
         assertThat(saved.getAiRecommendationId()).isEqualTo(1L);
+        assertThat(saved.getUserId()).isEqualTo(USER_ID);
         assertThat(saved.getStoreId()).isEqualTo(10L);
         assertThat(saved.getRecommendationType()).isEqualTo(RecommendationType.SALES);
         assertThat(saved.getEffectScore()).isEqualTo(96.0);
@@ -76,6 +79,7 @@ class EffectVerificationServiceTests {
                 .writeValueAsString(original.getMetricResults());
         EffectVerificationResult saved = EffectVerificationResult.builder()
                 .aiRecommendationId(1L)
+                .userId(USER_ID)
                 .storeId(10L)
                 .recommendationType(RecommendationType.SALES)
                 .effectScore(96.0)
@@ -84,10 +88,11 @@ class EffectVerificationServiceTests {
                 .summary("success")
                 .verifiedDate(verifiedDate)
                 .build();
-        when(resultRepository.findByAiRecommendationId(1L))
+        when(resultRepository.findByAiRecommendationIdAndUserId(1L, USER_ID))
                 .thenReturn(Optional.of(saved));
 
-        EffectVerificationResponse response = service.getByRecommendationId(1L);
+        EffectVerificationResponse response =
+                service.getByRecommendationId(USER_ID, 1L);
 
         assertThat(response.getRecommendationId()).isEqualTo(1L);
         assertThat(response.getStoreId()).isEqualTo(10L);
