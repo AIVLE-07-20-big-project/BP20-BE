@@ -10,7 +10,10 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "ai_recommendation_runs", indexes = {
         @Index(name = "idx_ai_runs_user", columnList = "user_id"),
-        @Index(name = "idx_ai_runs_analysis", columnList = "analysis_id")
+        @Index(name = "idx_ai_runs_analysis", columnList = "analysis_id"),
+        @Index(name = "idx_ai_runs_store", columnList = "store_id"),
+        // 추천 이력 조회: 사용자/매장별 최신 실행순
+        @Index(name = "idx_ai_runs_user_store_created", columnList = "user_id, store_id, created_at")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiRecommendationRun extends BaseTimeEntity {
@@ -20,19 +23,22 @@ public class AiRecommendationRun extends BaseTimeEntity {
     private String analysisId;
     @Column(name = "user_id", nullable = false)
     private Long userId;
+    @Column(name = "store_id", length = 100)
+    private String storeId;
     @Lob @Column(name = "result_json", nullable = false, columnDefinition = "LONGTEXT")
     private String resultJson;
 
-    private AiRecommendationRun(String threadId, String analysisId, Long userId, String resultJson) {
+    private AiRecommendationRun(String threadId, String analysisId, Long userId, String storeId, String resultJson) {
         this.threadId = threadId;
         this.analysisId = analysisId;
         this.userId = userId;
+        this.storeId = storeId;
         this.resultJson = resultJson;
     }
 
     public static AiRecommendationRun create(String threadId, String analysisId,
-                                             Long userId, String resultJson) {
-        return new AiRecommendationRun(threadId, analysisId, userId, resultJson);
+                                             Long userId, String storeId, String resultJson) {
+        return new AiRecommendationRun(threadId, analysisId, userId, storeId, resultJson);
     }
 
     public void updateResult(String resultJson) {

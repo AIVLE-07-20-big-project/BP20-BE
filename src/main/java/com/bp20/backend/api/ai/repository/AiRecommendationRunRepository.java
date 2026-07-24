@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface AiRecommendationRunRepository extends JpaRepository<AiRecommendationRun, String> {
     Optional<AiRecommendationRun> findByThreadIdAndUserId(String threadId, Long userId);
     List<AiRecommendationRun> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+    List<AiRecommendationRun> findAllByUserIdAndStoreIdOrderByCreatedAtDesc(Long userId, String storeId);
 }

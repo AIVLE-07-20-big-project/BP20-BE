@@ -9,7 +9,6 @@ import com.bp20.backend.global.response.SuccessCode;
 import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,8 +38,8 @@ public class AiController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> createAnalysis(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestParam MultipartFile file,
-            @RequestParam("trdar_cd") @NotBlank String trdarCd,
-            @RequestParam("svc_induty_cd") @NotBlank String svcIndutyCd,
+            @RequestParam(value = "trdar_cd", required = false) String trdarCd,
+            @RequestParam(value = "svc_induty_cd", required = false) String svcIndutyCd,
             @RequestParam(value = "yyqu_cd", required = false) Integer yyquCd,
             @RequestParam(value = "store_id", required = false) String storeId
     ) {
@@ -75,11 +74,12 @@ public class AiController {
 
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getRecommendations(
-            @AuthenticationPrincipal SecurityPrincipal currentUser
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @RequestParam(value = "store_id", required = false) String storeId
     ) {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_AI_RECOMMENDATION_GET,
-                aiService.getRecommendations(currentUser.id())
+                aiService.getRecommendations(currentUser.id(), storeId)
         );
     }
 
