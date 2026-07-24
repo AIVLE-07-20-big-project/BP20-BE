@@ -61,7 +61,7 @@ public class Product extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "online_sales_status", nullable = false, length = 20)
-    private OnlineSalesItemStatus onlineSalesStatus;
+    private OnlineSalesStatus onlineSalesStatus;
 
     private Product(
             Store store,
@@ -78,7 +78,7 @@ public class Product extends BaseTimeEntity {
         this.stockQuantity = stockQuantity;
         this.imageUrl = imageUrl;
         this.status = stockQuantity == 0 ? ProductStatus.SOLD_OUT : ProductStatus.ACTIVE;
-        this.onlineSalesStatus = OnlineSalesItemStatus.NOT_REGISTERED;
+        this.onlineSalesStatus = OnlineSalesStatus.NOT_REGISTERED;
     }
 
     public static Product create(
@@ -114,40 +114,33 @@ public class Product extends BaseTimeEntity {
 
         if (stockQuantity == 0) {
             this.status = ProductStatus.SOLD_OUT;
-            if (isRegisteredOnline()) {
-                this.onlineSalesStatus = OnlineSalesItemStatus.SOLD_OUT;
+            if (this.onlineSalesStatus == OnlineSalesStatus.ON_SALE) {
+                unregisterOnline();
             }
         } else if (this.status == ProductStatus.SOLD_OUT) {
             this.status = ProductStatus.ACTIVE;
-            if (this.onlineSalesStatus == OnlineSalesItemStatus.SOLD_OUT) {
-                this.onlineSalesStatus = OnlineSalesItemStatus.HIDDEN;
-            }
         }
     }
 
     public void changeStatus(ProductStatus status) {
         this.status = status;
-        if (status == ProductStatus.INACTIVE && onlineSalesStatus == OnlineSalesItemStatus.ON_SALE) {
-            this.onlineSalesStatus = OnlineSalesItemStatus.HIDDEN;
+        if (status == ProductStatus.INACTIVE && onlineSalesStatus == OnlineSalesStatus.ON_SALE) {
+            unregisterOnline();
         }
-        if (status == ProductStatus.SOLD_OUT && isRegisteredOnline()) {
-            this.onlineSalesStatus = OnlineSalesItemStatus.SOLD_OUT;
+        if (status == ProductStatus.SOLD_OUT && onlineSalesStatus == OnlineSalesStatus.ON_SALE) {
+            unregisterOnline();
         }
     }
 
     public void registerOnline() {
-        this.onlineSalesStatus = OnlineSalesItemStatus.ON_SALE;
-    }
-
-    public void changeOnlineSalesStatus(OnlineSalesItemStatus status) {
-        this.onlineSalesStatus = status;
+        this.onlineSalesStatus = OnlineSalesStatus.ON_SALE;
     }
 
     public void unregisterOnline() {
-        this.onlineSalesStatus = OnlineSalesItemStatus.NOT_REGISTERED;
+        this.onlineSalesStatus = OnlineSalesStatus.NOT_REGISTERED;
     }
 
     public boolean isRegisteredOnline() {
-        return onlineSalesStatus != OnlineSalesItemStatus.NOT_REGISTERED;
+        return onlineSalesStatus != OnlineSalesStatus.NOT_REGISTERED;
     }
 }

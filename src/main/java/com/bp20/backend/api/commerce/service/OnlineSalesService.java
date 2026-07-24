@@ -1,17 +1,11 @@
 package com.bp20.backend.api.commerce.service;
 
-import com.bp20.backend.api.commerce.domain.BundleStatus;
-import com.bp20.backend.api.commerce.domain.ProductBundle;
 import com.bp20.backend.api.commerce.dto.request.OnlineSalesStatusRequest;
-import com.bp20.backend.api.commerce.dto.response.ProductBundleResponse;
-import com.bp20.backend.api.commerce.repository.ProductBundleRepository;
-import com.bp20.backend.api.product.domain.OnlineSalesItemStatus;
+import com.bp20.backend.api.product.domain.OnlineSalesStatus;
 import com.bp20.backend.api.product.domain.Product;
 import com.bp20.backend.api.product.domain.ProductStatus;
-import com.bp20.backend.api.product.dto.request.OnlineSalesItemStatusRequest;
 import com.bp20.backend.api.product.dto.response.ProductResponse;
 import com.bp20.backend.api.product.repository.ProductRepository;
-import com.bp20.backend.api.store.domain.OnlineSalesStatus;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.dto.response.StoreResponse;
 import com.bp20.backend.api.store.repository.StoreRepository;
@@ -29,15 +23,11 @@ public class OnlineSalesService {
 
     private final StoreRepository storeRepository;
     private final ProductRepository productRepository;
-    private final ProductBundleRepository productBundleRepository;
 
     @Transactional
     public StoreResponse changeStatus(Long ownerId, OnlineSalesStatusRequest request) {
-        Store store = storeRepository.findByOwnerId(ownerId)
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
-
-        if (request.status() == OnlineSalesStatus.OPEN
-                && !hasOnlineSaleItem(store.getId())) {
+        Store store = requireOwnedStore(ownerId);
+        if (request.status() == com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN && !hasOnlineSaleItem(store.getId())) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_STORE_STATUS);
         }
 
@@ -50,7 +40,7 @@ public class OnlineSalesService {
         Store store = requireOwnedStore(ownerId);
         return productRepository.findByStoreIdAndOnlineSalesStatusNotOrderByIdDesc(
                         store.getId(),
-                        OnlineSalesItemStatus.NOT_REGISTERED
+                        OnlineSalesStatus.NOT_REGISTERED
                 ).stream()
                 .map(ProductResponse::from)
                 .toList();
@@ -69,18 +59,6 @@ public class OnlineSalesService {
     }
 
     @Transactional
-    public ProductResponse changeProductStatus(
-            Long ownerId,
-            Long productId,
-            OnlineSalesItemStatusRequest request
-    ) {
-        Product product = requireOwnedProduct(ownerId, productId);
-        validateOnlineSalesItemStatus(product, request.status());
-        product.changeOnlineSalesStatus(request.status());
-        return ProductResponse.from(product);
-    }
-
-    @Transactional
     public ProductResponse unregisterProduct(Long ownerId, Long productId) {
         Product product = requireOwnedProduct(ownerId, productId);
         if (!product.isRegisteredOnline()) {
@@ -90,73 +68,12 @@ public class OnlineSalesService {
         return ProductResponse.from(product);
     }
 
-    @Transactional
-    public ProductBundleResponse registerBundle(Long ownerId, Long bundleId) {
-        ProductBundle bundle = requireOwnedBundle(ownerId, bundleId);
-        if (bundle.isRegisteredOnline()
-                || bundle.getStatus() != BundleStatus.ON_SALE
-                || !canSellBundle(bundle)) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_BUNDLE);
-        }
-        bundle.registerOnline();
-        return ProductBundleResponse.from(bundle);
-    }
-
-    @Transactional
-    public ProductBundleResponse changeBundleStatus(
-            Long ownerId,
-            Long bundleId,
-            OnlineSalesItemStatusRequest request
-    ) {
-        ProductBundle bundle = requireOwnedBundle(ownerId, bundleId);
-        if (!bundle.isRegisteredOnline() || request.status() == OnlineSalesItemStatus.NOT_REGISTERED) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_BUNDLE);
-        }
-        if (request.status() == OnlineSalesItemStatus.ON_SALE
-                && (bundle.getStatus() != BundleStatus.ON_SALE || !canSellBundle(bundle))) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_BUNDLE);
-        }
-        bundle.changeOnlineSalesStatus(request.status());
-        return ProductBundleResponse.from(bundle);
-    }
-
-    @Transactional
-    public ProductBundleResponse unregisterBundle(Long ownerId, Long bundleId) {
-        ProductBundle bundle = requireOwnedBundle(ownerId, bundleId);
-        if (!bundle.isRegisteredOnline()) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_BUNDLE);
-        }
-        bundle.unregisterOnline();
-        return ProductBundleResponse.from(bundle);
-    }
-
     private boolean hasOnlineSaleItem(Long storeId) {
-        return productRepository.existsByStoreIdAndOnlineSalesStatus(
+        return productRepository.existsByStoreIdAndOnlineSalesStatusAndStatusAndStockQuantityGreaterThan(
                 storeId,
-                OnlineSalesItemStatus.ON_SALE
-        ) || productBundleRepository.existsByStoreIdAndOnlineSalesStatus(
-                storeId,
-                OnlineSalesItemStatus.ON_SALE
-        );
-    }
-
-    private void validateOnlineSalesItemStatus(Product product, OnlineSalesItemStatus targetStatus) {
-        if (!product.isRegisteredOnline() || targetStatus == OnlineSalesItemStatus.NOT_REGISTERED) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS);
-        }
-        if (targetStatus == OnlineSalesItemStatus.ON_SALE
-                && (product.getStatus() != ProductStatus.ACTIVE || product.getStockQuantity() == 0)) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS);
-        }
-        if (targetStatus == OnlineSalesItemStatus.SOLD_OUT && product.getStockQuantity() > 0) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS);
-        }
-    }
-
-    private boolean canSellBundle(ProductBundle bundle) {
-        return bundle.getItems().stream().allMatch(item ->
-                item.getProduct().getStatus() == ProductStatus.ACTIVE
-                        && item.getProduct().getStockQuantity() >= item.getQuantity()
+                OnlineSalesStatus.ON_SALE,
+                ProductStatus.ACTIVE,
+                0
         );
     }
 
@@ -168,10 +85,5 @@ public class OnlineSalesService {
     private Store requireOwnedStore(Long ownerId) {
         return storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
-    }
-
-    private ProductBundle requireOwnedBundle(Long ownerId, Long bundleId) {
-        return productBundleRepository.findOwnedBundle(bundleId, ownerId)
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_PRODUCT_BUNDLE));
     }
 }

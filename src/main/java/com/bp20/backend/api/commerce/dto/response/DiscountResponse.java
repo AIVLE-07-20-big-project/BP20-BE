@@ -1,21 +1,19 @@
 package com.bp20.backend.api.commerce.dto.response;
 
+import com.bp20.backend.api.commerce.domain.Discount;
 import com.bp20.backend.api.commerce.domain.DiscountStatus;
 import com.bp20.backend.api.commerce.domain.DiscountType;
-import com.bp20.backend.api.commerce.domain.OnlineDiscount;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 
-public record OnlineDiscountResponse(
+public record DiscountResponse(
         Long id,
         String name,
         String description,
         DiscountType discountType,
         long discountValue,
-        List<OnlineDiscountProductResponse> products,
-        List<OnlineDiscountBundleResponse> bundles,
+        DiscountProductResponse product,
         LocalDateTime startsAt,
         LocalDateTime endsAt,
         LocalTime dailyStartTime,
@@ -25,19 +23,14 @@ public record OnlineDiscountResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static OnlineDiscountResponse from(OnlineDiscount discount) {
-        return new OnlineDiscountResponse(
+    public static DiscountResponse from(Discount discount) {
+        return new DiscountResponse(
                 discount.getId(),
                 discount.getName(),
                 discount.getDescription(),
                 discount.getDiscountType(),
                 discount.getDiscountValue(),
-                discount.getDiscountProducts().stream()
-                        .map(link -> OnlineDiscountProductResponse.from(link.getProduct()))
-                        .toList(),
-                discount.getDiscountBundles().stream()
-                        .map(link -> OnlineDiscountBundleResponse.from(link.getBundle()))
-                        .toList(),
+                DiscountProductResponse.from(discount.getProduct()),
                 discount.getStartsAt(),
                 discount.getEndsAt(),
                 discount.getDailyStartTime(),

@@ -45,19 +45,18 @@ public enum SuccessCode {
     SUCCESS_PRODUCT_GET(HttpStatus.OK, "상품을 조회했습니다."),
     SUCCESS_PRODUCT_UPDATE(HttpStatus.OK, "상품을 수정했습니다."),
     SUCCESS_ONLINE_PRODUCT_REGISTER(HttpStatus.CREATED, "상품을 온라인 판매에 등록했습니다."),
-    SUCCESS_ONLINE_PRODUCT_UPDATE(HttpStatus.OK, "온라인 상품 상태를 변경했습니다."),
     SUCCESS_ONLINE_PRODUCT_UNREGISTER(HttpStatus.OK, "상품의 온라인 판매 등록을 해제했습니다."),
-    SUCCESS_ONLINE_DISCOUNT_CREATE(HttpStatus.CREATED, "온라인 할인을 등록했습니다."),
-    SUCCESS_ONLINE_DISCOUNT_GET(HttpStatus.OK, "온라인 할인을 조회했습니다."),
-    SUCCESS_ONLINE_DISCOUNT_UPDATE(HttpStatus.OK, "온라인 할인 상태를 변경했습니다."),
 
-    SUCCESS_PRODUCT_BUNDLE_CREATE(HttpStatus.CREATED, "세트상품을 등록했습니다."),
-    SUCCESS_PRODUCT_BUNDLE_GET(HttpStatus.OK, "세트상품을 조회했습니다."),
-    SUCCESS_PRODUCT_BUNDLE_UPDATE(HttpStatus.OK, "세트상품을 수정했습니다."),
+    SUCCESS_DISCOUNT_CREATE(HttpStatus.CREATED, "할인을 등록했습니다."),
+    SUCCESS_DISCOUNT_GET(HttpStatus.OK, "할인을 조회했습니다."),
+    SUCCESS_DISCOUNT_UPDATE(HttpStatus.OK, "할인 상태를 변경했습니다."),
 
-    SUCCESS_CUSTOMER_COUPON_ISSUE(HttpStatus.CREATED, "고객에게 쿠폰을 발급했습니다."),
-    SUCCESS_CUSTOMER_COUPON_GET(HttpStatus.OK, "고객 쿠폰을 조회했습니다."),
-    SUCCESS_CUSTOMER_COUPON_UPDATE(HttpStatus.OK, "고객 쿠폰 상태를 변경했습니다.");
+    SUCCESS_COUPON_ISSUE(HttpStatus.CREATED, "고객에게 쿠폰을 발급했습니다."),
+    SUCCESS_COUPON_GET(HttpStatus.OK, "쿠폰을 조회했습니다."),
+    SUCCESS_COUPON_UPDATE(HttpStatus.OK, "쿠폰 상태를 변경했습니다."),
+
+    SUCCESS_CUSTOMER_CREATE(HttpStatus.CREATED, "고객을 등록했습니다."),
+    SUCCESS_CUSTOMER_GET(HttpStatus.OK, "고객을 조회했습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

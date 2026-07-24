@@ -1,6 +1,6 @@
 package com.bp20.backend.api.product.dto.response;
 
-import com.bp20.backend.api.product.domain.OnlineSalesItemStatus;
+import com.bp20.backend.api.product.domain.OnlineSalesStatus;
 import com.bp20.backend.api.product.domain.Product;
 import com.bp20.backend.api.product.domain.ProductStatus;
 
@@ -14,7 +14,7 @@ public record ProductResponse(
         int stockQuantity,
         String imageUrl,
         ProductStatus status,
-        OnlineSalesItemStatus onlineSalesStatus,
+        OnlineSalesStatus onlineSalesStatus,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

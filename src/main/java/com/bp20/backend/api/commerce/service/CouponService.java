@@ -1,11 +1,11 @@
 package com.bp20.backend.api.commerce.service;
 
+import com.bp20.backend.api.commerce.domain.Coupon;
 import com.bp20.backend.api.commerce.domain.CouponStatus;
-import com.bp20.backend.api.commerce.domain.CustomerCoupon;
 import com.bp20.backend.api.commerce.domain.DiscountType;
 import com.bp20.backend.api.commerce.dto.request.IssueCouponRequest;
-import com.bp20.backend.api.commerce.dto.response.CustomerCouponResponse;
-import com.bp20.backend.api.commerce.repository.CustomerCouponRepository;
+import com.bp20.backend.api.commerce.dto.response.CouponResponse;
+import com.bp20.backend.api.commerce.repository.CouponRepository;
 import com.bp20.backend.api.customer.domain.Customer;
 import com.bp20.backend.api.customer.repository.CustomerRepository;
 import com.bp20.backend.api.store.domain.Store;
@@ -18,18 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CustomerCouponService {
+public class CouponService {
 
     private final StoreRepository storeRepository;
     private final CustomerRepository customerRepository;
-    private final CustomerCouponRepository customerCouponRepository;
+    private final CouponRepository couponRepository;
 
     @Transactional
-    public CustomerCouponResponse issue(Long ownerId, IssueCouponRequest request) {
+    public CouponResponse issue(Long ownerId, IssueCouponRequest request) {
         Store store = storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
         LocalDateTime now = LocalDateTime.now();
@@ -38,66 +37,57 @@ public class CustomerCouponService {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
         }
 
-        Customer customer = customerRepository.findById(request.customerId())
+        Customer customer = customerRepository.findOwnedCustomer(request.customerId(), ownerId)
                 .filter(Customer::isActive)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_CUSTOMER));
-        CustomerCoupon coupon = CustomerCoupon.issue(
+        Coupon coupon = Coupon.issue(
                 store,
                 customer,
                 request.name().trim(),
                 request.discountType(),
                 request.discountValue(),
-                generateUniqueCode(),
                 now,
                 request.expiresAt()
         );
-        return CustomerCouponResponse.from(customerCouponRepository.save(coupon));
+        return CouponResponse.from(couponRepository.save(coupon));
     }
 
     @Transactional
-    public List<CustomerCouponResponse> getMine(Long ownerId) {
+    public List<CouponResponse> getMine(Long ownerId) {
         LocalDateTime now = LocalDateTime.now();
-        return customerCouponRepository.findAllOwnedBy(ownerId).stream()
+        return couponRepository.findAllOwnedBy(ownerId).stream()
                 .peek(coupon -> expireIfNecessary(coupon, now))
-                .map(CustomerCouponResponse::from)
+                .map(CouponResponse::from)
                 .toList();
     }
 
     @Transactional
-    public CustomerCouponResponse getOne(Long ownerId, Long couponId) {
-        CustomerCoupon coupon = requireOwnedCoupon(ownerId, couponId);
+    public CouponResponse getOne(Long ownerId, Long couponId) {
+        Coupon coupon = requireOwnedCoupon(ownerId, couponId);
         expireIfNecessary(coupon, LocalDateTime.now());
-        return CustomerCouponResponse.from(coupon);
+        return CouponResponse.from(coupon);
     }
 
     @Transactional
-    public CustomerCouponResponse revoke(Long ownerId, Long couponId) {
-        CustomerCoupon coupon = requireOwnedCoupon(ownerId, couponId);
+    public CouponResponse revoke(Long ownerId, Long couponId) {
+        Coupon coupon = requireOwnedCoupon(ownerId, couponId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNecessary(coupon, now);
         if (coupon.getStatus() != CouponStatus.ISSUED) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
         }
         coupon.revoke(now);
-        return CustomerCouponResponse.from(coupon);
+        return CouponResponse.from(coupon);
     }
 
-    private void expireIfNecessary(CustomerCoupon coupon, LocalDateTime now) {
+    private void expireIfNecessary(Coupon coupon, LocalDateTime now) {
         if (coupon.getStatus() == CouponStatus.ISSUED && !now.isBefore(coupon.getExpiresAt())) {
             coupon.expire();
         }
     }
 
-    private String generateUniqueCode() {
-        String code;
-        do {
-            code = UUID.randomUUID().toString().replace("-", "").substring(0, 20).toUpperCase();
-        } while (customerCouponRepository.existsByCode(code));
-        return code;
-    }
-
-    private CustomerCoupon requireOwnedCoupon(Long ownerId, Long couponId) {
-        return customerCouponRepository.findOwnedCoupon(couponId, ownerId)
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_CUSTOMER_COUPON));
+    private Coupon requireOwnedCoupon(Long ownerId, Long couponId) {
+        return couponRepository.findOwnedCoupon(couponId, ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_COUPON));
     }
 }

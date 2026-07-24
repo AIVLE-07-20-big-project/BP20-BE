@@ -28,7 +28,7 @@ public class UserPrivateInfo {
     @Column(nullable = false, length = 100)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 255)
     private String passwordHash;
 
     @Column(nullable = false, length = 50)
@@ -46,6 +46,20 @@ public class UserPrivateInfo {
 
     public static UserPrivateInfo of(String email, String passwordHash, String name, String phoneNumber) {
         return new UserPrivateInfo(email, passwordHash, name, phoneNumber);
+    }
+
+    public static UserPrivateInfo forCustomer(String email, String name, String phoneNumber) {
+        return new UserPrivateInfo(email, null, name, phoneNumber);
+    }
+
+    public boolean hasPassword() {
+        return passwordHash != null;
+    }
+
+    public void attachUserAccount(String passwordHash, String name, String phoneNumber) {
+        this.passwordHash = passwordHash;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
     }
 
     public void updateName(String name) {

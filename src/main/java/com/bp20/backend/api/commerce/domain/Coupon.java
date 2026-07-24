@@ -15,7 +15,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,19 +24,18 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(
-        name = "customer_coupons",
-        uniqueConstraints = @UniqueConstraint(name = "uk_customer_coupons_code", columnNames = "code"),
+        name = "coupons",
         indexes = {
-                @Index(name = "idx_customer_coupons_store_status", columnList = "store_id,status"),
-                @Index(name = "idx_customer_coupons_customer_status", columnList = "customer_id,status")
+                @Index(name = "idx_coupons_store_status", columnList = "store_id,status"),
+                @Index(name = "idx_coupons_customer_status", columnList = "customer_id,status")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CustomerCoupon extends BaseTimeEntity {
+public class Coupon extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "customer_coupon_id")
+    @Column(name = "coupon_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -58,9 +56,6 @@ public class CustomerCoupon extends BaseTimeEntity {
     @Column(name = "discount_value", nullable = false)
     private long discountValue;
 
-    @Column(nullable = false, length = 32)
-    private String code;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private CouponStatus status;
@@ -77,13 +72,12 @@ public class CustomerCoupon extends BaseTimeEntity {
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
-    private CustomerCoupon(
+    private Coupon(
             Store store,
             Customer customer,
             String name,
             DiscountType discountType,
             long discountValue,
-            String code,
             LocalDateTime issuedAt,
             LocalDateTime expiresAt
     ) {
@@ -92,29 +86,26 @@ public class CustomerCoupon extends BaseTimeEntity {
         this.name = name;
         this.discountType = discountType;
         this.discountValue = discountValue;
-        this.code = code;
         this.status = CouponStatus.ISSUED;
         this.issuedAt = issuedAt;
         this.expiresAt = expiresAt;
     }
 
-    public static CustomerCoupon issue(
+    public static Coupon issue(
             Store store,
             Customer customer,
             String name,
             DiscountType discountType,
             long discountValue,
-            String code,
             LocalDateTime issuedAt,
             LocalDateTime expiresAt
     ) {
-        return new CustomerCoupon(
+        return new Coupon(
                 store,
                 customer,
                 name,
                 discountType,
                 discountValue,
-                code,
                 issuedAt,
                 expiresAt
         );

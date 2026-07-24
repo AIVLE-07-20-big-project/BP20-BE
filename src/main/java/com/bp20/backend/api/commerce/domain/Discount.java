@@ -3,7 +3,6 @@ package com.bp20.backend.api.commerce.domain;
 import com.bp20.backend.api.product.domain.Product;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.global.domain.BaseTimeEntity;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,7 +14,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,29 +21,31 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Entity
 @Table(
-        name = "online_discounts",
+        name = "discounts",
         indexes = {
-                @Index(name = "idx_online_discounts_store_status", columnList = "store_id,status"),
-                @Index(name = "idx_online_discounts_period", columnList = "starts_at,ends_at")
+                @Index(name = "idx_discounts_store_status", columnList = "store_id,status"),
+                @Index(name = "idx_discounts_period", columnList = "starts_at,ends_at")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OnlineDiscount extends BaseTimeEntity {
+public class Discount extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "online_discount_id")
+    @Column(name = "discount_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     @Column(nullable = false, length = 120)
     private String name;
@@ -79,14 +79,9 @@ public class OnlineDiscount extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private DiscountStatus status;
 
-    @OneToMany(mappedBy = "discount", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<OnlineDiscountProduct> discountProducts = new ArrayList<>();
-
-    @OneToMany(mappedBy = "discount", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<OnlineDiscountBundle> discountBundles = new ArrayList<>();
-
-    private OnlineDiscount(
+    private Discount(
             Store store,
+            Product product,
             String name,
             String description,
             DiscountType discountType,
@@ -98,6 +93,7 @@ public class OnlineDiscount extends BaseTimeEntity {
             boolean reminderEnabled
     ) {
         this.store = store;
+        this.product = product;
         this.name = name;
         this.description = description;
         this.discountType = discountType;
@@ -110,8 +106,9 @@ public class OnlineDiscount extends BaseTimeEntity {
         this.status = DiscountStatus.DRAFT;
     }
 
-    public static OnlineDiscount create(
+    public static Discount create(
             Store store,
+            Product product,
             String name,
             String description,
             DiscountType discountType,
@@ -122,8 +119,9 @@ public class OnlineDiscount extends BaseTimeEntity {
             LocalTime dailyEndTime,
             boolean reminderEnabled
     ) {
-        return new OnlineDiscount(
+        return new Discount(
                 store,
+                product,
                 name,
                 description,
                 discountType,
@@ -134,14 +132,6 @@ public class OnlineDiscount extends BaseTimeEntity {
                 dailyEndTime,
                 reminderEnabled
         );
-    }
-
-    public void addProduct(Product product) {
-        discountProducts.add(OnlineDiscountProduct.create(this, product));
-    }
-
-    public void addBundle(ProductBundle bundle) {
-        discountBundles.add(OnlineDiscountBundle.create(this, bundle));
     }
 
     public void changeStatus(DiscountStatus status) {

@@ -4,8 +4,8 @@ import com.bp20.backend.api.commerce.domain.DiscountStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(description = "온라인 할인 상태 변경 요청")
-public record OnlineDiscountStatusRequest(
+@Schema(description = "할인 상태 변경 요청")
+public record DiscountStatusRequest(
         @Schema(
                 description = "변경할 할인 상태",
                 example = "ACTIVE",
