@@ -4,14 +4,12 @@ import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.dto.request.CreateStoreRequest;
 import com.bp20.backend.api.store.dto.request.UpdateStoreRequest;
 import com.bp20.backend.api.store.dto.response.StoreResponse;
-import com.bp20.backend.api.store.event.StoreCreatedEvent;
 import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +19,6 @@ public class StoreService {
 
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
-    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public StoreResponse create(Long ownerId, CreateStoreRequest request) {
@@ -43,7 +40,6 @@ public class StoreService {
                 request.address().trim(),
                 trimToNull(request.phoneNumber())
         ));
-        eventPublisher.publishEvent(new StoreCreatedEvent(store.getId()));
         return StoreResponse.from(store);
     }
 
