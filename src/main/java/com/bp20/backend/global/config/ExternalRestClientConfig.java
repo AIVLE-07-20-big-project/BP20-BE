@@ -46,4 +46,9 @@ public class ExternalRestClientConfig {
         return RestClient.builder()
                 .requestFactory(requestFactory);
     }
+
+    @Bean
+    public RestClient restClient(RestClient.Builder externalRestClientBuilder) {
+        return externalRestClientBuilder.build();
+    }
 }

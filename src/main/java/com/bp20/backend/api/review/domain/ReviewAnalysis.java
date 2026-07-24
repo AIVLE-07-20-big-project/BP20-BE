@@ -1,4 +1,4 @@
-package com.bp20.backend.api.reviewAnalysis.domain;
+package com.bp20.backend.api.review.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

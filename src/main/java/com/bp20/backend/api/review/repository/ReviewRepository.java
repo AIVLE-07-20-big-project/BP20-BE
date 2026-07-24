@@ -12,7 +12,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findTop50ByIsAnalyzedFalse();
 
+    List<Review> findByStoreId(Long storeId);
+
+    List<Review> findByStoreIdAndIsAnalyzedFalse(Long storeId);
+
 //    Page<Review> findByStoreId(Long storeId, Pageable pageable);
 
-//    long countByStoreIdAndIsAnalyzedFalse(Long storeId);
+    long countByStoreIdAndIsAnalyzedFalse(Long storeId);
 }

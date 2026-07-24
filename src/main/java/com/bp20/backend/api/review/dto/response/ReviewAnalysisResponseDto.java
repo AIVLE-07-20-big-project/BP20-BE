@@ -1,4 +1,4 @@
-package com.bp20.backend.api.reviewAnalysis.dto.response;
+package com.bp20.backend.api.review.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

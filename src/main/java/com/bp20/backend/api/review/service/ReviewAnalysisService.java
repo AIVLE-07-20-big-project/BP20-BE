@@ -1,14 +1,15 @@
-package com.bp20.backend.api.reviewAnalysis.service;
+package com.bp20.backend.api.review.service;
 
 import com.bp20.backend.api.review.domain.Review;
-import com.bp20.backend.api.review.repository.ReviewRepository;
-import com.bp20.backend.api.reviewAnalysis.domain.ReviewAnalysis;
-import com.bp20.backend.api.reviewAnalysis.dto.request.ReviewAnalysisRequestDto;
-import com.bp20.backend.api.reviewAnalysis.dto.response.AspectSentimentDto;
-import com.bp20.backend.api.reviewAnalysis.dto.response.ReviewAnalysisResponseDto;
-import com.bp20.backend.api.reviewAnalysis.repository.ReviewAnalysisRepository;
-import lombok.RequiredArgsConstructor;
+import com.bp20.backend.api.review.domain.ReviewAnalysis;
+import com.bp20.backend.api.review.dto.request.ReviewAnalysisRequestDto;
+import com.bp20.backend.api.review.dto.response.AspectSentimentDto;
+import com.bp20.backend.api.review.dto.response.ReviewAnalysisResponseDto;
+
 import java.util.ArrayList;
+
+import com.bp20.backend.api.review.repository.ReviewAnalysisRepository;
+import com.bp20.backend.api.review.repository.ReviewRepository;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
@@ -38,8 +39,8 @@ public class ReviewAnalysisService {
     }
 
     @Transactional
-    public void analyzeUnanalyzedReviews() {
-        List<Review> unanalyzedReviews = reviewRepository.findByIsAnalyzedFalse();
+    public void analyzeUnanalyzedReviews(Long storeId) {
+        List<Review> unanalyzedReviews = reviewRepository.findByStoreIdAndIsAnalyzedFalse(storeId);
 
         if (unanalyzedReviews.isEmpty())
             return;
