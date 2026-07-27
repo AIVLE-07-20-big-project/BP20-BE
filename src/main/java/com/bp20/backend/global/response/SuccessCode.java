@@ -56,7 +56,9 @@ public enum SuccessCode {
     SUCCESS_COUPON_UPDATE(HttpStatus.OK, "쿠폰 상태를 변경했습니다."),
 
     SUCCESS_CUSTOMER_CREATE(HttpStatus.CREATED, "고객을 등록했습니다."),
-    SUCCESS_CUSTOMER_GET(HttpStatus.OK, "고객을 조회했습니다.");
+    SUCCESS_CUSTOMER_GET(HttpStatus.OK, "고객을 조회했습니다."),
+
+    SUCCESS_PRODUCT_IMAGE_CATEGORIES(HttpStatus.OK, "지원 메뉴 목록을 조회했습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
