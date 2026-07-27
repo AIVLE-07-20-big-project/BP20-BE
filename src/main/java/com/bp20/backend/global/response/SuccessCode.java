@@ -17,10 +17,13 @@ public enum SuccessCode {
     SUCCESS_ADMIN_GET(HttpStatus.OK, "관리자 정보를 조회했습니다."),
     SUCCESS_ADMIN_INVITATION_CREATE(HttpStatus.CREATED, "관리자 초대를 생성했습니다."),
     SUCCESS_ADMIN_STATUS_UPDATE(HttpStatus.OK, "관리자 상태를 변경했습니다."),
+    SUCCESS_INVITATION_GET(HttpStatus.OK, "초대 목록을 조회했습니다."),
+    SUCCESS_INVITATION_REVOKE(HttpStatus.OK, "초대를 취소했습니다."),
     SUCCESS_IAM_LOG_GET(HttpStatus.OK, "IAM 로그를 조회했습니다."),
 
     SUCCESS_STORE_OWNER_GET(HttpStatus.OK, "점주 정보를 조회했습니다."),
     SUCCESS_STORE_OWNER_INVITATION_CREATE(HttpStatus.CREATED, "점주 초대를 생성했습니다."),
+    SUCCESS_STORE_OWNER_STATUS_UPDATE(HttpStatus.OK, "점주 계정 상태를 변경했습니다."),
 
     SUCCESS_STORE_CREATE(HttpStatus.CREATED, "매장을 생성했습니다."),
     SUCCESS_STORE_GET(HttpStatus.OK, "매장 정보를 조회했습니다."),
