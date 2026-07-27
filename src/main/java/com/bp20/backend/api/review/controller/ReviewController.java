@@ -3,6 +3,7 @@ package com.bp20.backend.api.review.controller;
 import com.bp20.backend.api.review.domain.Review;
 import com.bp20.backend.api.review.dto.response.ReviewResponseDto;
 import com.bp20.backend.api.review.service.ReviewService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Review", description = "리뷰 조회 및 관리 API")
 @RestController
 @RequestMapping("/api/v3/stores")
 @RequiredArgsConstructor
