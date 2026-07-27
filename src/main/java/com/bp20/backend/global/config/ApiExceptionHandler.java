@@ -120,25 +120,6 @@ public class ApiExceptionHandler {
     }
 
     /**
-     * 위에서 별도로 처리하지 못한 예외를 처리한다.
-     *
-     * 실제 운영 환경에서는 예외 내용을 그대로 사용자에게
-     * 노출하지 않고 서버 로그에만 기록하는 것이 좋다.
-     */
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, Object> handleException(
-            Exception exception
-    ) {
-        exception.printStackTrace();
-
-        return createErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "서버 처리 중 오류가 발생했습니다."
-        );
-    }
-
-    /**
      * 공통 오류 응답 형식을 생성한다.
      */
     private Map<String, Object> createErrorResponse(

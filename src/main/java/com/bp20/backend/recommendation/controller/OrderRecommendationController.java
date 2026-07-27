@@ -14,6 +14,8 @@ import com.bp20.backend.weather.service.WeatherService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.bp20.backend.global.security.principal.SecurityPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ public class OrderRecommendationController {
      */
     @PostMapping("/generate")
     public List<OrderRecommendationResponse> generate(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestParam double latitude,
             @RequestParam double longitude,
 
@@ -54,6 +57,7 @@ public class OrderRecommendationController {
                         : orderDateTime;
 
         return service.generate(
+                currentUser.id(),
                 latitude,
                 longitude,
                 targetDateTime
@@ -65,6 +69,7 @@ public class OrderRecommendationController {
      */
     @PostMapping("/automatic")
     public AutomaticOrderRecommendationResponse generateAutomatically(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestParam double latitude,
             @RequestParam double longitude
     ) {
@@ -78,6 +83,7 @@ public class OrderRecommendationController {
 
         List<OrderRecommendationResponse> recommendations =
                 service.generate(
+                        currentUser.id(),
                         latitude,
                         longitude,
                         now,

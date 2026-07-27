@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class EffectVerificationLifecycleServiceTests {
 
+    private static final long USER_ID = 7L;
+
     @Mock
     private EffectVerificationExecutionRepository executionRepository;
 
@@ -52,13 +54,15 @@ class EffectVerificationLifecycleServiceTests {
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        VerificationExecutionResponse response = lifecycleService.registerExecution(request);
+        VerificationExecutionResponse response =
+                lifecycleService.registerExecution(USER_ID, request);
 
         assertThat(response.getStatus()).isEqualTo(VerificationStatus.COLLECTING);
         assertThat(response.getVerificationDueAt()).isEqualTo(executedAt.plusDays(14));
         ArgumentCaptor<EffectVerificationExecution> captor =
                 ArgumentCaptor.forClass(EffectVerificationExecution.class);
         verify(executionRepository).save(captor.capture());
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
         assertThat(captor.getValue().getBeforeMetricsJson()).contains("target_sales");
     }
 
@@ -66,13 +70,14 @@ class EffectVerificationLifecycleServiceTests {
     void completeVerificationRejectsCollectionBeforeDueDate() {
         LocalDateTime executedAt = LocalDateTime.of(2026, 7, 20, 10, 0);
         EffectVerificationExecution execution = savedExecution(executedAt);
-        when(executionRepository.findByAiRecommendationId(100L))
+        when(executionRepository.findByAiRecommendationIdAndUserId(100L, USER_ID))
                 .thenReturn(Optional.of(execution));
         VerificationCompletionRequest request = new VerificationCompletionRequest();
         request.setAfter(salesPeriod(1_300_000.0));
         request.setCollectedAt(executedAt.plusDays(13));
 
-        assertThatThrownBy(() -> lifecycleService.completeVerification(100L, request))
+        assertThatThrownBy(() ->
+                lifecycleService.completeVerification(USER_ID, 100L, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("collection period has not ended");
     }
@@ -81,7 +86,7 @@ class EffectVerificationLifecycleServiceTests {
     void completeVerificationBuildsAiRequestFromStoredBaseline() {
         LocalDateTime executedAt = LocalDateTime.of(2026, 7, 1, 10, 0);
         EffectVerificationExecution execution = savedExecution(executedAt);
-        when(executionRepository.findByAiRecommendationId(100L))
+        when(executionRepository.findByAiRecommendationIdAndUserId(100L, USER_ID))
                 .thenReturn(Optional.of(execution));
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -89,18 +94,24 @@ class EffectVerificationLifecycleServiceTests {
         LocalDateTime verifiedAt = LocalDateTime.of(2026, 7, 20, 11, 0);
         EffectVerificationResponse aiResponse = new EffectVerificationResponse();
         aiResponse.setVerifiedDate(verifiedAt);
-        when(verificationService.verifyEffect(any(EffectVerificationRequest.class)))
+        when(verificationService.verifyEffect(
+                any(Long.class),
+                any(EffectVerificationRequest.class)
+        ))
                 .thenReturn(aiResponse);
 
         VerificationCompletionRequest request = new VerificationCompletionRequest();
         request.setAfter(salesPeriod(1_300_000.0));
         request.setCollectedAt(executedAt.plusDays(14));
 
-        lifecycleService.completeVerification(100L, request);
+        lifecycleService.completeVerification(USER_ID, 100L, request);
 
         ArgumentCaptor<EffectVerificationRequest> captor =
                 ArgumentCaptor.forClass(EffectVerificationRequest.class);
-        verify(verificationService).verifyEffect(captor.capture());
+        verify(verificationService).verifyEffect(
+                any(Long.class),
+                captor.capture()
+        );
         EffectVerificationRequest sent = captor.getValue();
         assertThat(sent.getRecommendationId()).isEqualTo(100L);
         assertThat(sent.getBefore().getSales().getTargetSales()).isEqualTo(1_000_000.0);
@@ -114,7 +125,8 @@ class EffectVerificationLifecycleServiceTests {
         LocalDateTime executedAt = LocalDateTime.now().minusDays(15);
         EffectVerificationExecution execution = savedExecution(executedAt);
         when(executionRepository
-                .findByStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                .findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                        any(Long.class),
                         any(Long.class),
                         any(VerificationStatus.class),
                         any(LocalDateTime.class)
@@ -122,13 +134,14 @@ class EffectVerificationLifecycleServiceTests {
                 .thenReturn(List.of(execution));
 
         List<VerificationExecutionResponse> responses =
-                lifecycleService.getDueExecutions(1L);
+                lifecycleService.getDueExecutions(USER_ID, 1L);
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().getRecommendationId()).isEqualTo(100L);
         assertThat(responses.getFirst().getStatus()).isEqualTo(VerificationStatus.COLLECTING);
         verify(executionRepository)
-                .findByStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                .findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                        any(Long.class),
                         any(Long.class),
                         any(VerificationStatus.class),
                         any(LocalDateTime.class)
@@ -140,22 +153,29 @@ class EffectVerificationLifecycleServiceTests {
         EffectVerificationExecution execution = savedExecution(
                 LocalDateTime.of(2026, 7, 1, 10, 0)
         );
-        when(executionRepository.findByStoreIdAndStatusOrderByExecutedAtDesc(
+        when(executionRepository.findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+                USER_ID,
                 1L,
                 VerificationStatus.COLLECTING
         )).thenReturn(List.of(execution));
 
         List<VerificationExecutionResponse> responses =
-                lifecycleService.getExecutionHistory(1L, VerificationStatus.COLLECTING);
+                lifecycleService.getExecutionHistory(
+                        USER_ID,
+                        1L,
+                        VerificationStatus.COLLECTING
+                );
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().getStoreId()).isEqualTo(1L);
         assertThat(responses.getFirst().getStatus()).isEqualTo(VerificationStatus.COLLECTING);
-        verify(executionRepository).findByStoreIdAndStatusOrderByExecutedAtDesc(
+        verify(executionRepository).findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+                USER_ID,
                 1L,
                 VerificationStatus.COLLECTING
         );
-        verify(executionRepository, never()).findByStoreIdOrderByExecutedAtDesc(1L);
+        verify(executionRepository, never())
+                .findByUserIdAndStoreIdOrderByExecutedAtDesc(USER_ID, 1L);
     }
 
     @Test
@@ -179,29 +199,35 @@ class EffectVerificationLifecycleServiceTests {
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        lifecycleService.registerExecution(registration);
+        lifecycleService.registerExecution(USER_ID, registration);
 
         ArgumentCaptor<EffectVerificationExecution> executionCaptor =
                 ArgumentCaptor.forClass(EffectVerificationExecution.class);
         verify(executionRepository).save(executionCaptor.capture());
         EffectVerificationExecution saved = executionCaptor.getValue();
-        when(executionRepository.findByAiRecommendationId(200L))
+        when(executionRepository.findByAiRecommendationIdAndUserId(200L, USER_ID))
                 .thenReturn(Optional.of(saved));
 
         EffectVerificationResponse aiResponse = new EffectVerificationResponse();
         aiResponse.setVerifiedDate(executedAt.plusDays(15));
-        when(verificationService.verifyEffect(any(EffectVerificationRequest.class)))
+        when(verificationService.verifyEffect(
+                any(Long.class),
+                any(EffectVerificationRequest.class)
+        ))
                 .thenReturn(aiResponse);
 
         VerificationCompletionRequest completion = new VerificationCompletionRequest();
         completion.setAfter(reviewPeriod(4.4, 18.0));
         completion.setCollectedAt(executedAt.plusDays(15));
 
-        lifecycleService.completeVerification(200L, completion);
+        lifecycleService.completeVerification(USER_ID, 200L, completion);
 
         ArgumentCaptor<EffectVerificationRequest> requestCaptor =
                 ArgumentCaptor.forClass(EffectVerificationRequest.class);
-        verify(verificationService).verifyEffect(requestCaptor.capture());
+        verify(verificationService).verifyEffect(
+                any(Long.class),
+                requestCaptor.capture()
+        );
         EffectVerificationRequest sent = requestCaptor.getValue();
         assertThat(sent.getRecommendationType()).isEqualTo(RecommendationType.REVIEW);
         assertThat(sent.getCondition().getTargetAspect()).isEqualTo("waiting_time");
@@ -219,7 +245,7 @@ class EffectVerificationLifecycleServiceTests {
         request.setCondition(new VerificationCondition(14, null, null, true, null));
         request.setBefore(reviewPeriod(3.8, 40.0));
 
-        assertThatThrownBy(() -> lifecycleService.registerExecution(request))
+        assertThatThrownBy(() -> lifecycleService.registerExecution(USER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("requires target_aspect");
     }
@@ -238,6 +264,7 @@ class EffectVerificationLifecycleServiceTests {
     private EffectVerificationExecution savedExecution(LocalDateTime executedAt) {
         return EffectVerificationExecution.builder()
                 .aiRecommendationId(100L)
+                .userId(USER_ID)
                 .storeId(1L)
                 .recommendationType(RecommendationType.SALES)
                 .status(VerificationStatus.COLLECTING)

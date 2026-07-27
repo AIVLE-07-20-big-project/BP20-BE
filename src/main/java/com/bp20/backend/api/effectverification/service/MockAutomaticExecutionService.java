@@ -66,7 +66,7 @@ public class MockAutomaticExecutionService {
         request.setCondition(condition);
         request.setBefore(before);
         request.setExecutedAt(recommendation.executedAt());
-        return lifecycleService.registerExecution(request);
+        return lifecycleService.registerExecution(null, request);
     }
 
     public EffectVerificationResponse completeAutomatically(Long recommendationId) {
@@ -97,7 +97,7 @@ public class MockAutomaticExecutionService {
         request.setAfter(after);
         request.setCollectedAt(collectionTo);
         EffectVerificationResponse response = lifecycleService
-                .completeVerification(recommendationId, request);
+                .completeVerification(null, recommendationId, request);
         feedbackService.apply(recommendationId, response);
         return response;
     }

@@ -26,6 +26,9 @@ public class EffectVerificationExecution {
     @Column(name = "AIRecommendationID", nullable = false, unique = true)
     private Long aiRecommendationId;
 
+    @Column(name = "UserID")
+    private Long userId;
+
     @Column(name = "StoreID", nullable = false)
     private Long storeId;
 

@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,14 +80,14 @@ class MockAutomaticExecutionServiceTests {
         );
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(baseline);
-        when(lifecycleService.registerExecution(any()))
+        when(lifecycleService.registerExecution(isNull(), any()))
                 .thenReturn(VerificationExecutionResponse.builder().build());
 
         service.registerAutomatically(10001L);
 
         ArgumentCaptor<ExecutionRegistrationRequest> captor =
                 ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
-        verify(lifecycleService).registerExecution(captor.capture());
+        verify(lifecycleService).registerExecution(isNull(), captor.capture());
         ExecutionRegistrationRequest request = captor.getValue();
         assertThat(request.getRecommendationId()).isEqualTo(10001L);
         assertThat(request.getExecutedAt()).isEqualTo(executedAt);
@@ -118,7 +119,7 @@ class MockAutomaticExecutionServiceTests {
         ));
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(new PeriodMetrics(null, null));
-        when(lifecycleService.registerExecution(any()))
+        when(lifecycleService.registerExecution(isNull(), any()))
                 .thenReturn(VerificationExecutionResponse.builder().build());
 
         service.registerAutomatically(10003L);
@@ -130,7 +131,7 @@ class MockAutomaticExecutionServiceTests {
         );
         ArgumentCaptor<ExecutionRegistrationRequest> captor =
                 ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
-        verify(lifecycleService).registerExecution(captor.capture());
+        verify(lifecycleService).registerExecution(isNull(), captor.capture());
         assertThat(captor.getValue().getRecommendationType())
                 .isEqualTo(RecommendationType.REVIEW);
         assertThat(captor.getValue().getCondition().getTargetAspect())
@@ -157,7 +158,7 @@ class MockAutomaticExecutionServiceTests {
         );
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(after);
-        when(lifecycleService.completeVerification(anyLong(), any()))
+        when(lifecycleService.completeVerification(isNull(), anyLong(), any()))
                 .thenReturn(new EffectVerificationResponse());
 
         service.completeAutomatically(10001L);
@@ -171,7 +172,11 @@ class MockAutomaticExecutionServiceTests {
         );
         ArgumentCaptor<VerificationCompletionRequest> captor =
                 ArgumentCaptor.forClass(VerificationCompletionRequest.class);
-        verify(lifecycleService).completeVerification(eq(10001L), captor.capture());
+        verify(lifecycleService).completeVerification(
+                isNull(),
+                eq(10001L),
+                captor.capture()
+        );
         verify(feedbackService).apply(eq(10001L), any());
         assertThat(captor.getValue().getAfter()).isSameAs(after);
         assertThat(captor.getValue().getCollectedAt())
@@ -193,7 +198,7 @@ class MockAutomaticExecutionServiceTests {
         ));
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(new PeriodMetrics(null, null));
-        when(lifecycleService.completeVerification(anyLong(), any()))
+        when(lifecycleService.completeVerification(isNull(), anyLong(), any()))
                 .thenReturn(new EffectVerificationResponse());
 
         service.completeAutomatically(10003L);
@@ -203,7 +208,11 @@ class MockAutomaticExecutionServiceTests {
                 executedAt,
                 executedAt.plusDays(14)
         );
-        verify(lifecycleService).completeVerification(eq(10003L), any());
+        verify(lifecycleService).completeVerification(
+                isNull(),
+                eq(10003L),
+                any()
+        );
         verify(feedbackService).apply(eq(10003L), any());
     }
 

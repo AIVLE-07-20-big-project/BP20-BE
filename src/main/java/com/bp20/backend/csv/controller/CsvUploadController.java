@@ -1,10 +1,10 @@
 package com.bp20.backend.csv;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import com.bp20.backend.global.security.principal.SecurityPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 
 import java.util.Map;
+import java.util.List;
+import com.bp20.backend.inventory.InventoryDataRequest;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,13 +27,14 @@ public class CsvUploadController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public Map<String, Object> uploadProducts(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestPart("file") MultipartFile file
     ) {
-        csvDataService.loadProducts(file);
+        int count = csvDataService.loadProducts(currentUser.id(), file);
 
         return Map.of(
                 "message", "상품 CSV 업로드 완료",
-                "count", csvDataService.getProducts().size()
+                "count", count
         );
     }
 
@@ -40,13 +43,14 @@ public class CsvUploadController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public Map<String, Object> uploadSales(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestPart("file") MultipartFile file
     ) {
-        csvDataService.loadSales(file);
+        int count = csvDataService.loadSales(currentUser.id(), file);
 
         return Map.of(
                 "message", "매출 CSV 업로드 완료",
-                "count", csvDataService.getSales().size()
+                "count", count
         );
     }
 
@@ -55,30 +59,30 @@ public class CsvUploadController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public Map<String, Object> uploadInventories(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestPart("file") MultipartFile file
     ) {
-
-        csvDataService.loadInventories(file);
+        int count = csvDataService.loadInventories(currentUser.id(), file);
         return Map.of(
                 "message", "재고 CSV 업로드 완료",
-                "count", csvDataService.getInventories().size()
+                "count", count
         );
     }
 
+    @GetMapping("/inventories")
+    public List<InventoryDataRequest> getInventories(
+            @AuthenticationPrincipal SecurityPrincipal currentUser
+    ) {
+        return csvDataService.getInventories(currentUser.id());
+    }
+
     /**
-     * 현재 메모리에 저장된 데이터 수 확인용
+     * 현재 로그인한 점주의 MySQL 저장 데이터 수 확인용
      */
     @GetMapping("/status")
-    public Map<String, Object> status() {
-        return Map.of(
-                "productCount",
-                csvDataService.getProducts().size(),
-
-                "salesCount",
-                csvDataService.getSales().size(),
-
-                "inventoryCount",
-                csvDataService.getInventories().size()
-        );
+    public Map<String, Long> status(
+            @AuthenticationPrincipal SecurityPrincipal currentUser
+    ) {
+        return csvDataService.getStatus(currentUser.id());
     }
 }

@@ -61,6 +61,7 @@ public class OrderRecommendationService {
      * @return 재료별 발주 추천 결과
      */
     public List<OrderRecommendationResponse> generate(
+            Long ownerId,
             double latitude,
             double longitude,
             LocalDateTime orderDateTime
@@ -78,6 +79,7 @@ public class OrderRecommendationService {
                 );
 
         return generate(
+                ownerId,
                 latitude,
                 longitude,
                 targetOrderDateTime,
@@ -86,6 +88,7 @@ public class OrderRecommendationService {
     }
 
     public List<OrderRecommendationResponse> generate(
+            Long ownerId,
             double latitude,
             double longitude,
             LocalDateTime orderDateTime,
@@ -103,13 +106,13 @@ public class OrderRecommendationService {
          * 1. 업로드된 CSV 데이터 조회
          */
         List<ProductDataRequest> products =
-                csvDataService.getProducts();
+                csvDataService.getProducts(ownerId);
 
         List<DailySalesDto> sales =
-                csvDataService.getSales();
+                csvDataService.getSales(ownerId);
 
         List<InventoryDataRequest> inventories =
-                csvDataService.getInventories();
+                csvDataService.getInventories(ownerId);
 
         validateUploadedData(
                 products,

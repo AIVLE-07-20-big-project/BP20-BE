@@ -1,13 +1,21 @@
 package com.bp20.backend.csv;
 
+import com.bp20.backend.csv.entity.CsvDailySales;
+import com.bp20.backend.csv.entity.CsvInventory;
+import com.bp20.backend.csv.entity.CsvProduct;
+import com.bp20.backend.csv.repository.CsvDailySalesRepository;
+import com.bp20.backend.csv.repository.CsvInventoryRepository;
+import com.bp20.backend.csv.repository.CsvProductRepository;
 import com.bp20.backend.inventory.InventoryDataRequest;
 import com.bp20.backend.product.ProductDataRequest;
 import com.bp20.backend.sales.DailySalesDto;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.input.BOMInputStream;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -16,24 +24,21 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class CsvDataService {
 
-    /*
-     * DB 대신 서버 메모리에 데이터를 저장한다.
-     *
-     * 서버를 종료하면 데이터가 모두 사라진다.
-     */
-    private List<ProductDataRequest> products = new ArrayList<>();
-    private List<DailySalesDto> sales = new ArrayList<>();
-    private List<InventoryDataRequest> inventories =
-            new ArrayList<>();
+    private final CsvProductRepository productRepository;
+    private final CsvDailySalesRepository salesRepository;
+    private final CsvInventoryRepository inventoryRepository;
 
     /**
-     * 상품 CSV 파일을 읽어 상품 데이터를 메모리에 저장한다.
+     * 상품 CSV 파일을 읽어 로그인한 점주의 데이터로 교체 저장한다.
      */
-    public void loadProducts(MultipartFile file) {
+    @Transactional
+    public int loadProducts(Long ownerId, MultipartFile file) {
         List<ProductDataRequest> result = new ArrayList<>();
 
         try (
@@ -71,7 +76,12 @@ public class CsvDataService {
              *
              * 파일 처리 도중 오류가 발생하면 기존 데이터가 유지된다.
              */
-            this.products = result;
+            productRepository.deleteAllByOwnerId(ownerId);
+            productRepository.flush();
+            productRepository.saveAll(
+                    result.stream().map(value -> new CsvProduct(ownerId, value)).toList()
+            );
+            return result.size();
 
         } catch (Exception e) {
             throw new IllegalArgumentException(
@@ -84,7 +94,8 @@ public class CsvDataService {
     /**
      * 매출 CSV 파일을 읽어 일별 매출 데이터를 메모리에 저장한다.
      */
-    public void loadSales(MultipartFile file) {
+    @Transactional
+    public int loadSales(Long ownerId, MultipartFile file) {
         List<DailySalesDto> result = new ArrayList<>();
 
         try (
@@ -130,7 +141,12 @@ public class CsvDataService {
                 result.add(sale);
             }
 
-            this.sales = result;
+            salesRepository.deleteAllByOwnerId(ownerId);
+            salesRepository.flush();
+            salesRepository.saveAll(
+                    result.stream().map(value -> new CsvDailySales(ownerId, value)).toList()
+            );
+            return result.size();
 
         } catch (Exception e) {
             throw new IllegalArgumentException(
@@ -143,7 +159,8 @@ public class CsvDataService {
     /**
      * 재고 CSV 파일을 읽어 원재료 재고 데이터를 메모리에 저장한다.
      */
-    public void loadInventories(MultipartFile file) {
+    @Transactional
+    public int loadInventories(Long ownerId, MultipartFile file) {
         List<InventoryDataRequest> result =
                 new ArrayList<>();
 
@@ -151,61 +168,51 @@ public class CsvDataService {
                 BufferedReader reader = createReader(file);
                 CSVParser parser = createParser(reader)
         ) {
-            /*
-             * 반드시 존재해야 하는 최소 헤더만 검사한다.
-             *
-             * reserved_stock, incoming_stock, safety_stock,
-             * order_unit은 없을 경우 기본값을 사용한다.
-             */
             validateHeaders(
                     parser,
-                    "ingredient_name",
-                    "current_stock"
+                    "name",
+                    "lot",
+                    "stock",
+                    "unit",
+                    "expected_depletion",
+                    "expiry",
+                    "supplier",
+                    "status",
+                    "reorder_qty",
+                    "supplier_price",
+                    "lead_time"
             );
 
             for (CSVRecord record : parser) {
-                long currentStock = Long.parseLong(
-                        record.get("current_stock")
-                );
-
-                long reservedStock = getLongOrDefault(
-                        record,
-                        "reserved_stock",
-                        0
-                );
-
-                long incomingStock = getLongOrDefault(
-                        record,
-                        "incoming_stock",
-                        0
-                );
-
-                long safetyStock = getLongOrDefault(
-                        record,
-                        "safety_stock",
-                        10
-                );
-
-                long orderUnit = getLongOrDefault(
-                        record,
-                        "order_unit",
-                        1
-                );
+                double stock = Double.parseDouble(record.get("stock"));
+                long reorderQty = Long.parseLong(record.get("reorder_qty"));
+                long supplierPrice = Long.parseLong(record.get("supplier_price"));
+                int leadTime = Integer.parseInt(record.get("lead_time"));
 
                 InventoryDataRequest inventory =
                         new InventoryDataRequest(
-                                record.get("ingredient_name"),
-                                currentStock,
-                                reservedStock,
-                                incomingStock,
-                                safetyStock,
-                                orderUnit
+                                record.get("name"),
+                                record.get("lot"),
+                                stock,
+                                record.get("unit"),
+                                record.get("expected_depletion"),
+                                record.get("expiry"),
+                                record.get("supplier"),
+                                record.get("status"),
+                                reorderQty,
+                                supplierPrice,
+                                leadTime
                         );
 
                 result.add(inventory);
             }
 
-            this.inventories = result;
+            inventoryRepository.deleteAllByOwnerId(ownerId);
+            inventoryRepository.flush();
+            inventoryRepository.saveAll(
+                    result.stream().map(value -> new CsvInventory(ownerId, value)).toList()
+            );
+            return result.size();
 
         } catch (Exception e) {
             throw new IllegalArgumentException(
@@ -323,21 +330,36 @@ public class CsvDataService {
     /**
      * 현재 메모리에 저장된 상품 목록을 반환한다.
      */
-    public List<ProductDataRequest> getProducts() {
-        return products;
+    @Transactional(readOnly = true)
+    public List<ProductDataRequest> getProducts(Long ownerId) {
+        return productRepository.findAllByOwnerIdOrderByProductCode(ownerId)
+                .stream().map(CsvProduct::toDto).toList();
     }
 
     /**
      * 현재 메모리에 저장된 매출 목록을 반환한다.
      */
-    public List<DailySalesDto> getSales() {
-        return sales;
+    @Transactional(readOnly = true)
+    public List<DailySalesDto> getSales(Long ownerId) {
+        return salesRepository.findAllByOwnerIdOrderBySaleDateAscProductCodeAsc(ownerId)
+                .stream().map(CsvDailySales::toDto).toList();
     }
 
     /**
      * 현재 메모리에 저장된 재고 목록을 반환한다.
      */
-    public List<InventoryDataRequest> getInventories() {
-        return inventories;
+    @Transactional(readOnly = true)
+    public List<InventoryDataRequest> getInventories(Long ownerId) {
+        return inventoryRepository.findAllByOwnerIdOrderByName(ownerId)
+                .stream().map(CsvInventory::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStatus(Long ownerId) {
+        return Map.of(
+                "productCount", productRepository.countByOwnerId(ownerId),
+                "salesCount", salesRepository.countByOwnerId(ownerId),
+                "inventoryCount", inventoryRepository.countByOwnerId(ownerId)
+        );
     }
 }

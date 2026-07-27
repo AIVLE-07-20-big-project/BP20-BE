@@ -13,6 +13,11 @@ public interface EffectVerificationExecutionRepository
 
     Optional<EffectVerificationExecution> findByAiRecommendationId(Long aiRecommendationId);
 
+    Optional<EffectVerificationExecution> findByAiRecommendationIdAndUserId(
+            Long aiRecommendationId,
+            Long userId
+    );
+
     boolean existsByAiRecommendationId(Long aiRecommendationId);
 
     List<EffectVerificationExecution> findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
@@ -26,9 +31,33 @@ public interface EffectVerificationExecutionRepository
             LocalDateTime dueAt
     );
 
+    List<EffectVerificationExecution> findByUserIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+            Long userId,
+            VerificationStatus status,
+            LocalDateTime dueAt
+    );
+
+    List<EffectVerificationExecution> findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+            Long userId,
+            Long storeId,
+            VerificationStatus status,
+            LocalDateTime dueAt
+    );
+
     List<EffectVerificationExecution> findByStoreIdOrderByExecutedAtDesc(Long storeId);
 
+    List<EffectVerificationExecution> findByUserIdAndStoreIdOrderByExecutedAtDesc(
+            Long userId,
+            Long storeId
+    );
+
     List<EffectVerificationExecution> findByStoreIdAndStatusOrderByExecutedAtDesc(
+            Long storeId,
+            VerificationStatus status
+    );
+
+    List<EffectVerificationExecution> findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+            Long userId,
             Long storeId,
             VerificationStatus status
     );

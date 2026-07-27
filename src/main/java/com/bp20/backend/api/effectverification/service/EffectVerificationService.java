@@ -28,6 +28,7 @@ public class EffectVerificationService {
 
     @Transactional
     public EffectVerificationResponse verifyEffect(
+            Long userId,
             EffectVerificationRequest request
     ) {
         EffectVerificationResponse response = effectVerificationApiClient.verifyEffect(request);
@@ -35,9 +36,13 @@ public class EffectVerificationService {
         String metricResults = writeMetricResults(response.getMetricResults());
 
         EffectVerificationResult result = resultRepository
-                .findByAiRecommendationId(response.getRecommendationId())
+                .findByAiRecommendationIdAndUserId(
+                        response.getRecommendationId(),
+                        userId
+                )
                 .orElseGet(() -> EffectVerificationResult.builder()
                         .aiRecommendationId(response.getRecommendationId())
+                        .userId(userId)
                         .build());
 
         result.update(
@@ -56,9 +61,12 @@ public class EffectVerificationService {
     }
 
     @Transactional(readOnly = true)
-    public EffectVerificationResponse getByRecommendationId(Long recommendationId) {
+    public EffectVerificationResponse getByRecommendationId(
+            Long userId,
+            Long recommendationId
+    ) {
         EffectVerificationResult result = resultRepository
-                .findByAiRecommendationId(recommendationId)
+                .findByAiRecommendationIdAndUserId(recommendationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Effect verification result not found"

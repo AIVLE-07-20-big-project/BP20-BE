@@ -88,7 +88,8 @@ public class MockRecommendationFeedbackService {
         }
         return switch (verdict) {
             case "EFFECTIVE" -> 0.2;
-            case "INEFFECTIVE" -> -0.2;
+            case "NOT_EFFECTIVE" -> -0.2;
+            case "PARTIALLY_EFFECTIVE" -> 0.0;
             default -> 0.0;
         };
     }

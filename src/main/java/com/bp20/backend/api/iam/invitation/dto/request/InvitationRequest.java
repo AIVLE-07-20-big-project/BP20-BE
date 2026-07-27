@@ -7,11 +7,11 @@ import jakarta.validation.constraints.Size;
 
 @Schema(description = "사용자 초대 생성 요청")
 public record InvitationRequest(
-        @Schema(description = "초대할 사용자의 이메일", example = "user@bp20.com")
+        @Schema(description = "초대할 관리자 또는 점주의 이메일", example = "store-owner@bp20.com")
         @Email @NotBlank @Size(max = 100)
         String email,
 
-        @Schema(description = "민감 작업 재인증을 위한 현재 관리자 비밀번호", example = "StrongPassw0rd!23")
+        @Schema(description = "초대를 실행하는 현재 관리자의 비밀번호", example = "bp20admin001")
         @NotBlank @Size(max = 72)
         String currentPassword
 ) {

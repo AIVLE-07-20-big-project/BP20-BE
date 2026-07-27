@@ -61,6 +61,11 @@ weather:
     service-key: ${KMA_SERVICE_KEY}
     asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
 
+kakao:
+  local:
+    base-url: https://dapi.kakao.com
+    rest-api-key: ${KAKAO_REST_API_KEY:}
+
 # 발주량 예측 및 효과검증 AI 서비스
 ai:
   server-url: ${AI_SERVER_URL:http://localhost:8000}
