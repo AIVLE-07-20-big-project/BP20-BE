@@ -28,7 +28,8 @@ import org.springframework.web.client.RestClient;
  *     }
  */
 @Configuration
-@EnableConfigurationProperties(OcrServiceProperties.class)
+// ProductImageServiceProperties.class를 추가로 등록하였습니다. 
+@EnableConfigurationProperties({OcrServiceProperties.class, ProductImageServiceProperties.class})
 public class ExternalRestClientConfig {
 
     @Bean

@@ -81,6 +81,10 @@ llm:
 ocr-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
+# AI 상품 이미지 생성 서비스 연동 설정
+product-image-service:
+  base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+
 app:
   jwt:
     secret: ${JWT_SECRET}
