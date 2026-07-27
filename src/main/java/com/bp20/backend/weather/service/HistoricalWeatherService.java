@@ -1,16 +1,16 @@
 package com.bp20.backend.weather.service;
 
+import com.bp20.backend.weather.api.KmaWeatherApiClient;
 import com.bp20.backend.weather.dto.HistoricalWeatherData;
 import com.bp20.backend.weather.dto.HistoricalWeatherResponse;
 import com.bp20.backend.weather.station.AsosStation;
 import com.bp20.backend.weather.station.AsosStationResolver;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -29,23 +29,21 @@ public class HistoricalWeatherService {
     private static final DateTimeFormatter REQUEST_DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    private final RestClient restClient;
+    private final KmaWeatherApiClient kmaWeatherApiClient;
     private final AsosStationResolver stationResolver;
     private final String serviceKey;
+    private final String asosHourlyUrl;
 
     public HistoricalWeatherService(
-            @Qualifier("restClientBuilder")
-            RestClient.Builder restClientBuilder,
+            KmaWeatherApiClient kmaWeatherApiClient,
             AsosStationResolver stationResolver,
             @Value("${weather.api.service-key}") String serviceKey,
             @Value("${weather.api.asos-hourly-url}") String asosHourlyUrl
     ) {
-        this.restClient = restClientBuilder.clone()
-                .baseUrl(asosHourlyUrl)
-                .build();
-
+        this.kmaWeatherApiClient = kmaWeatherApiClient;
         this.stationResolver = stationResolver;
         this.serviceKey = serviceKey;
+        this.asosHourlyUrl = asosHourlyUrl;
     }
 
     /**
@@ -138,43 +136,24 @@ public class HistoricalWeatherService {
             int pageNo,
             int numOfRows
     ) {
-        JsonNode response = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .queryParam("serviceKey", serviceKey)
-                        .queryParam("pageNo", pageNo)
-                        .queryParam("numOfRows", numOfRows)
-                        .queryParam("dataType", "JSON")
-                        .queryParam("dataCd", "ASOS")
-                        .queryParam("dateCd", "HR")
-                        .queryParam(
-                                "startDt",
-                                startDate.format(REQUEST_DATE_FORMAT)
-                        )
-                        .queryParam("startHh", "00")
-                        .queryParam(
-                                "endDt",
-                                endDate.format(REQUEST_DATE_FORMAT)
-                        )
-                        .queryParam("endHh", "23")
-                        .queryParam("stnIds", stationId)
-                        .build())
-                .retrieve()
-                .onStatus(
-                        HttpStatusCode::isError,
-                        (request, errorResponse) -> {
-                            throw new IllegalStateException(
-                                    "기상청 API HTTP 오류: "
-                                            + errorResponse.getStatusCode()
-                            );
-                        }
-                )
-                .body(JsonNode.class);
+        URI requestUri = UriComponentsBuilder
+                .fromUriString(asosHourlyUrl)
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("pageNo", pageNo)
+                .queryParam("numOfRows", numOfRows)
+                .queryParam("dataType", "JSON")
+                .queryParam("dataCd", "ASOS")
+                .queryParam("dateCd", "HR")
+                .queryParam("startDt", startDate.format(REQUEST_DATE_FORMAT))
+                .queryParam("startHh", "00")
+                .queryParam("endDt", endDate.format(REQUEST_DATE_FORMAT))
+                .queryParam("endHh", "23")
+                .queryParam("stnIds", stationId)
+                .build()
+                .encode()
+                .toUri();
 
-        if (response == null) {
-            throw new IllegalStateException(
-                    "기상청 API 응답이 비어 있습니다."
-            );
-        }
+        JsonNode response = kmaWeatherApiClient.getHistoricalWeather(requestUri);
 
         validateApiResponse(response);
 

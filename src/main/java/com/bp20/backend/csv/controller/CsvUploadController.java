@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 
 import java.util.Map;
 import java.util.List;
-import com.bp20.backend.inventory.InventoryDataRequest;
+import com.bp20.backend.recommendation.data.InventoryDataRequest;
 
 @RestController
 @RequiredArgsConstructor

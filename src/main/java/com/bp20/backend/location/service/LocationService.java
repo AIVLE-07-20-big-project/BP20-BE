@@ -1,6 +1,6 @@
 package com.bp20.backend.location.service;
 
-import com.bp20.backend.location.client.KakaoLocalClient;
+import com.bp20.backend.location.api.KakaoLocalClient;
 import com.bp20.backend.location.dto.LocationSearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

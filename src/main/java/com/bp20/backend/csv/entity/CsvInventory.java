@@ -1,6 +1,6 @@
 package com.bp20.backend.csv.entity;
 
-import com.bp20.backend.inventory.InventoryDataRequest;
+import com.bp20.backend.recommendation.data.InventoryDataRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

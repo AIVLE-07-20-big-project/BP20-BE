@@ -1,8 +1,9 @@
-package com.bp20.backend.forecast;
+package com.bp20.backend.recommendation.api;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import com.bp20.backend.recommendation.api.dto.ForecastRequest;
+import com.bp20.backend.recommendation.api.dto.ProductForecastResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -12,8 +13,7 @@ public class ForecastClient {
     private final RestClient restClient;
 
     public ForecastClient(
-            @Qualifier("restClientBuilder")
-            RestClient.Builder builder,
+            @Qualifier("restClientBuilder") RestClient.Builder builder,
             @Value("${ai.server-url}") String aiServerUrl
     ) {
         this.restClient = builder.clone()
@@ -21,9 +21,7 @@ public class ForecastClient {
                 .build();
     }
 
-    public ProductForecastResponse predict(
-            ForecastRequest request
-    ) {
+    public ProductForecastResponse predict(ForecastRequest request) {
         ProductForecastResponse response = restClient.post()
                 .uri("/api/v1/forecasts")
                 .body(request)
@@ -31,9 +29,7 @@ public class ForecastClient {
                 .body(ProductForecastResponse.class);
 
         if (response == null) {
-            throw new IllegalStateException(
-                    "AI 예측 서버에서 결과를 받지 못했습니다."
-            );
+            throw new IllegalStateException("AI 예측 서버에서 결과를 받지 못했습니다.");
         }
 
         return response;

@@ -1,4 +1,4 @@
-package com.bp20.backend.forecast;
+package com.bp20.backend.recommendation.api.dto;
 
 import java.util.List;
 

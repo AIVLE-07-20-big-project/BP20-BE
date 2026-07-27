@@ -1,4 +1,4 @@
-package com.bp20.backend.sales;
+package com.bp20.backend.recommendation.data;
 
 import java.time.LocalDate;
 

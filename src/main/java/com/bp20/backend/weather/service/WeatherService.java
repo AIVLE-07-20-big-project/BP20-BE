@@ -1,13 +1,10 @@
 package com.bp20.backend.weather.service;
 
+import com.bp20.backend.weather.api.KmaWeatherApiClient;
 import com.bp20.backend.weather.dto.WeatherResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -46,7 +43,7 @@ public class WeatherService {
             14, 17, 20, 23
     };
 
-    private final RestClient restClient;
+    private final KmaWeatherApiClient kmaWeatherApiClient;
 
     @Value("${weather.api.service-key}")
     private String serviceKey;
@@ -55,10 +52,9 @@ public class WeatherService {
     private String forecastUrl;
 
     public WeatherService(
-            @Qualifier("restClientBuilder")
-            RestClient.Builder restClientBuilder
+            KmaWeatherApiClient kmaWeatherApiClient
     ) {
-        this.restClient = restClientBuilder.clone().build();
+        this.kmaWeatherApiClient = kmaWeatherApiClient;
     }
 
     /**
@@ -99,7 +95,7 @@ public class WeatherService {
                 );
 
         Map<String, Object> apiResponse =
-                requestForecast(requestUri);
+                kmaWeatherApiClient.getForecast(requestUri);
 
         validateApiResponse(apiResponse);
 
@@ -130,7 +126,7 @@ public class WeatherService {
         Grid grid = convertToGrid(latitude, longitude);
         BaseDateTime baseDateTime = getBaseDateTimeForOrder(reference);
         URI requestUri = createForecastRequestUri(grid, baseDateTime);
-        Map<String, Object> apiResponse = requestForecast(requestUri);
+        Map<String, Object> apiResponse = kmaWeatherApiClient.getForecast(requestUri);
         validateApiResponse(apiResponse);
 
         return List.of(
@@ -210,30 +206,6 @@ public class WeatherService {
                 .build()
                 .encode()
                 .toUri();
-    }
-
-    /**
-     * 기상청 단기예보 API를 호출합니다.
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> requestForecast(
-            URI requestUri
-    ) {
-        try {
-            log.info("발주시점 날씨 조회를 위해 기상청 API를 호출합니다.");
-
-            return restClient
-                    .get()
-                    .uri(requestUri)
-                    .retrieve()
-                    .body(Map.class);
-
-        } catch (RestClientException e) {
-            throw new IllegalStateException(
-                    "기상청 API 호출에 실패했습니다.",
-                    e
-            );
-        }
     }
 
     /**

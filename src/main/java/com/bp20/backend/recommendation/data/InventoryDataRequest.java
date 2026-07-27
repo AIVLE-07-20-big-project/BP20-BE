@@ -1,4 +1,4 @@
-package com.bp20.backend.inventory;
+package com.bp20.backend.recommendation.data;
 
 public record InventoryDataRequest(
         String name,

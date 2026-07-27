@@ -57,8 +57,6 @@ public class SecurityConfig {
                         ).permitAll();
                     }
                     auth.requestMatchers(
-                                "/",
-                                "/index.html",
                                 "/api/auth/login",
                                 "/api/auth/signup",
                                 "/actuator/health",

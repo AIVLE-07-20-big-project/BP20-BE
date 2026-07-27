@@ -1,4 +1,4 @@
-package com.bp20.backend.location.client;
+package com.bp20.backend.location.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.bp20.backend.location.dto.LocationSearchResponse;

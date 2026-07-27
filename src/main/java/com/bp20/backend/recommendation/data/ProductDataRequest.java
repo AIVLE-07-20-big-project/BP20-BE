@@ -1,4 +1,4 @@
-package com.bp20.backend.product;
+package com.bp20.backend.recommendation.data;
 
 import java.util.List;
 import java.util.Objects;

@@ -1,12 +1,12 @@
 package com.bp20.backend.recommendation.service;
 
 import com.bp20.backend.csv.CsvDataService;
-import com.bp20.backend.forecast.ForecastClient;
-import com.bp20.backend.forecast.ForecastRequest;
-import com.bp20.backend.forecast.ProductForecastResponse;
-import com.bp20.backend.inventory.InventoryDataRequest;
-import com.bp20.backend.product.ProductDataRequest;
-import com.bp20.backend.sales.DailySalesDto;
+import com.bp20.backend.recommendation.api.ForecastClient;
+import com.bp20.backend.recommendation.api.dto.ForecastRequest;
+import com.bp20.backend.recommendation.api.dto.ProductForecastResponse;
+import com.bp20.backend.recommendation.data.DailySalesDto;
+import com.bp20.backend.recommendation.data.InventoryDataRequest;
+import com.bp20.backend.recommendation.data.ProductDataRequest;
 import com.bp20.backend.recommendation.dto.OrderRecommendationResponse;
 import com.bp20.backend.weather.dto.WeatherResponse;
 import com.bp20.backend.weather.service.WeatherService;
@@ -345,12 +345,7 @@ public class OrderRecommendationService {
                             )
                     );
 
-            /*
-             * 현재는 프로젝트의 LlmClient 메서드 구조가 확인되지 않았으므로
-             * 기본 추천 사유를 생성한다.
-             *
-             * LLM 연결 시 이 부분에서 LlmClient를 호출하면 된다.
-             */
+            // 재고와 날씨 분석 결과로 설명 가능한 추천 사유를 생성한다.
             String reason =
                     createRecommendationReason(
                             inventory,

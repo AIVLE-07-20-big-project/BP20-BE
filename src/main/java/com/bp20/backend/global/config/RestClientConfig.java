@@ -1,4 +1,4 @@
-package com.bp20.backend.common;
+package com.bp20.backend.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,8 +8,7 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     /**
-     * ForecastClient, LlmClient 등에서 공통으로 사용할
-     * RestClient.Builder를 Spring Bean으로 등록한다.
+     * 발주 추천, 위치 및 날씨 API 클라이언트에서 공통으로 사용하는 빌더입니다.
      */
     @Bean
     public RestClient.Builder restClientBuilder() {
