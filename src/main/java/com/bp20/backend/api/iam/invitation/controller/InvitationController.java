@@ -1,7 +1,9 @@
 package com.bp20.backend.api.iam.invitation.controller;
 
 import com.bp20.backend.api.iam.invitation.dto.request.InvitationRequest;
+import com.bp20.backend.api.iam.invitation.dto.request.RevokeInvitationRequest;
 import com.bp20.backend.api.iam.invitation.dto.response.InvitationResponse;
+import com.bp20.backend.api.iam.invitation.dto.response.InvitationSummaryResponse;
 import com.bp20.backend.api.iam.invitation.service.InvitationService;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.response.SuccessCode;
@@ -14,9 +16,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,6 +33,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class InvitationController implements InvitationApiDocs {
 
     private final InvitationService invitationService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<InvitationSummaryResponse>>> getInvitations(
+            @AuthenticationPrincipal SecurityPrincipal currentUser
+    ) {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_INVITATION_GET,
+                invitationService.getInvitations(currentUser.role())
+        );
+    }
 
     @Override
     @PostMapping("/admin")
@@ -50,6 +67,24 @@ public class InvitationController implements InvitationApiDocs {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_STORE_OWNER_INVITATION_CREATE,
                 invitationService.inviteStoreOwner(currentUser.id(), request, servletRequest.getRemoteAddr())
+        );
+    }
+
+    @PatchMapping("/{invitationId}/revoke")
+    public ResponseEntity<ApiResponse<InvitationSummaryResponse>> revokeInvitation(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable Long invitationId,
+            @Valid @RequestBody RevokeInvitationRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_INVITATION_REVOKE,
+                invitationService.revokeInvitation(
+                        currentUser.id(),
+                        invitationId,
+                        request.currentPassword(),
+                        servletRequest.getRemoteAddr()
+                )
         );
     }
 }

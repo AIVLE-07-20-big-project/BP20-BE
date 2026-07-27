@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -65,7 +66,11 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll();
-                    auth.requestMatchers("/api/iam/invitation/store-owner")
+                    auth.requestMatchers(HttpMethod.POST, "/api/iam/invitation/store-owner")
+                            .hasAuthority(Permission.ADMIN_MANAGE.name())
+                            .requestMatchers(HttpMethod.GET, "/api/iam/invitation")
+                            .hasAuthority(Permission.ADMIN_MANAGE.name())
+                            .requestMatchers(HttpMethod.PATCH, "/api/iam/invitation/*/revoke")
                             .hasAuthority(Permission.ADMIN_MANAGE.name())
                             .requestMatchers("/api/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                             .requestMatchers("/api/admin/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
