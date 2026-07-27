@@ -1,4 +1,4 @@
-package com.bp20.backend.api.review.dto.response;
+package com.bp20.backend.api.review.dto;
 
 public record AspectSentimentDto(
         String aspect,
