@@ -8,7 +8,9 @@ import com.bp20.backend.api.iam.invitation.service.TemporaryPasswordService;
 import com.bp20.backend.api.iam.log.domain.IamLogAction;
 import com.bp20.backend.api.iam.log.service.IamLogService;
 import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.domain.UserPrivateInfo;
 import com.bp20.backend.api.user.domain.UserRole;
+import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
@@ -26,6 +28,7 @@ import java.util.Locale;
 public class SignupService {
 
     private final UserRepository userRepository;
+    private final UserPrivateInfoRepository userPrivateInfoRepository;
     private final InvitationRepository invitationRepository;
     private final PasswordEncoder passwordEncoder;
     private final TemporaryPasswordService temporaryPasswordService;
@@ -67,7 +70,20 @@ public class SignupService {
         String name = request.name().trim();
         String phoneNumber = trimToNull(request.phoneNumber());
         String passwordHash = passwordEncoder.encode(request.password());
+        UserPrivateInfo privateInfo = userPrivateInfoRepository.findByEmailIgnoreCase(email)
+                .orElse(null);
 
+        if (privateInfo != null) {
+            if (privateInfo.hasPassword()) {
+                throw new ApiException(ErrorCode.CONFLICT_DUPLICATE_EMAIL);
+            }
+            privateInfo.attachUserAccount(passwordHash, name, phoneNumber);
+            return switch (targetRole) {
+                case ADMIN -> User.createAdmin(privateInfo);
+                case STORE_OWNER -> User.createStoreOwner(privateInfo);
+                default -> throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_ROLE);
+            };
+        }
         return switch (targetRole) {
             case ADMIN -> User.createAdmin(email, name, phoneNumber, passwordHash);
             case STORE_OWNER -> User.createStoreOwner(email, name, phoneNumber, passwordHash);

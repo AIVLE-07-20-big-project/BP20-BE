@@ -38,7 +38,7 @@ public interface AuthApiDocs {
                                             value = """
                                                     {
                                                       "email": "admin@bp20.com",
-                                                      "temporaryPassword": "A7!kP3@mN8#qR5$t",
+                                                      "temporaryPassword": "",
                                                       "password": "bp20admin001",
                                                       "name": "BP20 관리자",
                                                       "phoneNumber": "010-1111-1111"
@@ -51,7 +51,7 @@ public interface AuthApiDocs {
                                             value = """
                                                     {
                                                       "email": "store-owner@bp20.com",
-                                                      "temporaryPassword": "B8@mQ4#nR9$pS6%u",
+                                                      "temporaryPassword": "",
                                                       "password": "bp20storeowner",
                                                       "name": "김점주",
                                                       "phoneNumber": "010-2222-2222"
