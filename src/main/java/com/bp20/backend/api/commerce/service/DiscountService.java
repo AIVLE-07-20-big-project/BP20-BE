@@ -97,7 +97,7 @@ public class DiscountService {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_DISCOUNT);
         }
         if (request.dailyStartTime() != null
-                && request.dailyStartTime().equals(request.dailyEndTime())) {
+                && !request.dailyStartTime().isBefore(request.dailyEndTime())) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_DISCOUNT);
         }
         if (request.discountType() == DiscountType.RATE && request.discountValue() > 100) {

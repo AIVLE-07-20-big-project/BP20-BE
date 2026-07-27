@@ -122,6 +122,26 @@ class OnlineCommerceIntegrationTest {
     }
 
     @Test
+    void dailyDiscountWindowRequiresBothTimesAndIncreasingOrder() {
+        User owner = createOwner("discount-window-owner@example.com");
+        createStore(owner, "122-23-34343");
+        ProductResponse product = createProduct(owner, "시간대 할인 상품", 5_000);
+
+        assertInvalidDiscountWindow(owner, product, LocalTime.of(14, 0), null);
+        assertInvalidDiscountWindow(owner, product, null, LocalTime.of(17, 0));
+        assertInvalidDiscountWindow(owner, product, LocalTime.of(14, 0), LocalTime.of(14, 0));
+        assertInvalidDiscountWindow(owner, product, LocalTime.of(17, 0), LocalTime.of(14, 0));
+
+        DiscountResponse allDayDiscount = discountService.create(
+                owner.getId(),
+                createDiscountRequest(product.id(), null, null)
+        );
+
+        assertThat(allDayDiscount.dailyStartTime()).isNull();
+        assertThat(allDayDiscount.dailyEndTime()).isNull();
+    }
+
+    @Test
     void productMustBeRegisteredSeparatelyForOnlineSales() {
         User owner = createOwner("product-channel-owner@example.com");
         createStore(owner, "777-88-99999");
@@ -334,6 +354,41 @@ class OnlineCommerceIntegrationTest {
                         10,
                         "https://example.com/product.jpg"
                 )
+        );
+    }
+
+    private void assertInvalidDiscountWindow(
+            User owner,
+            ProductResponse product,
+            LocalTime dailyStartTime,
+            LocalTime dailyEndTime
+    ) {
+        assertThatThrownBy(() -> discountService.create(
+                owner.getId(),
+                createDiscountRequest(product.id(), dailyStartTime, dailyEndTime)
+        ))
+                .isInstanceOf(ApiException.class)
+                .extracting(exception -> ((ApiException) exception).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST_INVALID_DISCOUNT);
+    }
+
+    private CreateDiscountRequest createDiscountRequest(
+            Long productId,
+            LocalTime dailyStartTime,
+            LocalTime dailyEndTime
+    ) {
+        LocalDateTime now = LocalDateTime.now();
+        return new CreateDiscountRequest(
+                "시간대 할인",
+                "일일 할인 시간 검증",
+                DiscountType.RATE,
+                10,
+                productId,
+                now.plusDays(1),
+                now.plusDays(2),
+                dailyStartTime,
+                dailyEndTime,
+                false
         );
     }
 
