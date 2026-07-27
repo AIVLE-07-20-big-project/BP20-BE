@@ -2,18 +2,25 @@ package com.bp20.backend.api.review.service;
 
 import com.bp20.backend.api.review.domain.Review;
 import com.bp20.backend.api.review.domain.ReviewAnalysis;
+import com.bp20.backend.api.review.dto.AspectScoreDto;
 import com.bp20.backend.api.review.dto.request.ReviewAnalysisRequestDto;
-import com.bp20.backend.api.review.dto.response.AspectSentimentDto;
+import com.bp20.backend.api.review.dto.AspectSentimentDto;
+import com.bp20.backend.api.review.dto.response.AspectRadarResponseDto;
+import com.bp20.backend.api.review.dto.response.AspectStatResponseDto;
 import com.bp20.backend.api.review.dto.response.ReviewAnalysisResponseDto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 import com.bp20.backend.api.review.repository.ReviewAnalysisRepository;
 import com.bp20.backend.api.review.repository.ReviewRepository;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -104,5 +111,33 @@ public class ReviewAnalysisService {
             log.error("FastAPI WebClient 통신 중 에러 발생: {}", e.getMessage());
             throw new RuntimeException("AI 분석 서비스 통신 실패", e);
         }
+    }
+    @Transactional(readOnly = true)
+    @Cacheable(value = "aspectScores", key = "#storeId")
+    public List<AspectRadarResponseDto> getAspectRadarChart(Long storeId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfCurrentMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+        LocalDateTime startOfPrevMonth = startOfCurrentMonth.minusMonths(1);
+
+        List<AspectScoreDto> currentScores =
+                reviewAnalysisRepository.findAspectScoresByStoreAndDate(storeId, startOfCurrentMonth, now);
+        List<AspectScoreDto> prevScores =
+                reviewAnalysisRepository.findAspectScoresByStoreAndDate(storeId, startOfPrevMonth, startOfCurrentMonth);
+
+        Map<String, Double> prevScoreMap = prevScores.stream()
+                .collect(Collectors.toMap(AspectScoreDto::getAspect, AspectScoreDto::getScore));
+
+        return currentScores.stream()
+                .map(current -> new AspectRadarResponseDto(
+                        current.getAspect(),
+                        current.getScore(),
+                        prevScoreMap.getOrDefault(current.getAspect(), 0.0)
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AspectStatResponseDto> getAspectStats(Long storeId) {
+        return reviewAnalysisRepository.findAspectStatsByStoreId(storeId);
     }
 }
