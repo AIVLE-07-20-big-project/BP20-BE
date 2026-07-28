@@ -69,6 +69,22 @@ public class FastApiClient {
         }
     }
 
+    public Map<String, Object> getJobStatus(String jobId, Long userId) {
+        return exchange(() -> restClient.get()
+                .uri("/api/v1/jobs/{jobId}", jobId)
+                .header("X-User-Id", userId.toString())
+                .retrieve()
+                .body(MAP_TYPE));
+    }
+
+    public Map<String, Object> getAnalysisResult(String analysisId, Long userId) {
+        return exchange(() -> restClient.get()
+                .uri("/api/v1/analyses/{analysisId}", analysisId)
+                .header("X-User-Id", userId.toString())
+                .retrieve()
+                .body(MAP_TYPE));
+    }
+
     public Map<String, Object> createRecommendation(String analysisId, Long userId) {
         return exchange(() -> restClient.post()
                 .uri("/api/v1/analyses/{analysisId}/recommendations", analysisId)

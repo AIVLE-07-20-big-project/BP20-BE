@@ -45,8 +45,19 @@ public class AiController {
     ) {
         validateCsv(file);
         return ApiResponse.success(
-                SuccessCode.SUCCESS_AI_ANALYSIS_CREATE,
+                SuccessCode.SUCCESS_AI_ANALYSIS_JOB_ACCEPTED,
                 aiService.createAnalysis(currentUser.id(), storeId, file, trdarCd, svcIndutyCd, yyquCd)
+        );
+    }
+
+    @GetMapping("/jobs/{jobId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAnalysisJobStatus(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable String jobId
+    ) {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_AI_ANALYSIS_JOB_GET,
+                aiService.getAnalysisJobStatus(currentUser.id(), jobId)
         );
     }
 

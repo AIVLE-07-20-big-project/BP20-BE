@@ -31,20 +31,41 @@ public class AiService {
     private final AiStoreProfileRepository storeProfileRepository;
     private final ObjectMapper objectMapper;
 
+    // AI 서비스는 202 + job_id를 즉시 반환한다(비동기 분석). 완료 여부는
+    // getAnalysisJobStatus로 폴링해서 확인한다.
     public Map<String, Object> createAnalysis(Long userId, String storeId, MultipartFile file,
                                                String trdarCd, String svcIndutyCd, Integer yyquCd) {
         String[] resolvedCodes = resolveCodes(userId, trdarCd, svcIndutyCd);
-        String resolvedTrdarCd = resolvedCodes[0];
-        String resolvedSvcIndutyCd = resolvedCodes[1];
-
         Map<String, Object> result = fastApiClient.createAnalysis(
-                file, resolvedTrdarCd, resolvedSvcIndutyCd, yyquCd, userId, storeId
+                file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId, storeId
         );
-        String analysisId = requiredString(result, "analysis_id");
-        analysisRepository.save(AiAnalysis.create(
-                analysisId, userId, storeId, resolvedTrdarCd, resolvedSvcIndutyCd, yyquCd, write(result)
-        ));
+        requiredString(result, "job_id");
         return result;
+    }
+
+    // 잡 상태를 조회하고, 완료된 시점에만 AI 서비스에서 결과를 가져와 로컬에 저장한다
+    // (같은 analysis_id가 이미 저장돼 있으면 다시 가져오지 않는다 — 폴링마다 반복 호출되므로).
+    public Map<String, Object> getAnalysisJobStatus(Long userId, String jobId) {
+        Map<String, Object> job = fastApiClient.getJobStatus(jobId, userId);
+        if ("completed".equals(job.get("status"))) {
+            String analysisId = requiredString(job, "analysis_id");
+            if (analysisRepository.findByAnalysisIdAndUserId(analysisId, userId).isEmpty()) {
+                Map<String, Object> analysis = fastApiClient.getAnalysisResult(analysisId, userId);
+                analysisRepository.save(AiAnalysis.create(
+                        analysisId, userId,
+                        (String) analysis.get("store_id"),
+                        requiredString(analysis, "trdar_cd"),
+                        requiredString(analysis, "svc_induty_cd"),
+                        asInteger(analysis.get("yyqu_cd")),
+                        write(analysis)
+                ));
+            }
+        }
+        return job;
+    }
+
+    private Integer asInteger(Object value) {
+        return value == null ? null : ((Number) value).intValue();
     }
 
     // 이번 요청에 코드가 왔으면 사용자의 최근 값으로 저장하고, 없으면 저장된 값을 자동으로 채운다
