@@ -21,10 +21,9 @@ public class ExecutionRegistrationRequest {
     @JsonProperty("store_id")
     private Long storeId;
 
-    @NotNull
-    @Positive
+    @Size(max = 64)
     @JsonProperty("recommendation_id")
-    private Long recommendationId;
+    private String recommendationId;
 
     @Size(max = 36)
     @JsonProperty("thread_id")

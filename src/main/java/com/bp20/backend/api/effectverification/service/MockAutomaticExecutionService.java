@@ -61,7 +61,7 @@ public class MockAutomaticExecutionService {
 
         ExecutionRegistrationRequest request = new ExecutionRegistrationRequest();
         request.setStoreId(recommendation.storeId());
-        request.setRecommendationId(recommendation.recommendationId());
+        request.setRecommendationId(String.valueOf(recommendation.recommendationId()));
         request.setRecommendationType(recommendation.type());
         request.setCondition(condition);
         request.setBefore(before);
@@ -97,7 +97,7 @@ public class MockAutomaticExecutionService {
         request.setAfter(after);
         request.setCollectedAt(collectionTo);
         EffectVerificationResponse response = lifecycleService
-                .completeVerification(null, recommendationId, request);
+                .completeVerification(null, String.valueOf(recommendationId), request);
         feedbackService.apply(recommendationId, response);
         return response;
     }

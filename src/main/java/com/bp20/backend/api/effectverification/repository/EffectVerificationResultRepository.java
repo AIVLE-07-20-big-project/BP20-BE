@@ -8,12 +8,12 @@ import java.util.Optional;
 public interface EffectVerificationResultRepository
         extends JpaRepository<EffectVerificationResult, Long> {
 
-    Optional<EffectVerificationResult> findByAiRecommendationId(Long aiRecommendationId);
+    Optional<EffectVerificationResult> findByAiRecommendationId(String aiRecommendationId);
 
     Optional<EffectVerificationResult> findByAiRecommendationIdAndUserId(
-            Long aiRecommendationId,
+            String aiRecommendationId,
             Long userId
     );
 
-    boolean existsByAiRecommendationId(Long aiRecommendationId);
+    boolean existsByAiRecommendationId(String aiRecommendationId);
 }

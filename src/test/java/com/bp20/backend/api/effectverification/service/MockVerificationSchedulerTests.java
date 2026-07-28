@@ -101,7 +101,7 @@ class MockVerificationSchedulerTests {
 
     private EffectVerificationExecution execution(Long recommendationId, int attempts) {
         return EffectVerificationExecution.builder()
-                .aiRecommendationId(recommendationId)
+                .aiRecommendationId(String.valueOf(recommendationId))
                 .storeId(1L)
                 .status(VerificationStatus.COLLECTING)
                 .attemptCount(attempts)

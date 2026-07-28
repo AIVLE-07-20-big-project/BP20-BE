@@ -16,7 +16,7 @@ public class VerificationExecutionResponse {
     private Long storeId;
 
     @JsonProperty("recommendation_id")
-    private Long recommendationId;
+    private String recommendationId;
 
     @JsonProperty("thread_id")
     private String threadId;

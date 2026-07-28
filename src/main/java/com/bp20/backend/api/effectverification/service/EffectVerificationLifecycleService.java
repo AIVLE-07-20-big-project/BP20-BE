@@ -34,7 +34,8 @@ public class EffectVerificationLifecycleService {
             Long userId,
             ExecutionRegistrationRequest request
     ) {
-        if (executionRepository.existsByAiRecommendationId(request.getRecommendationId())) {
+        String recommendationId = resolveRecommendationId(request);
+        if (executionRepository.existsByAiRecommendationId(recommendationId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Verification execution already exists for this recommendation"
@@ -63,7 +64,7 @@ public class EffectVerificationLifecycleService {
                 : LocalDateTime.now();
 
         EffectVerificationExecution execution = EffectVerificationExecution.builder()
-                .aiRecommendationId(request.getRecommendationId())
+                .aiRecommendationId(recommendationId)
                 .threadId(request.getThreadId())
                 .decisionId(request.getDecisionId())
                 .userId(userId)
@@ -79,9 +80,22 @@ public class EffectVerificationLifecycleService {
         return toResponse(executionRepository.save(execution));
     }
 
+    private String resolveRecommendationId(ExecutionRegistrationRequest request) {
+        if (StringUtils.hasText(request.getRecommendationId())) {
+            return request.getRecommendationId();
+        }
+        if (StringUtils.hasText(request.getThreadId())) {
+            return request.getThreadId();
+        }
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "recommendation_id or thread_id is required"
+        );
+    }
+
     public EffectVerificationResponse completeVerification(
             Long userId,
-            Long recommendationId,
+            String recommendationId,
             VerificationCompletionRequest request
     ) {
         EffectVerificationExecution execution = findExecution(userId, recommendationId);
@@ -139,7 +153,7 @@ public class EffectVerificationLifecycleService {
     @Transactional(readOnly = true)
     public VerificationExecutionResponse getExecution(
             Long userId,
-            Long recommendationId
+            String recommendationId
     ) {
         return toResponse(findExecution(userId, recommendationId));
     }
@@ -220,7 +234,7 @@ public class EffectVerificationLifecycleService {
 
     private EffectVerificationExecution findExecution(
             Long userId,
-            Long recommendationId
+            String recommendationId
     ) {
         return (userId == null
                 ? executionRepository.findByAiRecommendationId(recommendationId)

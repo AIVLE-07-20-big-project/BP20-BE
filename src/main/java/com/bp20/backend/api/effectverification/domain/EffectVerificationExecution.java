@@ -23,8 +23,8 @@ public class EffectVerificationExecution {
     @Column(name = "EffectVerificationExecutionID")
     private Long effectVerificationExecutionId;
 
-    @Column(name = "AIRecommendationID", nullable = false, unique = true)
-    private Long aiRecommendationId;
+    @Column(name = "AIRecommendationID", nullable = false, unique = true, length = 64)
+    private String aiRecommendationId;
 
     @Column(name = "RecommendationThreadID", unique = true, length = 36)
     private String threadId;

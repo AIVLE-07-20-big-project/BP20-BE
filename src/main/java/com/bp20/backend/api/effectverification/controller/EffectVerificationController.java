@@ -46,7 +46,7 @@ public class EffectVerificationController {
     @PostMapping("/executions/{recommendationId}/complete")
     public ResponseEntity<EffectVerificationResponse> completeVerification(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @PathVariable Long recommendationId,
+            @PathVariable String recommendationId,
             @Valid @RequestBody VerificationCompletionRequest request
     ) {
         return ResponseEntity.ok(
@@ -61,7 +61,7 @@ public class EffectVerificationController {
     @GetMapping("/executions/{recommendationId}")
     public ResponseEntity<VerificationExecutionResponse> getExecution(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @PathVariable Long recommendationId
+            @PathVariable String recommendationId
     ) {
         return ResponseEntity.ok(
                 lifecycleService.getExecution(userId(currentUser), recommendationId)
@@ -107,7 +107,7 @@ public class EffectVerificationController {
     @GetMapping("/recommendations/{recommendationId}")
     public ResponseEntity<EffectVerificationResponse> getByRecommendationId(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @PathVariable Long recommendationId
+            @PathVariable String recommendationId
     ) {
         return ResponseEntity.ok(
                 effectVerificationService.getByRecommendationId(

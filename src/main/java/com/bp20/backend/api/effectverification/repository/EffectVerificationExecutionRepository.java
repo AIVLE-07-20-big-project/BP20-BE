@@ -11,14 +11,14 @@ import java.util.List;
 public interface EffectVerificationExecutionRepository
         extends JpaRepository<EffectVerificationExecution, Long> {
 
-    Optional<EffectVerificationExecution> findByAiRecommendationId(Long aiRecommendationId);
+    Optional<EffectVerificationExecution> findByAiRecommendationId(String aiRecommendationId);
 
     Optional<EffectVerificationExecution> findByAiRecommendationIdAndUserId(
-            Long aiRecommendationId,
+            String aiRecommendationId,
             Long userId
     );
 
-    boolean existsByAiRecommendationId(Long aiRecommendationId);
+    boolean existsByAiRecommendationId(String aiRecommendationId);
 
     boolean existsByThreadId(String threadId);
 
