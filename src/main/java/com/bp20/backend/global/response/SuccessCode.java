@@ -23,6 +23,7 @@ public enum SuccessCode {
     SUCCESS_NOTICE_UPDATE(HttpStatus.OK, "공지를 수정했습니다."),
     SUCCESS_NOTICE_END(HttpStatus.OK, "공지 게시를 종료했습니다."),
     SUCCESS_NOTICE_DELETE(HttpStatus.OK, "공지를 삭제했습니다."),
+    SUCCESS_NOTICE_ATTACHMENT_UPLOAD(HttpStatus.CREATED, "공지 첨부 파일을 업로드했습니다."),
 
     SUCCESS_STORE_OWNER_GET(HttpStatus.OK, "점주 정보를 조회했습니다."),
     SUCCESS_STORE_OWNER_INVITATION_CREATE(HttpStatus.CREATED, "점주 초대를 생성했습니다."),
