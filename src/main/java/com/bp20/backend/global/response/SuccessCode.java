@@ -18,6 +18,11 @@ public enum SuccessCode {
     SUCCESS_ADMIN_INVITATION_CREATE(HttpStatus.CREATED, "관리자 초대를 생성했습니다."),
     SUCCESS_ADMIN_STATUS_UPDATE(HttpStatus.OK, "관리자 상태를 변경했습니다."),
     SUCCESS_IAM_LOG_GET(HttpStatus.OK, "IAM 로그를 조회했습니다."),
+    SUCCESS_NOTICE_CREATE(HttpStatus.CREATED, "공지를 작성했습니다."),
+    SUCCESS_NOTICE_GET(HttpStatus.OK, "공지 목록을 조회했습니다."),
+    SUCCESS_NOTICE_UPDATE(HttpStatus.OK, "공지를 수정했습니다."),
+    SUCCESS_NOTICE_END(HttpStatus.OK, "공지 게시를 종료했습니다."),
+    SUCCESS_NOTICE_DELETE(HttpStatus.OK, "공지를 삭제했습니다."),
 
     SUCCESS_STORE_OWNER_GET(HttpStatus.OK, "점주 정보를 조회했습니다."),
     SUCCESS_STORE_OWNER_INVITATION_CREATE(HttpStatus.CREATED, "점주 초대를 생성했습니다."),
@@ -27,6 +32,8 @@ public enum SuccessCode {
     SUCCESS_STORE_UPDATE(HttpStatus.OK, "매장 정보를 수정했습니다."),
 
     SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석을 완료했습니다."),
+    SUCCESS_AI_ANALYSIS_JOB_ACCEPTED(HttpStatus.ACCEPTED, "매출 분석 요청을 접수했습니다."),
+    SUCCESS_AI_ANALYSIS_JOB_GET(HttpStatus.OK, "매출 분석 작업 상태를 조회했습니다."),
     SUCCESS_AI_ANALYSIS_GET(HttpStatus.OK, "매출 분석 결과를 조회했습니다."),
     SUCCESS_AI_RECOMMENDATION_CREATE(HttpStatus.OK, "고객 대응방안 추천과 검증을 시작했습니다."),
     SUCCESS_AI_RECOMMENDATION_GET(HttpStatus.OK, "AI 전략 추천 이력을 조회했습니다."),
