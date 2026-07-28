@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bp20.backend.api.recommendation.dto.OrderRecommendationResponse;
 import com.bp20.backend.api.recommendation.dto.AutomaticOrderRecommendationResponse;
 import com.bp20.backend.api.recommendation.service.OrderRecommendationService;
-import com.bp20.backend.api.weather.dto.WeatherResponse;
+import com.bp20.backend.api.weather.dto.DailyWeatherResponse;
 import com.bp20.backend.api.weather.service.WeatherService;
 
 import java.time.LocalDateTime;
@@ -79,12 +79,8 @@ public class OrderRecommendationController {
             @RequestParam(defaultValue = "false") boolean orderRequiredOnly
     ) {
         LocalDateTime now = LocalDateTime.now();
-        List<WeatherResponse> forecasts =
-                weatherService.getTodayAndTomorrowWeather(
-                        latitude,
-                        longitude,
-                        now
-                );
+        List<DailyWeatherResponse> forecasts =
+                weatherService.getWeeklyWeather(latitude, longitude);
 
         List<OrderRecommendationResponse> recommendations =
                 service.generate(
@@ -92,7 +88,7 @@ public class OrderRecommendationController {
                         latitude,
                         longitude,
                         now,
-                        forecasts
+                        weatherService.toAnalysisWeather(forecasts, now)
                 );
 
         return new AutomaticOrderRecommendationResponse(
