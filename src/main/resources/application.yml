@@ -21,6 +21,15 @@ spring:
       max-file-size: 20MB
       max-request-size: 50MB
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      repositories:
+        enabled: false
+
 server:
   port: 8080
   forward-headers-strategy: framework
@@ -90,6 +99,14 @@ app:
     secret: ${JWT_SECRET}
     expiration-seconds: ${JWT_EXPIRATION_SECONDS}
     admin-expiration-seconds: ${JWT_ADMIN_EXPIRATION_SECONDS}
+  auth:
+    refresh-token:
+      store: ${REFRESH_TOKEN_STORE:redis}
+      expiration-seconds: ${REFRESH_TOKEN_EXPIRATION_SECONDS:604800}
+      remember-me-expiration-seconds: ${REFRESH_TOKEN_REMEMBER_ME_EXPIRATION_SECONDS:2592000}
+      cookie-name: ${REFRESH_TOKEN_COOKIE_NAME:bp20_refresh_token}
+      cookie-secure: ${REFRESH_TOKEN_COOKIE_SECURE:false}
+      cookie-same-site: ${REFRESH_TOKEN_COOKIE_SAME_SITE:Lax}
   iam:
     invitation-expiration-hours: ${INVITATION_EXPIRATION_HOURS}
   cors:
