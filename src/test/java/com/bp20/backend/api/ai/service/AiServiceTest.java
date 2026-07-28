@@ -137,34 +137,32 @@ class AiServiceTest {
         verify(client).createRecommendation("analysis-1", 7L);
         verify(runRepository).save(argThat((AiRecommendationRun run) ->
                 run.getThreadId().equals("thread-1") && run.getUserId().equals(7L)
-                        && run.getStoreId().equals("store-1")));
+                        && run.getAnalysisId().equals("analysis-1")));
     }
 
     @Test
-    void getRecommendationsReturnsAllRunsWithStoreIdWhenNoFilterGiven() {
+    void getRecommendationsReturnsAllRunsWhenNoFilterGiven() {
         AiRecommendationRun run = AiRecommendationRun.create(
-                "thread-1", "analysis-1", 7L, "store-1", "{\"상태\":\"승인 대기\"}"
+                "thread-1", "analysis-1", 7L, "{\"상태\":\"승인 대기\"}"
         );
         when(runRepository.findAllByUserIdOrderByCreatedAtDesc(7L)).thenReturn(java.util.List.of(run));
 
         java.util.List<Map<String, Object>> result = service.getRecommendations(7L, null);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).get("store_id")).isEqualTo("store-1");
     }
 
     @Test
-    void getRecommendationsFiltersByStoreIdWhenGiven() {
+    void getRecommendationsIgnoresStoreIdFilter() {
         AiRecommendationRun run = AiRecommendationRun.create(
-                "thread-2", "analysis-2", 7L, "store-2", "{\"상태\":\"승인 대기\"}"
+                "thread-2", "analysis-2", 7L, "{\"상태\":\"승인 대기\"}"
         );
-        when(runRepository.findAllByUserIdAndStoreIdOrderByCreatedAtDesc(7L, "store-2"))
+        when(runRepository.findAllByUserIdOrderByCreatedAtDesc(7L))
                 .thenReturn(java.util.List.of(run));
 
         java.util.List<Map<String, Object>> result = service.getRecommendations(7L, "store-2");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).get("store_id")).isEqualTo("store-2");
-        verify(runRepository, never()).findAllByUserIdOrderByCreatedAtDesc(org.mockito.ArgumentMatchers.any());
+        verify(runRepository).findAllByUserIdOrderByCreatedAtDesc(7L);
     }
 }

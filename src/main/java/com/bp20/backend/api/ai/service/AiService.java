@@ -94,21 +94,18 @@ public class AiService {
         Map<String, Object> result = fastApiClient.createRecommendation(analysisId, userId);
         String threadId = requiredString(result, "thread_id");
         runRepository.save(AiRecommendationRun.create(
-                threadId, analysisId, userId, analysis.getStoreId(), write(result)
+                threadId, analysisId, userId, write(result)
         ));
         return result;
     }
 
     public List<Map<String, Object>> getRecommendations(Long userId, String storeId) {
-        List<AiRecommendationRun> runs = (storeId != null && !storeId.isBlank())
-                ? runRepository.findAllByUserIdAndStoreIdOrderByCreatedAtDesc(userId, storeId)
-                : runRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        List<AiRecommendationRun> runs = runRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
         return runs.stream()
                 .map(run -> {
                     Map<String, Object> result = new LinkedHashMap<>(read(run.getResultJson()));
                     result.putIfAbsent("thread_id", run.getThreadId());
                     result.putIfAbsent("analysis_id", run.getAnalysisId());
-                    result.put("store_id", run.getStoreId());
                     result.put("created_at", run.getCreatedAt());
                     result.put("updated_at", run.getUpdatedAt());
                     return result;
