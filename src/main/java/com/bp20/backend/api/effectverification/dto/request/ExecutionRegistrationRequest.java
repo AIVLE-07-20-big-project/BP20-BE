@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,6 +25,14 @@ public class ExecutionRegistrationRequest {
     @Positive
     @JsonProperty("recommendation_id")
     private Long recommendationId;
+
+    @Size(max = 36)
+    @JsonProperty("thread_id")
+    private String threadId;
+
+    @Size(max = 36)
+    @JsonProperty("decision_id")
+    private String decisionId;
 
     @NotNull
     @JsonProperty("recommendation_type")

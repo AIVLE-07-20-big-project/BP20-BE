@@ -26,6 +26,12 @@ public class EffectVerificationExecution {
     @Column(name = "AIRecommendationID", nullable = false, unique = true)
     private Long aiRecommendationId;
 
+    @Column(name = "RecommendationThreadID", unique = true, length = 36)
+    private String threadId;
+
+    @Column(name = "CampaignDecisionID", unique = true, length = 36)
+    private String decisionId;
+
     @Column(name = "UserID")
     private Long userId;
 

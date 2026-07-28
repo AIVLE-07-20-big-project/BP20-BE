@@ -20,6 +20,10 @@ public interface EffectVerificationExecutionRepository
 
     boolean existsByAiRecommendationId(Long aiRecommendationId);
 
+    boolean existsByThreadId(String threadId);
+
+    boolean existsByDecisionId(String decisionId);
+
     List<EffectVerificationExecution> findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             VerificationStatus status,
             LocalDateTime dueAt

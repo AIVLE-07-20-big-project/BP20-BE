@@ -40,6 +40,20 @@ public class EffectVerificationLifecycleService {
                     "Verification execution already exists for this recommendation"
             );
         }
+        if (StringUtils.hasText(request.getThreadId())
+                && executionRepository.existsByThreadId(request.getThreadId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Verification execution already exists for this thread"
+            );
+        }
+        if (StringUtils.hasText(request.getDecisionId())
+                && executionRepository.existsByDecisionId(request.getDecisionId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Verification execution already exists for this campaign decision"
+            );
+        }
 
         validateMetrics(request.getRecommendationType(), request.getBefore(), "before");
         validateCondition(request.getRecommendationType(), request.getCondition());
@@ -50,6 +64,8 @@ public class EffectVerificationLifecycleService {
 
         EffectVerificationExecution execution = EffectVerificationExecution.builder()
                 .aiRecommendationId(request.getRecommendationId())
+                .threadId(request.getThreadId())
+                .decisionId(request.getDecisionId())
                 .userId(userId)
                 .storeId(request.getStoreId())
                 .recommendationType(request.getRecommendationType())
@@ -297,6 +313,8 @@ public class EffectVerificationLifecycleService {
         return VerificationExecutionResponse.builder()
                 .storeId(execution.getStoreId())
                 .recommendationId(execution.getAiRecommendationId())
+                .threadId(execution.getThreadId())
+                .decisionId(execution.getDecisionId())
                 .recommendationType(execution.getRecommendationType())
                 .status(execution.getStatus())
                 .executedAt(execution.getExecutedAt())

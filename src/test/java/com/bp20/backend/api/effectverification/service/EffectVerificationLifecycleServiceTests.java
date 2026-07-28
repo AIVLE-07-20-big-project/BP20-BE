@@ -50,7 +50,11 @@ class EffectVerificationLifecycleServiceTests {
     void registerExecutionStoresBaselineAndFourteenDayDueDate() {
         LocalDateTime executedAt = LocalDateTime.of(2026, 7, 20, 10, 0);
         ExecutionRegistrationRequest request = registrationRequest(executedAt);
+        request.setThreadId("11111111-1111-1111-1111-111111111111");
+        request.setDecisionId("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         when(executionRepository.existsByAiRecommendationId(100L)).thenReturn(false);
+        when(executionRepository.existsByThreadId(request.getThreadId())).thenReturn(false);
+        when(executionRepository.existsByDecisionId(request.getDecisionId())).thenReturn(false);
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -58,11 +62,15 @@ class EffectVerificationLifecycleServiceTests {
                 lifecycleService.registerExecution(USER_ID, request);
 
         assertThat(response.getStatus()).isEqualTo(VerificationStatus.COLLECTING);
+        assertThat(response.getThreadId()).isEqualTo(request.getThreadId());
+        assertThat(response.getDecisionId()).isEqualTo(request.getDecisionId());
         assertThat(response.getVerificationDueAt()).isEqualTo(executedAt.plusDays(14));
         ArgumentCaptor<EffectVerificationExecution> captor =
                 ArgumentCaptor.forClass(EffectVerificationExecution.class);
         verify(executionRepository).save(captor.capture());
         assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
+        assertThat(captor.getValue().getThreadId()).isEqualTo(request.getThreadId());
+        assertThat(captor.getValue().getDecisionId()).isEqualTo(request.getDecisionId());
         assertThat(captor.getValue().getBeforeMetricsJson()).contains("target_sales");
     }
 

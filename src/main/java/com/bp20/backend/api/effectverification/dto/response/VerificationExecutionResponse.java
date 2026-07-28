@@ -18,6 +18,12 @@ public class VerificationExecutionResponse {
     @JsonProperty("recommendation_id")
     private Long recommendationId;
 
+    @JsonProperty("thread_id")
+    private String threadId;
+
+    @JsonProperty("decision_id")
+    private String decisionId;
+
     @JsonProperty("recommendation_type")
     private RecommendationType recommendationType;
 
