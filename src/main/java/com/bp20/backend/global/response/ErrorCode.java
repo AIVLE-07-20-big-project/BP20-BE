@@ -33,6 +33,7 @@ public enum ErrorCode {
     FORBIDDEN_STORE_OWNER_REQUIRED(HttpStatus.FORBIDDEN, "점주 권한이 필요합니다."),
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+    NOT_FOUND_INVITATION(HttpStatus.NOT_FOUND, "초대를 찾을 수 없습니다."),
     NOT_FOUND_STORE(HttpStatus.NOT_FOUND, "매장을 찾을 수 없습니다."),
     NOT_FOUND_AI_ANALYSIS(HttpStatus.NOT_FOUND, "매출 분석 결과를 찾을 수 없습니다."),
     NOT_FOUND_AI_AGENT_RUN(HttpStatus.NOT_FOUND, "AI 에이전트 실행을 찾을 수 없습니다."),
@@ -49,6 +50,7 @@ public enum ErrorCode {
     CONFLICT_STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "점주에게 이미 등록된 매장이 있습니다."),
     CONFLICT_DUPLICATE_CUSTOMER_EMAIL(HttpStatus.CONFLICT, "해당 매장에 이미 등록된 고객 이메일입니다."),
     CONFLICT_EXPIRED_SIGNUP_INVITATION(HttpStatus.CONFLICT, "회원가입 초대가 만료되었거나 더 이상 유효하지 않습니다."),
+    CONFLICT_INVITATION_NOT_REVOCABLE(HttpStatus.CONFLICT, "대기 중인 초대만 취소할 수 있습니다."),
     CONFLICT_DUPLICATE_RECEIPT(HttpStatus.CONFLICT, "동일한 거래로 보이는 영수증이 이미 등록되어 있습니다."),
 
     OCR_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "OCR/분석 서비스와 통신할 수 없습니다."),

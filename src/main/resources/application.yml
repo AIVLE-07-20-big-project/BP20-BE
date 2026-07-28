@@ -61,6 +61,9 @@ weather:
     service-key: ${KMA_SERVICE_KEY}
     asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
 
+kma:
+  forecast-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
+
 kakao:
   local:
     base-url: https://dapi.kakao.com
