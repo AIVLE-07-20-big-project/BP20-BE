@@ -42,18 +42,14 @@ class AiServiceTest {
     }
 
     @Test
-    void createAnalysisPersistsFastApiResultAndSavesStoreProfile() {
+    void createAnalysisReturnsJobAndSavesStoreProfileWithoutPersistingAnalysisYet() {
         MockMultipartFile file = new MockMultipartFile("file", "sales.csv", "text/csv", new byte[0]);
-        Map<String, Object> result = Map.of(
-                "analysis_id", "analysis-1", "diagnosis", Map.of(), "warnings", java.util.List.of()
-        );
+        Map<String, Object> result = Map.of("job_id", "job-1", "status", "queued");
         when(storeProfileRepository.findById(7L)).thenReturn(Optional.empty());
         when(client.createAnalysis(file, "1", "A", 20261, 7L, "store-1")).thenReturn(result);
 
         assertThat(service.createAnalysis(7L, "store-1", file, "1", "A", 20261)).isEqualTo(result);
-        verify(analysisRepository).save(argThat(saved ->
-                saved.getAnalysisId().equals("analysis-1") && saved.getUserId().equals(7L)
-                        && saved.getStoreId().equals("store-1")));
+        verify(analysisRepository, never()).save(org.mockito.ArgumentMatchers.any());
         verify(storeProfileRepository).save(argThat(profile ->
                 profile.getUserId().equals(7L) && profile.getTrdarCd().equals("1")
                         && profile.getSvcIndutyCd().equals("A")));
@@ -62,9 +58,7 @@ class AiServiceTest {
     @Test
     void createAnalysisFillsCodesFromSavedProfileWhenOmitted() {
         MockMultipartFile file = new MockMultipartFile("file", "sales.csv", "text/csv", new byte[0]);
-        Map<String, Object> result = Map.of(
-                "analysis_id", "analysis-2", "diagnosis", Map.of(), "warnings", java.util.List.of()
-        );
+        Map<String, Object> result = Map.of("job_id", "job-2", "status", "queued");
         when(storeProfileRepository.findById(7L))
                 .thenReturn(Optional.of(AiStoreProfile.create(7L, "1", "A")));
         when(client.createAnalysis(file, "1", "A", null, 7L, "store-1")).thenReturn(result);
@@ -72,6 +66,47 @@ class AiServiceTest {
         assertThat(service.createAnalysis(7L, "store-1", file, null, null, null)).isEqualTo(result);
         verify(client).createAnalysis(file, "1", "A", null, 7L, "store-1");
         verify(storeProfileRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void getAnalysisJobStatusPersistsResultOnceWhenJobCompletes() {
+        Map<String, Object> job = Map.of("job_id", "job-3", "status", "completed", "analysis_id", "analysis-3");
+        Map<String, Object> analysis = Map.of(
+                "analysis_id", "analysis-3", "trdar_cd", "1", "svc_induty_cd", "A",
+                "yyqu_cd", 20261, "store_id", "store-1"
+        );
+        when(client.getJobStatus("job-3", 7L)).thenReturn(job);
+        when(analysisRepository.findByAnalysisIdAndUserId("analysis-3", 7L)).thenReturn(Optional.empty());
+        when(client.getAnalysisResult("analysis-3", 7L)).thenReturn(analysis);
+
+        assertThat(service.getAnalysisJobStatus(7L, "job-3")).isEqualTo(job);
+
+        verify(analysisRepository).save(argThat(saved ->
+                saved.getAnalysisId().equals("analysis-3") && saved.getUserId().equals(7L)
+                        && saved.getStoreId().equals("store-1") && saved.getYyquCd().equals(20261)));
+    }
+
+    @Test
+    void getAnalysisJobStatusDoesNotRefetchAlreadySavedAnalysis() {
+        Map<String, Object> job = Map.of("job_id", "job-4", "status", "completed", "analysis_id", "analysis-4");
+        AiAnalysis existing = AiAnalysis.create("analysis-4", 7L, "store-1", "1", "A", 20261, "{}");
+        when(client.getJobStatus("job-4", 7L)).thenReturn(job);
+        when(analysisRepository.findByAnalysisIdAndUserId("analysis-4", 7L)).thenReturn(Optional.of(existing));
+
+        assertThat(service.getAnalysisJobStatus(7L, "job-4")).isEqualTo(job);
+
+        verify(client, never()).getAnalysisResult(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(analysisRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void getAnalysisJobStatusSkipsPersistenceWhileStillRunning() {
+        Map<String, Object> job = Map.of("job_id", "job-5", "status", "running");
+        when(client.getJobStatus("job-5", 7L)).thenReturn(job);
+
+        assertThat(service.getAnalysisJobStatus(7L, "job-5")).isEqualTo(job);
+
+        verify(analysisRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
