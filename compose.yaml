@@ -23,6 +23,89 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis — Celery 브로커/결과 백엔드. 추후 Spring 캐시/세션도 공용 예정.
+  # noeviction 고정(안 하면 메모리 압박 시 큐 키가 증발할 수 있음)
+  redis:
+    image: redis:7-alpine
+    container_name: redis_bp20
+    restart: always
+    command: redis-server --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - network_bp20
+    healthcheck: # 컨테이너 상태 확인
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
+  fastapi:
+    build:
+      context: ../../20BGAI/BP20-AI
+    container_name: fastapi_bp20
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../20BGAI/BP20-AI/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    volumes:
+      - ../../20BGAI/BP20-AI/data:/app/data
+      - ../../20BGAI/BP20-AI/model:/app/model
+      - paddlex_models:/root/.paddlex  # PaddleOCR 모델 캐시(없으면 재생성마다 재다운로드)
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+
+  # Celery 워커 — 무거운 매출 분석 오프로드. 동시성 2(워커당 RSS 약 531MB 기준)
+  celery-worker:
+    build:
+      context: ../../20BGAI/BP20-AI
+    container_name: celery_worker_bp20
+    restart: always
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    env_file:
+      - ../../20BGAI/BP20-AI/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CONTAINER_ROLE: worker
+    volumes:
+      - ../../20BGAI/BP20-AI/data:/app/data
+      - ../../20BGAI/BP20-AI/model:/app/model
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+
+  # Celery beat — 정체된 queued/running 잡 청소 스케줄러
+  celery-beat:
+    build:
+      context: ../../20BGAI/BP20-AI
+    container_name: celery_beat_bp20
+    restart: always
+    command: celery -A app.celery_app beat --loglevel=info
+    env_file:
+      - ../../20BGAI/BP20-AI/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CONTAINER_ROLE: beat
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+
   # Spring Boot
   springboot:
     build: .
@@ -34,9 +117,11 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      FASTAPI_BASE_URL: http://host.docker.internal:8000
+      FASTAPI_BASE_URL: http://fastapi:8000
     depends_on:
       mysql:
+        condition: service_healthy
+      fastapi:
         condition: service_healthy
     networks:
       - network_bp20
@@ -47,3 +132,5 @@ networks:
 
 volumes:
   mysql_data:
+  redis_data:
+  paddlex_models:
