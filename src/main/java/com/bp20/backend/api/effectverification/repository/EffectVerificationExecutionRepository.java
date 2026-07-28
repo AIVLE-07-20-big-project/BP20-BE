@@ -24,6 +24,13 @@ public interface EffectVerificationExecutionRepository
 
     boolean existsByDecisionId(String decisionId);
 
+    Optional<EffectVerificationExecution> findByThreadId(String threadId);
+
+    Optional<EffectVerificationExecution> findByThreadIdAndUserId(
+            String threadId,
+            Long userId
+    );
+
     List<EffectVerificationExecution> findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             VerificationStatus status,
             LocalDateTime dueAt

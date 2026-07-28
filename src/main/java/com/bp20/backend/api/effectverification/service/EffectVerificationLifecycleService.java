@@ -159,6 +159,54 @@ public class EffectVerificationLifecycleService {
     }
 
     @Transactional(readOnly = true)
+    public AutomaticCollectionContext getAutomaticCollectionContext(
+            String recommendationId
+    ) {
+        EffectVerificationExecution execution = findExecution(null, recommendationId);
+        return new AutomaticCollectionContext(
+                execution.getStoreId(),
+                execution.getRecommendationType(),
+                readJson(execution.getConditionJson(), VerificationCondition.class),
+                execution.getExecutedAt(),
+                execution.getVerificationDueAt()
+        );
+    }
+
+    @Transactional
+    public VerificationExecutionResponse linkCampaignDecision(
+            Long userId,
+            String threadId,
+            String decisionId
+    ) {
+        EffectVerificationExecution execution = (userId == null
+                ? executionRepository.findByThreadId(threadId)
+                : executionRepository.findByThreadIdAndUserId(threadId, userId))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Verification execution not found for thread"
+                ));
+
+        if (decisionId.equals(execution.getDecisionId())) {
+            return toResponse(execution);
+        }
+        if (execution.getDecisionId() != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Campaign decision is already linked to this verification"
+            );
+        }
+        if (executionRepository.existsByDecisionId(decisionId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Campaign decision is already linked to another verification"
+            );
+        }
+
+        execution.linkDecision(decisionId);
+        return toResponse(executionRepository.save(execution));
+    }
+
+    @Transactional(readOnly = true)
     public List<VerificationExecutionResponse> getDueExecutions(
             Long userId,
             Long storeId
@@ -338,5 +386,14 @@ public class EffectVerificationLifecycleService {
                 .attemptCount(execution.getAttemptCount())
                 .lastAttemptAt(execution.getLastAttemptAt())
                 .build();
+    }
+
+    public record AutomaticCollectionContext(
+            Long storeId,
+            RecommendationType recommendationType,
+            VerificationCondition condition,
+            LocalDateTime collectionFrom,
+            LocalDateTime collectionTo
+    ) {
     }
 }

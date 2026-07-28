@@ -94,6 +94,67 @@ class EffectVerificationLifecycleServiceTests {
     }
 
     @Test
+    void linkCampaignDecisionUpdatesExecutionByThreadId() {
+        String threadId = "11111111-1111-1111-1111-111111111111";
+        String decisionId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        EffectVerificationExecution execution = EffectVerificationExecution.builder()
+                .aiRecommendationId(threadId)
+                .threadId(threadId)
+                .userId(USER_ID)
+                .storeId(1L)
+                .recommendationType(RecommendationType.SALES)
+                .status(VerificationStatus.COLLECTING)
+                .conditionJson("{}")
+                .beforeMetricsJson("{}")
+                .executedAt(LocalDateTime.now())
+                .verificationDueAt(LocalDateTime.now().plusDays(14))
+                .build();
+        when(executionRepository.findByThreadIdAndUserId(threadId, USER_ID))
+                .thenReturn(Optional.of(execution));
+        when(executionRepository.existsByDecisionId(decisionId)).thenReturn(false);
+        when(executionRepository.save(execution)).thenReturn(execution);
+
+        VerificationExecutionResponse response = lifecycleService.linkCampaignDecision(
+                USER_ID,
+                threadId,
+                decisionId
+        );
+
+        assertThat(response.getDecisionId()).isEqualTo(decisionId);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void linkCampaignDecisionIsIdempotentForSameDecision() {
+        String threadId = "11111111-1111-1111-1111-111111111111";
+        String decisionId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        EffectVerificationExecution execution = EffectVerificationExecution.builder()
+                .aiRecommendationId(threadId)
+                .threadId(threadId)
+                .decisionId(decisionId)
+                .userId(USER_ID)
+                .storeId(1L)
+                .recommendationType(RecommendationType.SALES)
+                .status(VerificationStatus.COLLECTING)
+                .conditionJson("{}")
+                .beforeMetricsJson("{}")
+                .executedAt(LocalDateTime.now())
+                .verificationDueAt(LocalDateTime.now().plusDays(14))
+                .build();
+        when(executionRepository.findByThreadIdAndUserId(threadId, USER_ID))
+                .thenReturn(Optional.of(execution));
+
+        VerificationExecutionResponse response = lifecycleService.linkCampaignDecision(
+                USER_ID,
+                threadId,
+                decisionId
+        );
+
+        assertThat(response.getDecisionId()).isEqualTo(decisionId);
+        verify(executionRepository, never()).save(execution);
+    }
+
+    @Test
     void completeVerificationRejectsCollectionBeforeDueDate() {
         LocalDateTime executedAt = LocalDateTime.of(2026, 7, 20, 10, 0);
         EffectVerificationExecution execution = savedExecution(executedAt);

@@ -95,4 +95,8 @@ public class EffectVerificationExecution {
         this.attemptCount = this.attemptCount == null ? 1 : this.attemptCount + 1;
         this.lastAttemptAt = attemptedAt;
     }
+
+    public void linkDecision(String decisionId) {
+        this.decisionId = decisionId;
+    }
 }

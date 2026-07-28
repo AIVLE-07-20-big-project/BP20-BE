@@ -1,6 +1,7 @@
 package com.bp20.backend.api.effectverification.controller;
 
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
+import com.bp20.backend.api.effectverification.dto.request.CampaignDecisionLinkRequest;
 import com.bp20.backend.api.effectverification.dto.request.ExecutionRegistrationRequest;
 import com.bp20.backend.api.effectverification.dto.request.VerificationCompletionRequest;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,6 +67,21 @@ public class EffectVerificationController {
     ) {
         return ResponseEntity.ok(
                 lifecycleService.getExecution(userId(currentUser), recommendationId)
+        );
+    }
+
+    @PatchMapping("/executions/by-thread/{threadId}/decision")
+    public ResponseEntity<VerificationExecutionResponse> linkCampaignDecision(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable String threadId,
+            @Valid @RequestBody CampaignDecisionLinkRequest request
+    ) {
+        return ResponseEntity.ok(
+                lifecycleService.linkCampaignDecision(
+                        userId(currentUser),
+                        threadId,
+                        request.getDecisionId()
+                )
         );
     }
 

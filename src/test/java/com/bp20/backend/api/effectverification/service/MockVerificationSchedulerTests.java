@@ -99,9 +99,33 @@ class MockVerificationSchedulerTests {
         verify(automaticExecutionService, never()).completeAutomatically(999L);
     }
 
+    @Test
+    void runDueVerificationsSkipsUuidRecommendationsHandledByRealCollectorLater() {
+        EffectVerificationExecution execution = execution(
+                "11111111-1111-1111-1111-111111111111",
+                0
+        );
+        when(executionRepository
+                .findByStatusInAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                        any(),
+                        any()
+                )).thenReturn(List.of(execution));
+
+        var response = scheduler.runDueVerifications();
+
+        assertThat(response.processed()).isEqualTo(1);
+        assertThat(response.skipped()).isEqualTo(1);
+        verify(automaticExecutionService, never()).supportsRecommendation(any());
+        verify(automaticExecutionService, never()).completeAutomatically(any());
+    }
+
     private EffectVerificationExecution execution(Long recommendationId, int attempts) {
+        return execution(String.valueOf(recommendationId), attempts);
+    }
+
+    private EffectVerificationExecution execution(String recommendationId, int attempts) {
         return EffectVerificationExecution.builder()
-                .aiRecommendationId(String.valueOf(recommendationId))
+                .aiRecommendationId(recommendationId)
                 .storeId(1L)
                 .status(VerificationStatus.COLLECTING)
                 .attemptCount(attempts)

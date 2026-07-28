@@ -57,8 +57,15 @@ public class MockVerificationScheduler {
         int failed = 0;
         int skipped = 0;
         for (EffectVerificationExecution execution : executions) {
+            Long mockRecommendationId;
+            try {
+                mockRecommendationId = Long.valueOf(execution.getAiRecommendationId());
+            } catch (NumberFormatException exception) {
+                skipped++;
+                continue;
+            }
             if (!automaticExecutionService.supportsRecommendation(
-                    Long.valueOf(execution.getAiRecommendationId())
+                    mockRecommendationId
             )) {
                 skipped++;
                 continue;
@@ -72,7 +79,7 @@ public class MockVerificationScheduler {
             }
             try {
                 automaticExecutionService.completeAutomatically(
-                        Long.valueOf(execution.getAiRecommendationId())
+                        mockRecommendationId
                 );
                 succeeded++;
             } catch (RuntimeException exception) {
