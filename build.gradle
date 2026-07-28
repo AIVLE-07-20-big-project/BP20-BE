@@ -26,6 +26,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+    implementation 'org.springframework.boot:spring-boot-restclient'
+
+    // CSV 기반 상품·매출·재고 입력
+    implementation 'org.apache.commons:commons-csv:1.14.1'
+    implementation 'commons-io:commons-io:2.20.0'
+
+    // 날짜/시간 JSON 직렬화
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     // MySQL
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -36,6 +44,8 @@ dependencies {
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
     // Development
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -59,8 +69,6 @@ tasks.register('provisionSuperAdmin', JavaExec) {
     group = 'application'
     description = 'Provision the one-time SUPER_ADMIN account using the configured Spring datasource.'
     dependsOn classes
-    // DevTools restarts the CLI main class without the original arguments.
-    // Exclude it so the provisioning command runs exactly once with its arguments intact.
     classpath = sourceSets.main.runtimeClasspath.filter {
         !it.name.startsWith('spring-boot-devtools-')
     }

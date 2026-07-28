@@ -4,6 +4,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -27,6 +28,8 @@ import org.springframework.web.client.RestClient;
  *     }
  */
 @Configuration
+// ProductImageServiceProperties.class를 추가로 등록하였습니다. 
+@EnableConfigurationProperties({OcrServiceProperties.class, ProductImageServiceProperties.class})
 public class ExternalRestClientConfig {
 
     @Bean
@@ -46,9 +49,13 @@ public class ExternalRestClientConfig {
         return RestClient.builder()
                 .requestFactory(requestFactory);
     }
+<<<<<<< HEAD
 
     @Bean
     public RestClient restClient(RestClient.Builder externalRestClientBuilder) {
         return externalRestClientBuilder.build();
     }
 }
+=======
+}
+>>>>>>> ea815a8537bdd5d589f7e0c1f4a4183f81752410

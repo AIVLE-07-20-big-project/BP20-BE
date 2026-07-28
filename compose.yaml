@@ -34,9 +34,13 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: docker
+<<<<<<< HEAD
       AI_SERVICE_BASE_URL: http://host.docker.internal:8000
     extra_hosts:
       - "host.docker.internal:host-gateway"
+=======
+      FASTAPI_BASE_URL: http://host.docker.internal:8000
+>>>>>>> ea815a8537bdd5d589f7e0c1f4a4183f81752410
     depends_on:
       mysql:
         condition: service_healthy

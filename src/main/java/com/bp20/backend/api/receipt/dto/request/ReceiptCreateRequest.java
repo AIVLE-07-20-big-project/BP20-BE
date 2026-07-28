@@ -50,7 +50,12 @@ public record ReceiptCreateRequest(
 
         String rawImagePath,
 
-        /** 중복 의심이어도 강제로 저장할지 여부 (기본 false - 중복이면 409로 안내) */
-        boolean force
+        /** 중복 의심이어도 강제로 저장할지 여부 (기본 false - 중복이면 409로 안내). 필드 자체를 안 보내도 false로 처리된다. */
+        Boolean force
 ) {
+    public ReceiptCreateRequest {
+        if (force == null) {
+            force = false;
+        }
+    }
 }

@@ -6,6 +6,7 @@ import com.bp20.backend.api.receipt.dto.response.ReceiptResponse;
 import com.bp20.backend.api.receipt.service.ReceiptService;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.response.SuccessCode;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,9 @@ import java.util.List;
 
 @Tag(name = "Receipt", description = "영수증 OCR/저장/조회 API")
 @RestController
-@RequestMapping("/api/receipts")
+@RequestMapping("/api/store-owner/receipts")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class ReceiptController {
 
     private final ReceiptService receiptService;

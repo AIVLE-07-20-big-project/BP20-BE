@@ -11,7 +11,9 @@ import com.bp20.backend.api.iam.invitation.dto.request.InvitationRequest;
 import com.bp20.backend.api.iam.invitation.dto.response.InvitationResponse;
 import com.bp20.backend.api.iam.invitation.service.InvitationService;
 import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.domain.UserPrivateInfo;
 import com.bp20.backend.api.user.domain.UserRole;
+import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.security.jwt.JwtTokenProvider;
@@ -44,6 +46,9 @@ class AuthIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserPrivateInfoRepository userPrivateInfoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -110,6 +115,44 @@ class AuthIntegrationTest {
                 "wrong-password@example.com",
                 "wrong-password"
         ))).isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void customerPrivateInfoIsReusedWhenCustomerAcceptsStoreOwnerInvitation() {
+        UserPrivateInfo customerPrivateInfo = userPrivateInfoRepository.save(
+                UserPrivateInfo.forCustomer(
+                        "customer-signup@example.com",
+                        "Customer",
+                        "010-1111-2222"
+                )
+        );
+        User inviter = userRepository.save(User.createAdmin(
+                "customer-signup-inviter@example.com",
+                "Auth Inviter",
+                null,
+                passwordEncoder.encode(PASSWORD)
+        ));
+        InvitationResponse invitation = invitationService.inviteStoreOwner(
+                inviter.getId(),
+                new InvitationRequest("customer-signup@example.com", PASSWORD),
+                "127.0.0.1"
+        );
+
+        signupService.signup(
+                new SignupRequest(
+                        "customer-signup@example.com",
+                        invitation.temporaryPassword(),
+                        PASSWORD,
+                        "Store Owner",
+                        "010-9999-8888"
+                ),
+                "127.0.0.1"
+        );
+
+        User signedUpUser = userRepository.findByEmail("customer-signup@example.com").orElseThrow();
+        assertThat(signedUpUser.getPrivateInfo().getId()).isEqualTo(customerPrivateInfo.getId());
+        assertThat(passwordEncoder.matches(PASSWORD, signedUpUser.getPasswordHash())).isTrue();
+        assertThat(signedUpUser.getName()).isEqualTo("Store Owner");
     }
 
     private void signupStoreOwner(String email) {
