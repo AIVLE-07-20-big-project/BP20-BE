@@ -71,8 +71,9 @@ public ResponseEntity<ApiResponse<List<InvitationSummaryResponse>>> getInvitatio
         );
     }
 
-    @PatchMapping("/{invitationId}/revoke")
-    public ResponseEntity<ApiResponse<InvitationSummaryResponse>> revokeInvitation(
+@PatchMapping("/{invitationId}/revoke")
+@io.swagger.v3.oas.annotations.Operation(summary = "초대 취소", description = "현재 비밀번호를 재확인한 뒤, 대기 중(PENDING) 초대만 취소(REVOKED)할 수 있습니다.")
+public ResponseEntity<ApiResponse<InvitationSummaryResponse>> revokeInvitation(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @PathVariable Long invitationId,
             @Valid @RequestBody RevokeInvitationRequest request,
