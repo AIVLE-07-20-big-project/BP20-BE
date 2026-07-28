@@ -12,6 +12,7 @@ public class ApiResponse<T> {
 
     private final int status;
     private final boolean success;
+    private final String code;
     private final String message;
     private final T data;
 
@@ -73,6 +74,7 @@ public class ApiResponse<T> {
         return ApiResponse.<Void>builder()
                 .status(status.getStatusCode())
                 .success(false)
+                .code(status.name())
                 .message(status.getMessage())
                 .build();
     }

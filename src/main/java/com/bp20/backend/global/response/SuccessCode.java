@@ -11,6 +11,8 @@ public enum SuccessCode {
 
     SUCCESS_AUTH_LOGIN(HttpStatus.OK, "로그인이 완료되었습니다."),
     SUCCESS_AUTH_SIGNUP(HttpStatus.CREATED, "회원가입이 완료되었습니다."),
+    SUCCESS_AUTH_TOKEN_REFRESH(HttpStatus.OK, "액세스 토큰을 재발급했습니다."),
+    SUCCESS_AUTH_LOGOUT(HttpStatus.OK, "로그아웃이 완료되었습니다."),
     SUCCESS_AUTH_ME(HttpStatus.OK, "현재 사용자 정보를 조회했습니다."),
 
     SUCCESS_ADMIN_CREATE(HttpStatus.CREATED, "관리자를 생성했습니다."),
