@@ -38,7 +38,7 @@ public class ReviewAnalysisService {
     public ReviewAnalysisService(
             ReviewAnalysisRepository reviewAnalysisRepository,
             ReviewRepository reviewRepository,
-            @Value("${fastapi.base-url}") String baseUrl
+            @Value("${app.fastapi.base-url}") String baseUrl
     ) {
         this.reviewAnalysisRepository = reviewAnalysisRepository;
         this.reviewRepository = reviewRepository;
