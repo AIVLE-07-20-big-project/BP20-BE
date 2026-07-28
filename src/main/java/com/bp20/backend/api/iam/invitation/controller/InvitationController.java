@@ -34,8 +34,9 @@ public class InvitationController implements InvitationApiDocs {
 
     private final InvitationService invitationService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<InvitationSummaryResponse>>> getInvitations(
+@GetMapping
+@io.swagger.v3.oas.annotations.Operation(summary = "초대 목록 조회", description = "SUPER_ADMIN은 관리자·점주 초대를, ADMIN은 점주 초대만 조회합니다.")
+public ResponseEntity<ApiResponse<List<InvitationSummaryResponse>>> getInvitations(
             @AuthenticationPrincipal SecurityPrincipal currentUser
     ) {
         return ApiResponse.success(
