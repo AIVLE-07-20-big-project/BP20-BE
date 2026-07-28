@@ -32,7 +32,11 @@ public class User extends BaseTimeEntity {
     @Column(name = "user_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
+    @OneToOne(
+            fetch = FetchType.LAZY,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
+            optional = false
+    )
     @JoinColumn(name = "private_info_id", nullable = false, unique = true)
     private UserPrivateInfo privateInfo;
 
@@ -50,16 +54,34 @@ public class User extends BaseTimeEntity {
         this.status = UserStatus.ACTIVE;
     }
 
+    private User(UserPrivateInfo privateInfo, UserRole role) {
+        this.privateInfo = privateInfo;
+        this.role = role;
+        this.status = UserStatus.ACTIVE;
+    }
+
     public static User createStoreOwner(String email, String name, String phoneNumber, String passwordHash) {
         return new User(email, name, phoneNumber, passwordHash, UserRole.STORE_OWNER);
+    }
+
+    public static User createStoreOwner(UserPrivateInfo privateInfo) {
+        return new User(privateInfo, UserRole.STORE_OWNER);
     }
 
     public static User createAdmin(String email, String name, String phoneNumber, String passwordHash) {
         return new User(email, name, phoneNumber, passwordHash, UserRole.ADMIN);
     }
 
+    public static User createAdmin(UserPrivateInfo privateInfo) {
+        return new User(privateInfo, UserRole.ADMIN);
+    }
+
     public static User createSuperAdmin(String email, String name, String phoneNumber, String passwordHash) {
         return new User(email, name, phoneNumber, passwordHash, UserRole.SUPER_ADMIN);
+    }
+
+    public static User createSuperAdmin(UserPrivateInfo privateInfo) {
+        return new User(privateInfo, UserRole.SUPER_ADMIN);
     }
 
     public String getEmail() { return privateInfo.getEmail(); }

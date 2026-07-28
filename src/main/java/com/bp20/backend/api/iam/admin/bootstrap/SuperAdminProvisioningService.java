@@ -2,7 +2,9 @@ package com.bp20.backend.api.iam.admin.bootstrap;
 
 import com.bp20.backend.api.iam.log.domain.IamLogAction;
 import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.domain.UserPrivateInfo;
 import com.bp20.backend.api.user.domain.UserRole;
+import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.api.iam.log.service.IamLogService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.Locale;
 public class SuperAdminProvisioningService {
 
     private final UserRepository userRepository;
+    private final UserPrivateInfoRepository userPrivateInfoRepository;
     private final PasswordEncoder passwordEncoder;
     private final IamLogService iamLogService;
 
@@ -34,12 +37,29 @@ public class SuperAdminProvisioningService {
             throw new IllegalStateException("The email is already in use.");
         }
 
-        User superAdmin = userRepository.save(User.createSuperAdmin(
-                normalizedEmail,
-                name.trim(),
-                trimToNull(phoneNumber),
-                passwordEncoder.encode(password)
-        ));
+        String passwordHash = passwordEncoder.encode(password);
+        UserPrivateInfo privateInfo = userPrivateInfoRepository.findByEmailIgnoreCase(normalizedEmail)
+                .orElse(null);
+        User superAdmin;
+        if (privateInfo == null) {
+            superAdmin = User.createSuperAdmin(
+                    normalizedEmail,
+                    name.trim(),
+                    trimToNull(phoneNumber),
+                    passwordHash
+            );
+        } else {
+            if (privateInfo.hasPassword()) {
+                throw new IllegalStateException("The email is already in use.");
+            }
+            privateInfo.attachUserAccount(
+                    passwordHash,
+                    name.trim(),
+                    trimToNull(phoneNumber)
+            );
+            superAdmin = User.createSuperAdmin(privateInfo);
+        }
+        superAdmin = userRepository.save(superAdmin);
         iamLogService.record(null, IamLogAction.SUPER_ADMIN_CREATED,
                 superAdmin.getId(), superAdmin.getEmail(), "CLI");
         return superAdmin;
