@@ -55,10 +55,6 @@ springdoc:
     persist-authorization: true
   show-actuator: true
 
-<<<<<<< HEAD
-ai-service:
-  base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
-=======
 # 기상청 단기예보 및 과거 ASOS 날씨
 weather:
   api:
@@ -85,7 +81,6 @@ ocr-service:
 # AI 상품 이미지 생성 서비스 연동 설정
 product-image-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
->>>>>>> ea815a8537bdd5d589f7e0c1f4a4183f81752410
 
 app:
   jwt:
@@ -96,8 +91,5 @@ app:
     invitation-expiration-hours: ${INVITATION_EXPIRATION_HOURS}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
-<<<<<<< HEAD
-=======
   fastapi:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
->>>>>>> ea815a8537bdd5d589f7e0c1f4a4183f81752410
