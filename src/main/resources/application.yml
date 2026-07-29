@@ -71,7 +71,7 @@ kakao:
 
 # 발주량 예측 및 효과검증 AI 서비스
 ai:
-  server-url: ${AI_SERVER_URL:http://localhost:8000}
+  server-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   effect-verification:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   review-sentiment:

@@ -92,6 +92,30 @@ class AccountManagementIntegrationTest {
     }
 
     @Test
+    void adminAndStoreOwnerInvitationsRejectWrongCurrentPassword() {
+        User superAdmin = saveSuperAdmin("wrong-password-super@example.com");
+        User admin = saveAdmin("wrong-password-admin@example.com");
+
+        assertThatThrownBy(() -> invitationService.inviteAdmin(
+                superAdmin.getId(),
+                new InvitationRequest("new-admin@example.com", "WrongPassw0rd!234"),
+                "127.0.0.1"
+        ))
+                .isInstanceOf(ApiException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.UNAUTHORIZED_INVALID_PASSWORD);
+
+        assertThatThrownBy(() -> invitationService.inviteStoreOwner(
+                admin.getId(),
+                new InvitationRequest("new-owner@example.com", "WrongPassw0rd!234"),
+                "127.0.0.1"
+        ))
+                .isInstanceOf(ApiException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.UNAUTHORIZED_INVALID_PASSWORD);
+    }
+
+    @Test
     void adminCanManageStoreOwnerAccountStatus() {
         User admin = saveAdmin("status-admin@example.com");
         User owner = userRepository.save(User.createStoreOwner(

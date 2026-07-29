@@ -14,7 +14,6 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 형식이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_ROLE(HttpStatus.BAD_REQUEST, "사용자 역할이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "CSV 파일만 업로드할 수 있습니다."),
-    BAD_REQUEST_INVALID_STORE_STATUS(HttpStatus.BAD_REQUEST, "온라인 판매 상태 변경 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "상품 상태 변경 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "온라인 상품 등록 또는 해제 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_DISCOUNT(HttpStatus.BAD_REQUEST, "할인 설정이 올바르지 않습니다."),
