@@ -2,7 +2,10 @@ package com.bp20.backend.api.store.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import static com.bp20.backend.global.util.PhoneNumberUtils.OPTIONAL_KOREAN_PHONE_PATTERN;
 
 @Schema(description = "점주 매장 수정 요청")
 public record UpdateStoreRequest(
@@ -22,6 +25,7 @@ public record UpdateStoreRequest(
         String address,
 
         @Schema(description = "변경할 매장 전화번호", example = "02-9876-5432")
+        @Pattern(regexp = OPTIONAL_KOREAN_PHONE_PATTERN, message = "전화번호 형식이 올바르지 않습니다.")
         @Size(max = 20, message = "전화번호는 20자 이하여야 합니다.")
         String phoneNumber
 ) {
