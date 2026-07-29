@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import static com.bp20.backend.global.util.PhoneNumberUtils.OPTIONAL_KOREAN_PHONE_PATTERN;
+
 @Schema(description = "고객 등록 요청")
 public record CreateCustomerRequest(
         @Schema(description = "고객 이메일", example = "customer@bp20.com")
@@ -21,8 +23,8 @@ public record CreateCustomerRequest(
 
         @Schema(description = "고객 전화번호", example = "010-1234-5678")
         @Pattern(
-                regexp = "^$|^[0-9+()\\-\\s]{8,30}$",
-                message = "고객 전화번호 형식이 올바르지 않습니다."
+                regexp = OPTIONAL_KOREAN_PHONE_PATTERN,
+                message = "전화번호 형식이 올바르지 않습니다."
         )
         String phoneNumber
 ) {

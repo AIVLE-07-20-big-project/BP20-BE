@@ -37,7 +37,7 @@ public class OnlineSalesController {
     @PatchMapping("/status")
     @Operation(
             summary = "온라인 판매 열기·닫기",
-            description = "온라인 판매 상태를 OPEN 또는 CLOSED로 변경합니다. 판매 중인 온라인 상품이 하나 이상 있어야 열 수 있습니다."
+            description = "등록 상품이나 재고 여부와 관계없이 온라인 판매 상태를 OPEN 또는 CLOSED로 변경합니다."
     )
     public ResponseEntity<ApiResponse<StoreResponse>> changeStatus(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
