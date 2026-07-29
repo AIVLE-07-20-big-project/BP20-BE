@@ -53,7 +53,8 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/notices/**"
                         ).permitAll()
                         .requestMatchers("/api/iam/invitation/store-owner")
                         .hasAuthority(Permission.ADMIN_MANAGE.name())

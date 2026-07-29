@@ -4,7 +4,8 @@ import jakarta.validation.constraints.NotNull;
 
 public record AgentRunResumeRequest(
         @NotNull Decision decision,
-        String modificationPlan
+        String modificationPlan,
+        String selectedAction
 ) {
     public enum Decision {
         approve, edit, reject
