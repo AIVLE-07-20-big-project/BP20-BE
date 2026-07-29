@@ -122,6 +122,63 @@ class RecommendationExecutionStartServiceTests {
     }
 
     @Test
+    void startsReviewVerificationWithTargetAspect() {
+        RecommendationExecutionStartService service = service();
+        RecommendationExecutionStartRequest input = request();
+        input.setRecommendationType(RecommendationType.REVIEW);
+        input.setTargetAspect("convenience");
+        PeriodMetrics before = new PeriodMetrics();
+        when(executionRepository.existsByThreadId("thread-uuid"))
+                .thenReturn(false);
+        when(collectorProvider.getIfAvailable()).thenReturn(collector);
+        when(campaignExecutionClient.recordExecution(
+                "thread-uuid",
+                10L,
+                20263
+        )).thenReturn(Map.of(
+                "decision_id", "decision-uuid",
+                "store_id", 3,
+                "action_id", "대기시간 개선"
+        ));
+        when(collector.collect(
+                eq(3L),
+                eq(RecommendationType.REVIEW),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class),
+                any(VerificationCondition.class)
+        )).thenReturn(before);
+
+        service.start(10L, input);
+
+        ArgumentCaptor<ExecutionRegistrationRequest> captor =
+                ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
+        verify(lifecycleService).registerExecution(eq(10L), captor.capture());
+        assertThat(captor.getValue().getRecommendationType())
+                .isEqualTo(RecommendationType.REVIEW);
+        assertThat(captor.getValue().getCondition().getTargetAspect())
+                .isEqualTo("convenience");
+    }
+
+    @Test
+    void rejectsReviewVerificationWithoutTargetAspectBeforeCampaignExecution() {
+        RecommendationExecutionStartService service = service();
+        RecommendationExecutionStartRequest input = request();
+        input.setRecommendationType(RecommendationType.REVIEW);
+        when(executionRepository.existsByThreadId("thread-uuid"))
+                .thenReturn(false);
+        when(collectorProvider.getIfAvailable()).thenReturn(collector);
+
+        assertThatThrownBy(() -> service.start(10L, input))
+                .isInstanceOfSatisfying(
+                        ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatusCode())
+                                .isEqualTo(HttpStatus.BAD_REQUEST)
+                );
+        verify(campaignExecutionClient, never())
+                .recordExecution(any(), any(), anyInt());
+    }
+
+    @Test
     void returnsExistingExecutionWithoutRecordingCampaignAgain() {
         RecommendationExecutionStartService service = service();
         VerificationExecutionResponse expected =

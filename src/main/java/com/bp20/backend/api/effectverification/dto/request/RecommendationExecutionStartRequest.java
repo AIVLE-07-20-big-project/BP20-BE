@@ -17,4 +17,10 @@ public class RecommendationExecutionStartRequest {
     @JsonProperty("thread_id")
     private String threadId;
 
+    @JsonProperty("recommendation_type")
+    private RecommendationType recommendationType;
+
+    @Size(max = 100)
+    @JsonProperty("target_aspect")
+    private String targetAspect;
 }

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
@@ -49,6 +50,17 @@ public class RecommendationExecutionStartService {
             );
         }
 
+        RecommendationType recommendationType =
+                input.getRecommendationType() == null
+                        ? RecommendationType.SALES
+                        : input.getRecommendationType();
+        if (recommendationType == RecommendationType.REVIEW
+                && !StringUtils.hasText(input.getTargetAspect())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "REVIEW recommendation requires target_aspect"
+            );
+        }
         LocalDateTime executedAt = LocalDateTime.now(clock);
         Map<String, Object> campaign = campaignExecutionClient.recordExecution(
                 input.getThreadId(),
@@ -64,12 +76,12 @@ public class RecommendationExecutionStartService {
                 null,
                 null,
                 false,
-                null
+                input.getTargetAspect()
         );
 
         PeriodMetrics before = metricCollector.collect(
                 storeId,
-                RecommendationType.SALES,
+                recommendationType,
                 executedAt.minusDays(DEFAULT_PERIOD_DAYS),
                 executedAt,
                 condition
@@ -79,7 +91,7 @@ public class RecommendationExecutionStartService {
         request.setThreadId(input.getThreadId());
         request.setDecisionId(decisionId);
         request.setStoreId(storeId);
-        request.setRecommendationType(RecommendationType.SALES);
+        request.setRecommendationType(recommendationType);
         request.setCondition(condition);
         request.setBefore(before);
         SelectedActionRequest selectedAction = new SelectedActionRequest();
