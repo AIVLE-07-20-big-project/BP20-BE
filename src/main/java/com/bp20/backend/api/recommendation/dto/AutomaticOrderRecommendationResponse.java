@@ -1,6 +1,6 @@
 package com.bp20.backend.api.recommendation.dto;
 
-import com.bp20.backend.api.weather.dto.WeatherResponse;
+import com.bp20.backend.api.weather.dto.DailyWeatherResponse;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
 public record AutomaticOrderRecommendationResponse(
         double latitude,
         double longitude,
-        List<WeatherResponse> weatherForecasts,
+        List<DailyWeatherResponse> weatherForecasts,
         List<OrderRecommendationResponse> recommendations
 ) {
 }
