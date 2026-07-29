@@ -31,6 +31,7 @@ public class RecommendationExecutionStartService {
     private final CampaignExecutionClient campaignExecutionClient;
     private final EffectVerificationExecutionRepository executionRepository;
     private final EffectVerificationLifecycleService lifecycleService;
+    private final EffectVerificationStoreAccessService storeAccessService;
     private final Clock clock;
 
     public VerificationExecutionResponse start(
@@ -68,6 +69,7 @@ public class RecommendationExecutionStartService {
                 treatmentYyquCd(executedAt)
         );
         Long storeId = requiredLong(campaign, "store_id");
+        storeAccessService.validateOwner(userId, storeId);
         String decisionId = requiredString(campaign, "decision_id");
         String actionId = requiredString(campaign, "action_id");
 

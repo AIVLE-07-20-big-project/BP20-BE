@@ -75,6 +75,8 @@ public class SecurityConfig {
                             .requestMatchers("/api/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                             .requestMatchers("/api/admin/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                             .requestMatchers("/api/admin/**").hasAuthority(Permission.ADMIN_MANAGE.name())
+                            .requestMatchers("/api/effect-verifications/**")
+                            .hasAuthority(Permission.STORE_OWNER_ACCESS.name())
                             .requestMatchers("/api/store-owner/**").hasAuthority(Permission.STORE_OWNER_ACCESS.name())
                             .anyRequest().authenticated();
                 })

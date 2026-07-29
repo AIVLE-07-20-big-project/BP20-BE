@@ -51,6 +51,9 @@ class RecommendationExecutionStartServiceTests {
     @Mock
     private EffectVerificationLifecycleService lifecycleService;
 
+    @Mock
+    private EffectVerificationStoreAccessService storeAccessService;
+
     private final Clock clock = Clock.fixed(
             Instant.parse("2026-07-29T05:00:00Z"),
             ZoneId.of("Asia/Seoul")
@@ -221,6 +224,7 @@ class RecommendationExecutionStartServiceTests {
                 campaignExecutionClient,
                 executionRepository,
                 lifecycleService,
+                storeAccessService,
                 clock
         );
     }
