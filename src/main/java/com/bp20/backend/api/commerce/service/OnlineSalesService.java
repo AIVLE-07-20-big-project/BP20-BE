@@ -27,10 +27,6 @@ public class OnlineSalesService {
     @Transactional
     public StoreResponse changeStatus(Long ownerId, OnlineSalesStatusRequest request) {
         Store store = requireOwnedStore(ownerId);
-        if (request.status() == com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN && !hasOnlineSaleItem(store.getId())) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_STORE_STATUS);
-        }
-
         store.changeOnlineSalesStatus(request.status());
         return StoreResponse.from(store);
     }
@@ -66,15 +62,6 @@ public class OnlineSalesService {
         }
         product.unregisterOnline();
         return ProductResponse.from(product);
-    }
-
-    private boolean hasOnlineSaleItem(Long storeId) {
-        return productRepository.existsByStoreIdAndOnlineSalesStatusAndStatusAndStockQuantityGreaterThan(
-                storeId,
-                OnlineSalesStatus.ON_SALE,
-                ProductStatus.ACTIVE,
-                0
-        );
     }
 
     private Product requireOwnedProduct(Long ownerId, Long productId) {
