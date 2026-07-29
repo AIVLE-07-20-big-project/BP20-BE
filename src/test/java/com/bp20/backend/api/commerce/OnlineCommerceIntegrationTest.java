@@ -265,21 +265,21 @@ class OnlineCommerceIntegrationTest {
     }
 
     @Test
-    void onlineSalesCannotOpenWithoutAnOnSaleProduct() {
+    void onlineSalesCanOpenWithoutAnOnSaleProduct() {
         User owner = createOwner("empty-store-owner@example.com");
         createStore(owner, "111-22-33333");
 
-        assertThatThrownBy(() -> onlineSalesService.changeStatus(
+        StoreResponse opened = onlineSalesService.changeStatus(
                 owner.getId(),
                 new OnlineSalesStatusRequest(com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN)
-        ))
-                .isInstanceOf(ApiException.class)
-                .extracting(exception -> ((ApiException) exception).getErrorCode())
-                .isEqualTo(ErrorCode.BAD_REQUEST_INVALID_STORE_STATUS);
+        );
+
+        assertThat(opened.onlineSalesStatus())
+                .isEqualTo(com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN);
     }
 
     @Test
-    void onlineSalesCannotOpenWithOnlySoldOutOnlineProduct() {
+    void onlineSalesCanRemainOpenWithoutAReadyProduct() {
         User owner = createOwner("sold-out-store-owner@example.com");
         createStore(owner, "112-23-34444");
         ProductResponse product = createProduct(owner, "재고 없는 온라인 상품", 5_000);
@@ -296,13 +296,13 @@ class OnlineCommerceIntegrationTest {
                 )
         );
 
-        assertThatThrownBy(() -> onlineSalesService.changeStatus(
+        StoreResponse opened = onlineSalesService.changeStatus(
                 owner.getId(),
                 new OnlineSalesStatusRequest(com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN)
-        ))
-                .isInstanceOf(ApiException.class)
-                .extracting(exception -> ((ApiException) exception).getErrorCode())
-                .isEqualTo(ErrorCode.BAD_REQUEST_INVALID_STORE_STATUS);
+        );
+
+        assertThat(opened.onlineSalesStatus())
+                .isEqualTo(com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN);
     }
 
     @Test

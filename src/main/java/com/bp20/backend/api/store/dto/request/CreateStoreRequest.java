@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import static com.bp20.backend.global.util.PhoneNumberUtils.OPTIONAL_KOREAN_PHONE_PATTERN;
+
 @Schema(description = "점주 매장 등록 요청")
 public record CreateStoreRequest(
         @Schema(description = "매장명", example = "성수 브루랩")
@@ -28,6 +30,7 @@ public record CreateStoreRequest(
         String address,
 
         @Schema(description = "매장 전화번호", example = "02-1234-5678")
+        @Pattern(regexp = OPTIONAL_KOREAN_PHONE_PATTERN, message = "전화번호 형식이 올바르지 않습니다.")
         @Size(max = 20, message = "전화번호는 20자 이하여야 합니다.")
         String phoneNumber
 ) {

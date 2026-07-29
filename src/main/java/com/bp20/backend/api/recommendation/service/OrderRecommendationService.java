@@ -38,7 +38,7 @@ public class OrderRecommendationService {
     /**
      * AI가 예측할 향후 기간
      */
-    private static final int FORECAST_DAYS = 2;
+    private static final int FORECAST_DAYS = 7;
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -71,12 +71,10 @@ public class OrderRecommendationService {
                         ? LocalDateTime.now()
                         : orderDateTime;
 
-        List<WeatherResponse> weatherForecasts =
-                weatherService.getTodayAndTomorrowWeather(
-                        latitude,
-                        longitude,
-                        targetOrderDateTime
-                );
+        List<WeatherResponse> weatherForecasts = weatherService.toAnalysisWeather(
+                weatherService.getWeeklyWeather(latitude, longitude),
+                targetOrderDateTime
+        );
 
         return generate(
                 ownerId,
@@ -593,7 +591,7 @@ public class OrderRecommendationService {
                         + "%d개 발주를 추천합니다.",
                 inventory.ingredientName(),
                 expectedUsage,
-                valueOrUnknown(weather.temperature()),
+                formatTemperature(weather.temperature()),
                 valueOrUnknown(weather.rainProbability()),
                 recommendedQuantity
         );
@@ -606,6 +604,12 @@ public class OrderRecommendationService {
         return value == null
                 ? "정보 없음"
                 : value.toString();
+    }
+
+    private String formatTemperature(Double temperature) {
+        return temperature == null
+                ? "정보 없음"
+                : String.format(java.util.Locale.KOREA, "%.1f", temperature);
     }
 
     /**

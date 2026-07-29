@@ -9,10 +9,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bp20.backend.api.recommendation.dto.OrderRecommendationResponse;
 import com.bp20.backend.api.recommendation.dto.AutomaticOrderRecommendationResponse;
 import com.bp20.backend.api.recommendation.service.OrderRecommendationService;
-import com.bp20.backend.api.weather.dto.WeatherResponse;
+import com.bp20.backend.api.weather.dto.DailyWeatherResponse;
 import com.bp20.backend.api.weather.service.WeatherService;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -49,19 +50,21 @@ public class OrderRecommendationController {
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE_TIME
             )
-            LocalDateTime orderDateTime
+            LocalDateTime orderDateTime,
+            @RequestParam(defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(defaultValue = "false") boolean orderRequiredOnly
     ) {
         LocalDateTime targetDateTime =
                 orderDateTime == null
                         ? LocalDateTime.now()
                         : orderDateTime;
 
-        return service.generate(
+        return sortAndFilter(service.generate(
                 currentUser.id(),
                 latitude,
                 longitude,
                 targetDateTime
-        );
+        ), sortDirection, orderRequiredOnly);
     }
 
     /**
@@ -71,15 +74,13 @@ public class OrderRecommendationController {
     public AutomaticOrderRecommendationResponse generateAutomatically(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestParam double latitude,
-            @RequestParam double longitude
+            @RequestParam double longitude,
+            @RequestParam(defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(defaultValue = "false") boolean orderRequiredOnly
     ) {
         LocalDateTime now = LocalDateTime.now();
-        List<WeatherResponse> forecasts =
-                weatherService.getTodayAndTomorrowWeather(
-                        latitude,
-                        longitude,
-                        now
-                );
+        List<DailyWeatherResponse> forecasts =
+                weatherService.getWeeklyWeather(latitude, longitude);
 
         List<OrderRecommendationResponse> recommendations =
                 service.generate(
@@ -87,14 +88,45 @@ public class OrderRecommendationController {
                         latitude,
                         longitude,
                         now,
-                        forecasts
+                        weatherService.toAnalysisWeather(forecasts, now)
                 );
 
         return new AutomaticOrderRecommendationResponse(
                 latitude,
                 longitude,
                 forecasts,
-                recommendations
+                sortAndFilter(recommendations, sortDirection, orderRequiredOnly)
         );
+    }
+
+    private List<OrderRecommendationResponse> sortAndFilter(
+            List<OrderRecommendationResponse> recommendations,
+            SortDirection sortDirection,
+            boolean orderRequiredOnly
+    ) {
+        Comparator<OrderRecommendationResponse> comparator =
+                Comparator.comparingLong(
+                                OrderRecommendationResponse::recommendedOrderQuantity
+                        )
+                        .thenComparing(
+                                OrderRecommendationResponse::ingredientName,
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                        );
+
+        if (sortDirection == SortDirection.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        return recommendations.stream()
+                .filter(recommendation ->
+                        !orderRequiredOnly || recommendation.orderRequired()
+                )
+                .sorted(comparator)
+                .toList();
+    }
+
+    public enum SortDirection {
+        ASC,
+        DESC
     }
 }

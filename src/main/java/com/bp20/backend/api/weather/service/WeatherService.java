@@ -1,6 +1,8 @@
 package com.bp20.backend.api.weather.service;
 
 import com.bp20.backend.api.weather.client.KmaWeatherClient;
+import com.bp20.backend.api.weather.client.WeeklyWeatherClient;
+import com.bp20.backend.api.weather.dto.DailyWeatherResponse;
 import com.bp20.backend.api.weather.dto.WeatherResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 @Slf4j
 @Service
@@ -44,6 +47,7 @@ public class WeatherService {
     };
 
     private final KmaWeatherClient kmaWeatherClient;
+    private final WeeklyWeatherClient weeklyWeatherClient;
 
     @Value("${weather.api.service-key}")
     private String serviceKey;
@@ -52,9 +56,125 @@ public class WeatherService {
     private String forecastUrl;
 
     public WeatherService(
-            KmaWeatherClient kmaWeatherClient
+            KmaWeatherClient kmaWeatherClient,
+            WeeklyWeatherClient weeklyWeatherClient
     ) {
         this.kmaWeatherClient = kmaWeatherClient;
+        this.weeklyWeatherClient = weeklyWeatherClient;
+    }
+
+    /** 오늘을 포함한 7일의 14시/21시 기준 일별 예보를 조회합니다. */
+    public List<DailyWeatherResponse> getWeeklyWeather(double latitude, double longitude) {
+        validateCoordinates(latitude, longitude);
+        Map<String, Object> response = weeklyWeatherClient.getForecast(latitude, longitude);
+        Map<String, Object> hourly = getMap(response, "hourly");
+        List<?> times = getList(hourly, "time");
+        List<?> temperatures = getList(hourly, "temperature_2m");
+        List<?> humidities = getList(hourly, "relative_humidity_2m");
+        List<?> rainProbabilities = getList(hourly, "precipitation_probability");
+        List<?> weatherCodes = getList(hourly, "weather_code");
+
+        Map<LocalDate, Map<Integer, Integer>> indexes = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < times.size(); i++) {
+            LocalDateTime dateTime = LocalDateTime.parse(String.valueOf(times.get(i)));
+            if (dateTime.getHour() == 14 || dateTime.getHour() == 21) {
+                indexes.computeIfAbsent(dateTime.toLocalDate(), ignored -> new HashMap<>())
+                        .put(dateTime.getHour(), i);
+            }
+        }
+
+        List<DailyWeatherResponse> result = new ArrayList<>();
+        indexes.forEach((date, hours) -> {
+            Integer afternoon = hours.get(14);
+            Integer evening = hours.get(21);
+            if (afternoon == null || evening == null) return;
+            int conditionIndex = selectConditionIndex(weatherCodes, afternoon, evening);
+            result.add(new DailyWeatherResponse(
+                    date, latitude, longitude,
+                    nullableDouble(temperatures, afternoon),
+                    nullableDouble(temperatures, evening),
+                    convertWeatherCode(nullableInteger(weatherCodes, conditionIndex)),
+                    max(nullableInteger(rainProbabilities, afternoon), nullableInteger(rainProbabilities, evening)),
+                    average(nullableInteger(humidities, afternoon), nullableInteger(humidities, evening))
+            ));
+        });
+
+        if (result.size() != 7) {
+            throw new IllegalStateException("일주일 날씨 예보 7일분을 조회하지 못했습니다.");
+        }
+        return result;
+    }
+
+    public List<WeatherResponse> toAnalysisWeather(
+            List<DailyWeatherResponse> forecasts, LocalDateTime orderDateTime) {
+        Grid grid = convertToGrid(forecasts.get(0).latitude(), forecasts.get(0).longitude());
+        List<WeatherResponse> result = new ArrayList<>();
+        for (DailyWeatherResponse forecast : forecasts) {
+            result.add(new WeatherResponse(orderDateTime, forecast.date().atTime(14, 0),
+                    forecast.latitude(), forecast.longitude(), grid.nx(), grid.ny(),
+                    forecast.maximumTemperature(), null, forecast.weatherCondition(),
+                    precipitationType(forecast.weatherCondition()), forecast.rainProbability(), forecast.humidity()));
+            result.add(new WeatherResponse(orderDateTime, forecast.date().atTime(21, 0),
+                    forecast.latitude(), forecast.longitude(), grid.nx(), grid.ny(),
+                    forecast.minimumTemperature(), null, forecast.weatherCondition(),
+                    precipitationType(forecast.weatherCondition()), forecast.rainProbability(), forecast.humidity()));
+        }
+        return result;
+    }
+
+    private int selectConditionIndex(List<?> codes, int afternoon, int evening) {
+        Integer afternoonCode = nullableInteger(codes, afternoon);
+        Integer eveningCode = nullableInteger(codes, evening);
+        return weatherSeverity(eveningCode) > weatherSeverity(afternoonCode) ? evening : afternoon;
+    }
+
+    private int weatherSeverity(Integer code) {
+        if (code == null) return 0;
+        if (code >= 71 && code <= 77 || code >= 85) return 3;
+        if (code >= 51 && code <= 67 || code >= 80) return 2;
+        if (code >= 1) return 1;
+        return 0;
+    }
+
+    private String convertWeatherCode(Integer code) {
+        return switch (weatherSeverity(code)) {
+            case 3 -> "눈";
+            case 2 -> "비";
+            case 1 -> "흐림";
+            default -> "맑음";
+        };
+    }
+
+    private String precipitationType(String condition) {
+        return "비".equals(condition) || "눈".equals(condition) ? condition : "없음";
+    }
+
+    private Double nullableDouble(List<?> values, int index) {
+        Object value = index < values.size() ? values.get(index) : null;
+        return value instanceof Number number ? number.doubleValue() : null;
+    }
+
+    private Integer nullableInteger(List<?> values, int index) {
+        Object value = index < values.size() ? values.get(index) : null;
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
+    private List<?> getList(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (value instanceof List<?> list) return list;
+        throw new IllegalStateException("일주일 날씨 예보의 " + key + " 데이터가 없습니다.");
+    }
+
+    private Integer max(Integer first, Integer second) {
+        if (first == null) return second;
+        if (second == null) return first;
+        return Math.max(first, second);
+    }
+
+    private Integer average(Integer first, Integer second) {
+        if (first == null) return second;
+        if (second == null) return first;
+        return (int) Math.round((first + second) / 2.0);
     }
 
     /**
