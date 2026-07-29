@@ -3,12 +3,14 @@ package com.bp20.backend.api.effectverification.controller;
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
 import com.bp20.backend.api.effectverification.dto.request.CampaignDecisionLinkRequest;
 import com.bp20.backend.api.effectverification.dto.request.ExecutionRegistrationRequest;
+import com.bp20.backend.api.effectverification.dto.request.RecommendationExecutionStartRequest;
 import com.bp20.backend.api.effectverification.dto.request.VerificationCompletionRequest;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.VerificationExecutionResponse;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.bp20.backend.api.effectverification.service.EffectVerificationLifecycleService;
 import com.bp20.backend.api.effectverification.service.EffectVerificationService;
+import com.bp20.backend.api.effectverification.service.RecommendationExecutionStartService;
 import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -34,6 +36,17 @@ public class EffectVerificationController {
 
     private final EffectVerificationService effectVerificationService;
     private final EffectVerificationLifecycleService lifecycleService;
+    private final RecommendationExecutionStartService executionStartService;
+
+    @PostMapping("/executions/start")
+    public ResponseEntity<VerificationExecutionResponse> startExecution(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @Valid @RequestBody RecommendationExecutionStartRequest request
+    ) {
+        return ResponseEntity.ok(
+                executionStartService.start(userId(currentUser), request)
+        );
+    }
 
     @PostMapping("/executions")
     public ResponseEntity<VerificationExecutionResponse> registerExecution(

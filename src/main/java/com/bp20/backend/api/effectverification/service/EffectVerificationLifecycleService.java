@@ -73,6 +73,9 @@ public class EffectVerificationLifecycleService {
                 .status(VerificationStatus.COLLECTING)
                 .conditionJson(writeJson(request.getCondition()))
                 .beforeMetricsJson(writeJson(request.getBefore()))
+                .selectedActionJson(request.getSelectedAction() == null
+                        ? null
+                        : writeJson(request.getSelectedAction()))
                 .executedAt(executedAt)
                 .verificationDueAt(executedAt.plusDays(periodDays))
                 .build();
@@ -378,6 +381,12 @@ public class EffectVerificationLifecycleService {
                 .threadId(execution.getThreadId())
                 .decisionId(execution.getDecisionId())
                 .recommendationType(execution.getRecommendationType())
+                .selectedAction(execution.getSelectedActionJson() == null
+                        ? null
+                        : readJson(
+                                execution.getSelectedActionJson(),
+                                SelectedActionRequest.class
+                        ))
                 .status(execution.getStatus())
                 .executedAt(execution.getExecutedAt())
                 .verificationDueAt(execution.getVerificationDueAt())

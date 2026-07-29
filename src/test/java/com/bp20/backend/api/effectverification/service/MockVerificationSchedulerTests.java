@@ -119,6 +119,27 @@ class MockVerificationSchedulerTests {
         verify(automaticExecutionService, never()).completeAutomatically(any());
     }
 
+    @Test
+    void runDueVerificationsCompletesMockThreadExecution() {
+        EffectVerificationExecution execution = execution(
+                "mock-approved-sales-thread",
+                0
+        );
+        when(executionRepository
+                .findByStatusInAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                        any(),
+                        any()
+                )).thenReturn(List.of(execution));
+
+        var response = scheduler.runDueVerifications();
+
+        assertThat(response.processed()).isEqualTo(1);
+        assertThat(response.succeeded()).isEqualTo(1);
+        verify(automaticExecutionService).completeThreadAutomatically(
+                "mock-approved-sales-thread"
+        );
+    }
+
     private EffectVerificationExecution execution(Long recommendationId, int attempts) {
         return execution(String.valueOf(recommendationId), attempts);
     }

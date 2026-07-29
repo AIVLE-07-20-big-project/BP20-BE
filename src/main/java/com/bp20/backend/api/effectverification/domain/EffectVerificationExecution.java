@@ -52,6 +52,9 @@ public class EffectVerificationExecution {
     @Column(name = "BeforeMetricsJson", nullable = false, columnDefinition = "TEXT")
     private String beforeMetricsJson;
 
+    @Column(name = "SelectedActionJson", columnDefinition = "TEXT")
+    private String selectedActionJson;
+
     @Column(name = "AfterMetricsJson", columnDefinition = "TEXT")
     private String afterMetricsJson;
 

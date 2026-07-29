@@ -75,6 +75,20 @@ public class MockAutomaticExecutionService {
             String threadId,
             MockThreadExecutionRegistrationRequest input
     ) {
+        return registerThreadAutomatically(null, threadId, input);
+    }
+
+    public VerificationExecutionResponse registerThreadAutomatically(
+            Long userId,
+            String threadId,
+            MockThreadExecutionRegistrationRequest input
+    ) {
+        VerificationExecutionResponse existing =
+                findExistingThreadExecution(threadId);
+        if (existing != null) {
+            return existing;
+        }
+
         LocalDateTime executedAt = input.getExecutedAt() == null
                 ? latestMockExecutionTime(
                         input.getStoreId(),
@@ -110,7 +124,24 @@ public class MockAutomaticExecutionService {
         request.setCondition(condition);
         request.setBefore(before);
         request.setExecutedAt(executedAt);
-        return lifecycleService.registerExecution(null, request);
+        return lifecycleService.registerExecution(userId, request);
+    }
+
+    public boolean isThreadRegistered(String threadId) {
+        return findExistingThreadExecution(threadId) != null;
+    }
+
+    private VerificationExecutionResponse findExistingThreadExecution(
+            String threadId
+    ) {
+        try {
+            return lifecycleService.getExecution(null, threadId);
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return null;
+            }
+            throw exception;
+        }
     }
 
     private LocalDateTime latestMockExecutionTime(

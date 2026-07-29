@@ -45,6 +45,10 @@ public class ExecutionRegistrationRequest {
     @Valid
     private PeriodMetrics before;
 
+    @Valid
+    @JsonProperty("selected_action")
+    private SelectedActionRequest selectedAction;
+
     @JsonProperty("executed_at")
     private LocalDateTime executedAt;
 }
