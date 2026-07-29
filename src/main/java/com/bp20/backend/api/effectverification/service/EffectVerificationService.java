@@ -63,7 +63,7 @@ public class EffectVerificationService {
     @Transactional(readOnly = true)
     public EffectVerificationResponse getByRecommendationId(
             Long userId,
-            Long recommendationId
+            String recommendationId
     ) {
         EffectVerificationResult result = resultRepository
                 .findByAiRecommendationIdAndUserId(recommendationId, userId)

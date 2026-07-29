@@ -77,6 +77,13 @@ ai:
   review-sentiment:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
+effect-verification:
+  scheduler:
+    enabled: ${EFFECT_VERIFICATION_SCHEDULER_ENABLED:true}
+    cron: ${EFFECT_VERIFICATION_SCHEDULER_CRON:0 0 2 * * *}
+    zone: ${EFFECT_VERIFICATION_SCHEDULER_ZONE:Asia/Seoul}
+    max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}
+
 # 영수증 OCR 및 원가 분석 서비스
 ocr-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}

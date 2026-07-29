@@ -50,7 +50,7 @@ class EffectVerificationServiceTests {
         EffectVerificationRequest request = new EffectVerificationRequest();
         EffectVerificationResponse aiResponse = createResponse();
         when(apiClient.verifyEffect(request)).thenReturn(aiResponse);
-        when(resultRepository.findByAiRecommendationIdAndUserId(1L, USER_ID))
+        when(resultRepository.findByAiRecommendationIdAndUserId("1", USER_ID))
                 .thenReturn(Optional.empty());
         when(resultRepository.save(any(EffectVerificationResult.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -62,7 +62,7 @@ class EffectVerificationServiceTests {
         verify(resultRepository).save(captor.capture());
         EffectVerificationResult saved = captor.getValue();
 
-        assertThat(saved.getAiRecommendationId()).isEqualTo(1L);
+        assertThat(saved.getAiRecommendationId()).isEqualTo("1");
         assertThat(saved.getUserId()).isEqualTo(USER_ID);
         assertThat(saved.getStoreId()).isEqualTo(10L);
         assertThat(saved.getRecommendationType()).isEqualTo(RecommendationType.SALES);
@@ -78,7 +78,7 @@ class EffectVerificationServiceTests {
         String metricsJson = new ObjectMapper()
                 .writeValueAsString(original.getMetricResults());
         EffectVerificationResult saved = EffectVerificationResult.builder()
-                .aiRecommendationId(1L)
+                .aiRecommendationId("1")
                 .userId(USER_ID)
                 .storeId(10L)
                 .recommendationType(RecommendationType.SALES)
@@ -88,13 +88,13 @@ class EffectVerificationServiceTests {
                 .summary("success")
                 .verifiedDate(verifiedDate)
                 .build();
-        when(resultRepository.findByAiRecommendationIdAndUserId(1L, USER_ID))
+        when(resultRepository.findByAiRecommendationIdAndUserId("1", USER_ID))
                 .thenReturn(Optional.of(saved));
 
         EffectVerificationResponse response =
-                service.getByRecommendationId(USER_ID, 1L);
+                service.getByRecommendationId(USER_ID, "1");
 
-        assertThat(response.getRecommendationId()).isEqualTo(1L);
+        assertThat(response.getRecommendationId()).isEqualTo("1");
         assertThat(response.getStoreId()).isEqualTo(10L);
         assertThat(response.getMetricResults()).hasSize(1);
         assertThat(response.getMetricResults().getFirst().getMetricName())
@@ -113,7 +113,7 @@ class EffectVerificationServiceTests {
 
         EffectVerificationResponse response = new EffectVerificationResponse();
         response.setStoreId(10L);
-        response.setRecommendationId(1L);
+        response.setRecommendationId("1");
         response.setRecommendationType(RecommendationType.SALES);
         response.setEffectScore(96.0);
         response.setVerdict("EFFECTIVE");
