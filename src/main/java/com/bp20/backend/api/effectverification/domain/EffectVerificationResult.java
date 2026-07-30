@@ -19,8 +19,11 @@ public class EffectVerificationResult {
     @Column(name = "EffectVerificationResultID")
     private Long effectVerificationResultId;
 
-    @Column(name = "AIRecommendationID", nullable = false, unique = true)
-    private Long aiRecommendationId;
+    @Column(name = "AIRecommendationID", nullable = false, unique = true, length = 64)
+    private String aiRecommendationId;
+
+    @Column(name = "UserID")
+    private Long userId;
 
     @Column(name = "StoreID", nullable = false)
     private Long storeId;

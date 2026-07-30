@@ -23,8 +23,17 @@ public class EffectVerificationExecution {
     @Column(name = "EffectVerificationExecutionID")
     private Long effectVerificationExecutionId;
 
-    @Column(name = "AIRecommendationID", nullable = false, unique = true)
-    private Long aiRecommendationId;
+    @Column(name = "AIRecommendationID", nullable = false, unique = true, length = 64)
+    private String aiRecommendationId;
+
+    @Column(name = "RecommendationThreadID", unique = true, length = 36)
+    private String threadId;
+
+    @Column(name = "CampaignDecisionID", unique = true, length = 36)
+    private String decisionId;
+
+    @Column(name = "UserID")
+    private Long userId;
 
     @Column(name = "StoreID", nullable = false)
     private Long storeId;
@@ -42,6 +51,9 @@ public class EffectVerificationExecution {
 
     @Column(name = "BeforeMetricsJson", nullable = false, columnDefinition = "TEXT")
     private String beforeMetricsJson;
+
+    @Column(name = "SelectedActionJson", columnDefinition = "TEXT")
+    private String selectedActionJson;
 
     @Column(name = "AfterMetricsJson", columnDefinition = "TEXT")
     private String afterMetricsJson;
@@ -85,5 +97,9 @@ public class EffectVerificationExecution {
     public void beginAttempt(LocalDateTime attemptedAt) {
         this.attemptCount = this.attemptCount == null ? 1 : this.attemptCount + 1;
         this.lastAttemptAt = attemptedAt;
+    }
+
+    public void linkDecision(String decisionId) {
+        this.decisionId = decisionId;
     }
 }

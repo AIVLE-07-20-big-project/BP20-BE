@@ -57,12 +57,6 @@ public class MockVerificationScheduler {
         int failed = 0;
         int skipped = 0;
         for (EffectVerificationExecution execution : executions) {
-            if (!automaticExecutionService.supportsRecommendation(
-                    execution.getAiRecommendationId()
-            )) {
-                skipped++;
-                continue;
-            }
             int attemptCount = execution.getAttemptCount() == null
                     ? 0
                     : execution.getAttemptCount();
@@ -71,9 +65,26 @@ public class MockVerificationScheduler {
                 continue;
             }
             try {
-                automaticExecutionService.completeAutomatically(
-                        execution.getAiRecommendationId()
-                );
+                String recommendationId = execution.getAiRecommendationId();
+                Long mockRecommendationId = numericId(recommendationId);
+                if (mockRecommendationId != null) {
+                    if (!automaticExecutionService.supportsRecommendation(
+                            mockRecommendationId
+                    )) {
+                        skipped++;
+                        continue;
+                    }
+                    automaticExecutionService.completeAutomatically(
+                            mockRecommendationId
+                    );
+                } else if (recommendationId.startsWith("mock-")) {
+                    automaticExecutionService.completeThreadAutomatically(
+                            recommendationId
+                    );
+                } else {
+                    skipped++;
+                    continue;
+                }
                 succeeded++;
             } catch (RuntimeException exception) {
                 failed++;
@@ -90,5 +101,13 @@ public class MockVerificationScheduler {
                 failed,
                 skipped
         );
+    }
+
+    private Long numericId(String recommendationId) {
+        try {
+            return Long.valueOf(recommendationId);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 }

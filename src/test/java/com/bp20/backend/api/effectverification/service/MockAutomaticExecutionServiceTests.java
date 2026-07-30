@@ -3,9 +3,11 @@ package com.bp20.backend.api.effectverification.service;
 import com.bp20.backend.api.effectverification.collector.VerificationMetricCollector;
 import com.bp20.backend.api.effectverification.dto.request.ExecutionRegistrationRequest;
 import com.bp20.backend.api.effectverification.dto.request.PeriodMetrics;
+import com.bp20.backend.api.effectverification.dto.request.MockThreadExecutionRegistrationRequest;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
 import com.bp20.backend.api.effectverification.dto.request.SalesMetrics;
 import com.bp20.backend.api.effectverification.dto.request.VerificationCompletionRequest;
+import com.bp20.backend.api.effectverification.dto.request.VerificationCondition;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.VerificationExecutionResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,16 +82,16 @@ class MockAutomaticExecutionServiceTests {
         );
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(baseline);
-        when(lifecycleService.registerExecution(any()))
+        when(lifecycleService.registerExecution(isNull(), any()))
                 .thenReturn(VerificationExecutionResponse.builder().build());
 
         service.registerAutomatically(10001L);
 
         ArgumentCaptor<ExecutionRegistrationRequest> captor =
                 ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
-        verify(lifecycleService).registerExecution(captor.capture());
+        verify(lifecycleService).registerExecution(isNull(), captor.capture());
         ExecutionRegistrationRequest request = captor.getValue();
-        assertThat(request.getRecommendationId()).isEqualTo(10001L);
+        assertThat(request.getRecommendationId()).isEqualTo("10001");
         assertThat(request.getExecutedAt()).isEqualTo(executedAt);
         assertThat(request.getBefore()).isSameAs(baseline);
         assertThat(request.getCondition().getPeriodDays()).isEqualTo(14);
@@ -101,6 +104,46 @@ class MockAutomaticExecutionServiceTests {
         );
         verify(reviewSentimentService, never())
                 .analyzePending(anyLong(), any(), any());
+    }
+
+    @Test
+    void threadRecommendationCollectsBaselineAndUsesThreadAsRecommendationId() {
+        String threadId = "11111111-1111-1111-1111-111111111111";
+        LocalDateTime executedAt = LocalDateTime.of(2026, 6, 15, 10, 0);
+        VerificationCondition condition = new VerificationCondition(
+                14, 14, 17, true, null
+        );
+        MockThreadExecutionRegistrationRequest input =
+                new MockThreadExecutionRegistrationRequest();
+        input.setStoreId(1L);
+        input.setRecommendationType(RecommendationType.SALES);
+        input.setCondition(condition);
+        input.setExecutedAt(executedAt);
+        PeriodMetrics baseline = new PeriodMetrics(
+                new SalesMetrics(30_000.0, 3, 10_000.0, 33.33,
+                        0.0, 1, 2, 50_000.0),
+                null
+        );
+        when(metricCollector.collect(
+                1L,
+                RecommendationType.SALES,
+                executedAt.minusDays(14),
+                executedAt,
+                condition
+        )).thenReturn(baseline);
+        when(lifecycleService.registerExecution(isNull(), any()))
+                .thenReturn(VerificationExecutionResponse.builder().build());
+
+        service.registerThreadAutomatically(threadId, input);
+
+        ArgumentCaptor<ExecutionRegistrationRequest> captor =
+                ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
+        verify(lifecycleService).registerExecution(isNull(), captor.capture());
+        ExecutionRegistrationRequest request = captor.getValue();
+        assertThat(request.getRecommendationId()).isNull();
+        assertThat(request.getThreadId()).isEqualTo(threadId);
+        assertThat(request.getBefore()).isSameAs(baseline);
+        assertThat(request.getExecutedAt()).isEqualTo(executedAt);
     }
 
     @Test
@@ -118,7 +161,7 @@ class MockAutomaticExecutionServiceTests {
         ));
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(new PeriodMetrics(null, null));
-        when(lifecycleService.registerExecution(any()))
+        when(lifecycleService.registerExecution(isNull(), any()))
                 .thenReturn(VerificationExecutionResponse.builder().build());
 
         service.registerAutomatically(10003L);
@@ -130,7 +173,7 @@ class MockAutomaticExecutionServiceTests {
         );
         ArgumentCaptor<ExecutionRegistrationRequest> captor =
                 ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
-        verify(lifecycleService).registerExecution(captor.capture());
+        verify(lifecycleService).registerExecution(isNull(), captor.capture());
         assertThat(captor.getValue().getRecommendationType())
                 .isEqualTo(RecommendationType.REVIEW);
         assertThat(captor.getValue().getCondition().getTargetAspect())
@@ -157,7 +200,7 @@ class MockAutomaticExecutionServiceTests {
         );
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(after);
-        when(lifecycleService.completeVerification(anyLong(), any()))
+        when(lifecycleService.completeVerification(isNull(), anyString(), any()))
                 .thenReturn(new EffectVerificationResponse());
 
         service.completeAutomatically(10001L);
@@ -171,7 +214,11 @@ class MockAutomaticExecutionServiceTests {
         );
         ArgumentCaptor<VerificationCompletionRequest> captor =
                 ArgumentCaptor.forClass(VerificationCompletionRequest.class);
-        verify(lifecycleService).completeVerification(eq(10001L), captor.capture());
+        verify(lifecycleService).completeVerification(
+                isNull(),
+                eq("10001"),
+                captor.capture()
+        );
         verify(feedbackService).apply(eq(10001L), any());
         assertThat(captor.getValue().getAfter()).isSameAs(after);
         assertThat(captor.getValue().getCollectedAt())
@@ -193,7 +240,7 @@ class MockAutomaticExecutionServiceTests {
         ));
         when(metricCollector.collect(anyLong(), any(), any(), any(), any()))
                 .thenReturn(new PeriodMetrics(null, null));
-        when(lifecycleService.completeVerification(anyLong(), any()))
+        when(lifecycleService.completeVerification(isNull(), anyString(), any()))
                 .thenReturn(new EffectVerificationResponse());
 
         service.completeAutomatically(10003L);
@@ -203,8 +250,74 @@ class MockAutomaticExecutionServiceTests {
                 executedAt,
                 executedAt.plusDays(14)
         );
-        verify(lifecycleService).completeVerification(eq(10003L), any());
+        verify(lifecycleService).completeVerification(
+                isNull(),
+                eq("10003"),
+                any()
+        );
         verify(feedbackService).apply(eq(10003L), any());
+    }
+
+    @Test
+    void threadCompletionCollectsMetricsUsingStoredExecutionContext() {
+        String threadId = "11111111-1111-1111-1111-111111111111";
+        LocalDateTime executedAt = LocalDateTime.of(2026, 6, 15, 10, 0);
+        LocalDateTime dueAt = executedAt.plusDays(14);
+        VerificationCondition condition = new VerificationCondition(
+                14, 14, 17, true, null
+        );
+        PeriodMetrics after = new PeriodMetrics(
+                new SalesMetrics(72_000.0, 5, 14_400.0, 50.0,
+                        100.0, 1, 0, 93_000.0),
+                null
+        );
+        when(lifecycleService.getAutomaticCollectionContext(threadId))
+                .thenReturn(new EffectVerificationLifecycleService.AutomaticCollectionContext(
+                        1L,
+                        RecommendationType.SALES,
+                        condition,
+                        executedAt,
+                        dueAt
+                ));
+        when(metricCollector.collect(
+                1L,
+                RecommendationType.SALES,
+                executedAt,
+                dueAt,
+                condition
+        )).thenReturn(after);
+        when(lifecycleService.completeVerification(isNull(), eq(threadId), any()))
+                .thenReturn(new EffectVerificationResponse());
+
+        service.completeThreadAutomatically(threadId);
+
+        ArgumentCaptor<VerificationCompletionRequest> captor =
+                ArgumentCaptor.forClass(VerificationCompletionRequest.class);
+        verify(lifecycleService).completeVerification(
+                isNull(),
+                eq(threadId),
+                captor.capture()
+        );
+        assertThat(captor.getValue().getAfter()).isSameAs(after);
+        assertThat(captor.getValue().getCollectedAt()).isEqualTo(dueAt);
+        verify(feedbackService, never()).apply(anyLong(), any());
+    }
+
+    @Test
+    void resetDeletesVerificationDataAndLearnedWeights() {
+        when(jdbcTemplate.update("DELETE FROM effect_verification_result"))
+                .thenReturn(3);
+        when(jdbcTemplate.update("DELETE FROM effect_verification_execution"))
+                .thenReturn(3);
+        when(jdbcTemplate.update("DELETE FROM MockRecommendationStrategyWeight"))
+                .thenReturn(2);
+
+        MockAutomaticExecutionService.MockResetResult result =
+                service.resetVerificationData();
+
+        assertThat(result.deletedResults()).isEqualTo(3);
+        assertThat(result.deletedExecutions()).isEqualTo(3);
+        assertThat(result.deletedStrategyWeights()).isEqualTo(2);
     }
 
     @SuppressWarnings("unchecked")

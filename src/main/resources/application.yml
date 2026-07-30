@@ -13,6 +13,14 @@ spring:
         format_sql: true
     open-in-view: false
 
+  main:
+    web-application-type: servlet
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 50MB
+
 server:
   port: 8080
   forward-headers-strategy: framework
@@ -47,15 +55,41 @@ springdoc:
     persist-authorization: true
   show-actuator: true
 
-# AI 서비스 연동 설정
+# 기상청 단기예보 및 과거 ASOS 날씨
+weather:
+  api:
+    service-key: ${KMA_SERVICE_KEY}
+    asos-hourly-url: https://apis.data.go.kr/1360000/AsosHourlyInfoService/getWthrDataList
+
+kma:
+  forecast-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst
+
+kakao:
+  local:
+    base-url: https://dapi.kakao.com
+    rest-api-key: ${KAKAO_REST_API_KEY:}
+
+# 발주량 예측 및 효과검증 AI 서비스
 ai:
+  server-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   effect-verification:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   review-sentiment:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
-# 영수증 OCR 및 원가 분석 서비스 연동 설정
+effect-verification:
+  scheduler:
+    enabled: ${EFFECT_VERIFICATION_SCHEDULER_ENABLED:true}
+    cron: ${EFFECT_VERIFICATION_SCHEDULER_CRON:0 0 2 * * *}
+    zone: ${EFFECT_VERIFICATION_SCHEDULER_ZONE:Asia/Seoul}
+    max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}
+
+# 영수증 OCR 및 원가 분석 서비스
 ocr-service:
+  base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+
+# AI 상품 이미지 생성 서비스 연동 설정
+product-image-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
 app:
@@ -69,4 +103,3 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
   fastapi:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
-

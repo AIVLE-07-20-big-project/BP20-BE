@@ -30,11 +30,29 @@ public class EffectVerificationLifecycleService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
-    public VerificationExecutionResponse registerExecution(ExecutionRegistrationRequest request) {
-        if (executionRepository.existsByAiRecommendationId(request.getRecommendationId())) {
+    public VerificationExecutionResponse registerExecution(
+            Long userId,
+            ExecutionRegistrationRequest request
+    ) {
+        String recommendationId = resolveRecommendationId(request);
+        if (executionRepository.existsByAiRecommendationId(recommendationId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Verification execution already exists for this recommendation"
+            );
+        }
+        if (StringUtils.hasText(request.getThreadId())
+                && executionRepository.existsByThreadId(request.getThreadId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Verification execution already exists for this thread"
+            );
+        }
+        if (StringUtils.hasText(request.getDecisionId())
+                && executionRepository.existsByDecisionId(request.getDecisionId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Verification execution already exists for this campaign decision"
             );
         }
 
@@ -46,12 +64,18 @@ public class EffectVerificationLifecycleService {
                 : LocalDateTime.now();
 
         EffectVerificationExecution execution = EffectVerificationExecution.builder()
-                .aiRecommendationId(request.getRecommendationId())
+                .aiRecommendationId(recommendationId)
+                .threadId(request.getThreadId())
+                .decisionId(request.getDecisionId())
+                .userId(userId)
                 .storeId(request.getStoreId())
                 .recommendationType(request.getRecommendationType())
                 .status(VerificationStatus.COLLECTING)
                 .conditionJson(writeJson(request.getCondition()))
                 .beforeMetricsJson(writeJson(request.getBefore()))
+                .selectedActionJson(request.getSelectedAction() == null
+                        ? null
+                        : writeJson(request.getSelectedAction()))
                 .executedAt(executedAt)
                 .verificationDueAt(executedAt.plusDays(periodDays))
                 .build();
@@ -59,11 +83,25 @@ public class EffectVerificationLifecycleService {
         return toResponse(executionRepository.save(execution));
     }
 
+    private String resolveRecommendationId(ExecutionRegistrationRequest request) {
+        if (StringUtils.hasText(request.getRecommendationId())) {
+            return request.getRecommendationId();
+        }
+        if (StringUtils.hasText(request.getThreadId())) {
+            return request.getThreadId();
+        }
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "recommendation_id or thread_id is required"
+        );
+    }
+
     public EffectVerificationResponse completeVerification(
-            Long recommendationId,
+            Long userId,
+            String recommendationId,
             VerificationCompletionRequest request
     ) {
-        EffectVerificationExecution execution = findExecution(recommendationId);
+        EffectVerificationExecution execution = findExecution(userId, recommendationId);
         if (execution.getStatus() == VerificationStatus.VERIFIED) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -101,7 +139,10 @@ public class EffectVerificationLifecycleService {
         verificationRequest.setAfter(request.getAfter());
 
         try {
-            EffectVerificationResponse response = verificationService.verifyEffect(verificationRequest);
+            EffectVerificationResponse response = verificationService.verifyEffect(
+                    execution.getUserId(),
+                    verificationRequest
+            );
             execution.markVerified(response.getVerifiedDate());
             executionRepository.save(execution);
             return response;
@@ -113,25 +154,97 @@ public class EffectVerificationLifecycleService {
     }
 
     @Transactional(readOnly = true)
-    public VerificationExecutionResponse getExecution(Long recommendationId) {
-        return toResponse(findExecution(recommendationId));
+    public VerificationExecutionResponse getExecution(
+            Long userId,
+            String recommendationId
+    ) {
+        return toResponse(findExecution(userId, recommendationId));
     }
 
     @Transactional(readOnly = true)
-    public List<VerificationExecutionResponse> getDueExecutions(Long storeId) {
+    public AutomaticCollectionContext getAutomaticCollectionContext(
+            String recommendationId
+    ) {
+        EffectVerificationExecution execution = findExecution(null, recommendationId);
+        return new AutomaticCollectionContext(
+                execution.getStoreId(),
+                execution.getRecommendationType(),
+                readJson(execution.getConditionJson(), VerificationCondition.class),
+                execution.getExecutedAt(),
+                execution.getVerificationDueAt()
+        );
+    }
+
+    @Transactional
+    public VerificationExecutionResponse linkCampaignDecision(
+            Long userId,
+            String threadId,
+            String decisionId
+    ) {
+        EffectVerificationExecution execution = (userId == null
+                ? executionRepository.findByThreadId(threadId)
+                : executionRepository.findByThreadIdAndUserId(threadId, userId))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Verification execution not found for thread"
+                ));
+
+        if (decisionId.equals(execution.getDecisionId())) {
+            return toResponse(execution);
+        }
+        if (execution.getDecisionId() != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Campaign decision is already linked to this verification"
+            );
+        }
+        if (executionRepository.existsByDecisionId(decisionId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Campaign decision is already linked to another verification"
+            );
+        }
+
+        execution.linkDecision(decisionId);
+        return toResponse(executionRepository.save(execution));
+    }
+
+    @Transactional(readOnly = true)
+    public List<VerificationExecutionResponse> getDueExecutions(
+            Long userId,
+            Long storeId
+    ) {
         LocalDateTime now = LocalDateTime.now();
-        List<EffectVerificationExecution> executions = storeId == null
-                ? executionRepository
-                .findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
-                        VerificationStatus.COLLECTING,
-                        now
-                )
-                : executionRepository
-                .findByStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
-                        storeId,
-                        VerificationStatus.COLLECTING,
-                        now
-                );
+        List<EffectVerificationExecution> executions;
+        if (userId == null) {
+            executions = storeId == null
+                    ? executionRepository
+                    .findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                            VerificationStatus.COLLECTING,
+                            now
+                    )
+                    : executionRepository
+                    .findByStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                            storeId,
+                            VerificationStatus.COLLECTING,
+                            now
+                    );
+        } else {
+            executions = storeId == null
+                    ? executionRepository
+                    .findByUserIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                            userId,
+                            VerificationStatus.COLLECTING,
+                            now
+                    )
+                    : executionRepository
+                    .findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                            userId,
+                            storeId,
+                            VerificationStatus.COLLECTING,
+                            now
+                    );
+        }
 
         return executions.stream()
                 .map(this::toResponse)
@@ -140,23 +253,46 @@ public class EffectVerificationLifecycleService {
 
     @Transactional(readOnly = true)
     public List<VerificationExecutionResponse> getExecutionHistory(
+            Long userId,
             Long storeId,
             VerificationStatus status
     ) {
-        List<EffectVerificationExecution> executions = status == null
-                ? executionRepository.findByStoreIdOrderByExecutedAtDesc(storeId)
-                : executionRepository.findByStoreIdAndStatusOrderByExecutedAtDesc(
-                        storeId,
-                        status
-                );
+        List<EffectVerificationExecution> executions;
+        if (userId == null) {
+            executions = status == null
+                    ? executionRepository.findByStoreIdOrderByExecutedAtDesc(storeId)
+                    : executionRepository.findByStoreIdAndStatusOrderByExecutedAtDesc(
+                            storeId,
+                            status
+                    );
+        } else {
+            executions = status == null
+                    ? executionRepository.findByUserIdAndStoreIdOrderByExecutedAtDesc(
+                            userId,
+                            storeId
+                    )
+                    : executionRepository.findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+                            userId,
+                            storeId,
+                            status
+                    );
+        }
 
         return executions.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    private EffectVerificationExecution findExecution(Long recommendationId) {
-        return executionRepository.findByAiRecommendationId(recommendationId)
+    private EffectVerificationExecution findExecution(
+            Long userId,
+            String recommendationId
+    ) {
+        return (userId == null
+                ? executionRepository.findByAiRecommendationId(recommendationId)
+                : executionRepository.findByAiRecommendationIdAndUserId(
+                        recommendationId,
+                        userId
+                ))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Verification execution not found"
@@ -242,7 +378,15 @@ public class EffectVerificationLifecycleService {
         return VerificationExecutionResponse.builder()
                 .storeId(execution.getStoreId())
                 .recommendationId(execution.getAiRecommendationId())
+                .threadId(execution.getThreadId())
+                .decisionId(execution.getDecisionId())
                 .recommendationType(execution.getRecommendationType())
+                .selectedAction(execution.getSelectedActionJson() == null
+                        ? null
+                        : readJson(
+                                execution.getSelectedActionJson(),
+                                SelectedActionRequest.class
+                        ))
                 .status(execution.getStatus())
                 .executedAt(execution.getExecutedAt())
                 .verificationDueAt(execution.getVerificationDueAt())
@@ -251,5 +395,14 @@ public class EffectVerificationLifecycleService {
                 .attemptCount(execution.getAttemptCount())
                 .lastAttemptAt(execution.getLastAttemptAt())
                 .build();
+    }
+
+    public record AutomaticCollectionContext(
+            Long storeId,
+            RecommendationType recommendationType,
+            VerificationCondition condition,
+            LocalDateTime collectionFrom,
+            LocalDateTime collectionTo
+    ) {
     }
 }

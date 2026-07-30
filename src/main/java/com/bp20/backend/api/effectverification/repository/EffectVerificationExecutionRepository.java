@@ -11,9 +11,25 @@ import java.util.List;
 public interface EffectVerificationExecutionRepository
         extends JpaRepository<EffectVerificationExecution, Long> {
 
-    Optional<EffectVerificationExecution> findByAiRecommendationId(Long aiRecommendationId);
+    Optional<EffectVerificationExecution> findByAiRecommendationId(String aiRecommendationId);
 
-    boolean existsByAiRecommendationId(Long aiRecommendationId);
+    Optional<EffectVerificationExecution> findByAiRecommendationIdAndUserId(
+            String aiRecommendationId,
+            Long userId
+    );
+
+    boolean existsByAiRecommendationId(String aiRecommendationId);
+
+    boolean existsByThreadId(String threadId);
+
+    boolean existsByDecisionId(String decisionId);
+
+    Optional<EffectVerificationExecution> findByThreadId(String threadId);
+
+    Optional<EffectVerificationExecution> findByThreadIdAndUserId(
+            String threadId,
+            Long userId
+    );
 
     List<EffectVerificationExecution> findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             VerificationStatus status,
@@ -26,9 +42,33 @@ public interface EffectVerificationExecutionRepository
             LocalDateTime dueAt
     );
 
+    List<EffectVerificationExecution> findByUserIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+            Long userId,
+            VerificationStatus status,
+            LocalDateTime dueAt
+    );
+
+    List<EffectVerificationExecution> findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+            Long userId,
+            Long storeId,
+            VerificationStatus status,
+            LocalDateTime dueAt
+    );
+
     List<EffectVerificationExecution> findByStoreIdOrderByExecutedAtDesc(Long storeId);
 
+    List<EffectVerificationExecution> findByUserIdAndStoreIdOrderByExecutedAtDesc(
+            Long userId,
+            Long storeId
+    );
+
     List<EffectVerificationExecution> findByStoreIdAndStatusOrderByExecutedAtDesc(
+            Long storeId,
+            VerificationStatus status
+    );
+
+    List<EffectVerificationExecution> findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+            Long userId,
             Long storeId,
             VerificationStatus status
     );
