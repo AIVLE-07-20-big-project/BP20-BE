@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "ai_recommendation_runs", indexes = {
         @Index(name = "idx_ai_runs_user", columnList = "user_id"),
-        @Index(name = "idx_ai_runs_analysis", columnList = "analysis_id")
+        @Index(name = "idx_ai_runs_analysis", columnList = "analysis_id"),
+        // 추천 이력 조회: 사용자별 최신 실행순
+        @Index(name = "idx_ai_runs_user_created", columnList = "user_id, created_at")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiRecommendationRun extends BaseTimeEntity {
