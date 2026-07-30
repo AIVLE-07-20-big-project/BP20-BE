@@ -23,6 +23,110 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis — Celery 브로커/결과 백엔드. 추후 Spring 캐시/세션도 공용 예정.
+  # noeviction 고정(안 하면 메모리 압박 시 큐 키가 증발할 수 있음)
+  redis:
+    image: redis:7-alpine
+    container_name: redis_bp20
+    restart: always
+    command: redis-server --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - network_bp20
+    healthcheck: # 컨테이너 상태 확인
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
+  fastapi:
+    build:
+      context: ../../20BGAI/BP20-AI
+    container_name: fastapi_bp20
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../20BGAI/BP20-AI/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MODEL_PATH: ${MODEL_PATH}
+      HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ../../20BGAI/BP20-AI/data:/app/data
+      - ../../20BGAI/BP20-AI/model:/app/model
+      - paddlex_models:/root/.paddlex  # PaddleOCR 모델 캐시(없으면 재생성마다 재다운로드)
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+    healthcheck: # 컨테이너 상태 확인
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" ]
+      interval: 30s
+      timeout: 5s
+      # PaddleOCR/ABSA 모델 최초 로딩 시간이 길어 초기 healthcheck 실패 방지
+      start_period: 180s
+      retries: 3
+
+  # Celery 워커 — 무거운 매출 분석 오프로드. 동시성 2(워커당 RSS 약 531MB 기준)
+  celery-worker:
+    build:
+      context: ../../20BGAI/BP20-AI
+    container_name: celery_worker_bp20
+    restart: always
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    env_file:
+      - ../../20BGAI/BP20-AI/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MODEL_PATH: ${MODEL_PATH}
+      HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ../../20BGAI/BP20-AI/data:/app/data
+      - ../../20BGAI/BP20-AI/model:/app/model
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+    healthcheck: # 컨테이너 상태 확인
+      test: [ "CMD", "celery", "-A", "app.celery_app", "inspect", "ping", "-t", "3" ]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # Celery beat — 정체된 queued/running 잡 청소 스케줄러
+  celery-beat:
+    build:
+      context: ../../20BGAI/BP20-AI
+    container_name: celery_beat_bp20
+    restart: always
+    command: celery -A app.celery_app beat --loglevel=info
+    env_file:
+      - ../../20BGAI/BP20-AI/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+    healthcheck: # 컨테이너 상태 확인 — beat가 매 tick(60초)마다 갱신하는 스케줄 파일의 최신 여부로 판단
+      test: [ "CMD", "python", "-c", "import pathlib, time, sys; paths = [pathlib.Path('celerybeat-schedule'), pathlib.Path('celerybeat-schedule.dat')]; sys.exit(0 if any(p.exists() and time.time() - p.stat().st_mtime < 90 for p in paths) else 1)" ]
+      interval: 30s
+      timeout: 5s
+      start_period: 70s
+      retries: 3
+
   # Spring Boot
   springboot:
     build: .
@@ -30,13 +134,18 @@ services:
     restart: always
     ports:
       - "8081:8080"
+    volumes:
+      - ./uploads:/app/uploads
     env_file:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      FASTAPI_BASE_URL: http://host.docker.internal:8000
+      FASTAPI_BASE_URL: http://fastapi:8000
+      KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
     depends_on:
       mysql:
+        condition: service_healthy
+      fastapi:
         condition: service_healthy
     networks:
       - network_bp20
@@ -47,3 +156,5 @@ networks:
 
 volumes:
   mysql_data:
+  redis_data:
+  paddlex_models:
