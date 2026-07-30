@@ -70,9 +70,10 @@ class RecommendationExecutionStartServiceTests {
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
         when(campaignExecutionClient.recordExecution(
-                "thread-uuid",
-                10L,
-                20263
+                eq("thread-uuid"),
+                eq(10L),
+                eq(20263),
+                any(LocalDateTime.class)
         )).thenReturn(Map.of(
                 "decision_id", "decision-uuid",
                 "store_id", "1",
@@ -109,7 +110,7 @@ class RecommendationExecutionStartServiceTests {
                 .isEqualTo(RecommendationType.SALES);
         assertThat(registration.getExecutedAt()).isEqualTo(executedAt);
         assertThat(registration.getBefore()).isSameAs(before);
-        assertThat(registration.getCondition().getPeriodDays()).isEqualTo(14);
+        assertThat(registration.getCondition().getPeriodDays()).isEqualTo(30);
         assertThat(registration.getCondition().getStartHour()).isNull();
         assertThat(registration.getCondition().getEndHour()).isNull();
         assertThat(registration.getSelectedAction().getAction())
@@ -118,7 +119,7 @@ class RecommendationExecutionStartServiceTests {
         verify(collector).collect(
                 1L,
                 RecommendationType.SALES,
-                executedAt.minusDays(14),
+                executedAt.minusDays(30),
                 executedAt,
                 registration.getCondition()
         );
@@ -135,9 +136,10 @@ class RecommendationExecutionStartServiceTests {
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
         when(campaignExecutionClient.recordExecution(
-                "thread-uuid",
-                10L,
-                20263
+                eq("thread-uuid"),
+                eq(10L),
+                eq(20263),
+                any(LocalDateTime.class)
         )).thenReturn(Map.of(
                 "decision_id", "decision-uuid",
                 "store_id", 3,
@@ -178,7 +180,7 @@ class RecommendationExecutionStartServiceTests {
                                 .isEqualTo(HttpStatus.BAD_REQUEST)
                 );
         verify(campaignExecutionClient, never())
-                .recordExecution(any(), any(), anyInt());
+                .recordExecution(any(), any(), anyInt(), any());
     }
 
     @Test
@@ -195,7 +197,7 @@ class RecommendationExecutionStartServiceTests {
 
         assertThat(actual).isSameAs(expected);
         verify(campaignExecutionClient, never())
-                .recordExecution(any(), any(), anyInt());
+                .recordExecution(any(), any(), anyInt(), any());
         verify(collectorProvider, never()).getIfAvailable();
     }
 
@@ -213,7 +215,7 @@ class RecommendationExecutionStartServiceTests {
                                 .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
                 );
         verify(campaignExecutionClient, never())
-                .recordExecution(any(), any(), anyInt());
+                .recordExecution(any(), any(), anyInt(), any());
         verify(lifecycleService, never())
                 .registerExecution(any(), any());
     }

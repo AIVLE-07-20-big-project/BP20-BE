@@ -25,7 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RecommendationExecutionStartService {
 
-    private static final int DEFAULT_PERIOD_DAYS = 14;
+    private static final int DEFAULT_PERIOD_DAYS = 30;
 
     private final ObjectProvider<VerificationMetricCollector> metricCollectorProvider;
     private final CampaignExecutionClient campaignExecutionClient;
@@ -66,12 +66,18 @@ public class RecommendationExecutionStartService {
         Map<String, Object> campaign = campaignExecutionClient.recordExecution(
                 input.getThreadId(),
                 userId,
-                treatmentYyquCd(executedAt)
+                treatmentYyquCd(executedAt),
+                executedAt
         );
         Long storeId = requiredLong(campaign, "store_id");
         storeAccessService.validateOwner(userId, storeId);
         String decisionId = requiredString(campaign, "decision_id");
-        String actionId = requiredString(campaign, "action_id");
+        String actionId = firstRequiredString(
+                campaign,
+                "action_id",
+                "executed_action",
+                "approved_action"
+        );
 
         VerificationCondition condition = new VerificationCondition(
                 DEFAULT_PERIOD_DAYS,
@@ -115,6 +121,19 @@ public class RecommendationExecutionStartService {
             throw invalidCampaignResponse(key);
         }
         return field.toString();
+    }
+
+    private String firstRequiredString(
+            Map<String, Object> value,
+            String... keys
+    ) {
+        for (String key : keys) {
+            Object field = value.get(key);
+            if (field != null && !field.toString().isBlank()) {
+                return field.toString();
+            }
+        }
+        throw invalidCampaignResponse(String.join(" or ", keys));
     }
 
     private Long requiredLong(Map<String, Object> value, String key) {
