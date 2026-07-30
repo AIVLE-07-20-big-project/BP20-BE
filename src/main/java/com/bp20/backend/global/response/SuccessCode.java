@@ -38,7 +38,7 @@ public enum SuccessCode {
     SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석을 완료했습니다."),
     SUCCESS_AI_ANALYSIS_JOB_ACCEPTED(HttpStatus.ACCEPTED, "매출 분석 요청을 접수했습니다."),
     SUCCESS_AI_ANALYSIS_JOB_GET(HttpStatus.OK, "매출 분석 작업 상태를 조회했습니다."),
-    SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석이 완료되었습니다."),
+    SUCCESS_AI_ANALYSIS_COMPLETE(HttpStatus.OK, "매출 분석이 완료되었습니다."),
     SUCCESS_AI_ANALYSIS_GET(HttpStatus.OK, "매출 분석 결과를 조회했습니다."),
     SUCCESS_AI_RECOMMENDATION_CREATE(HttpStatus.OK, "고객 대응방안 추천과 검증을 시작했습니다."),
     SUCCESS_AI_RECOMMENDATION_GET(HttpStatus.OK, "AI 전략 추천 이력을 조회했습니다."),

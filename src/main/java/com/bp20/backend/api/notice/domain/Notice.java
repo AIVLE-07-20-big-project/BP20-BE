@@ -38,7 +38,6 @@ public class Notice extends BaseTimeEntity {
     private NoticeStatus status;
 
     @Column(nullable = false)
-    @Column(nullable = false)
     private boolean urgent;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
