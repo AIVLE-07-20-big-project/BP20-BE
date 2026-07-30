@@ -28,6 +28,13 @@ public class LocationController {
         return locationService.search(query);
     }
 
+    @GetMapping("/store")
+    public LocationSearchResponse getStoreLocation(
+            @AuthenticationPrincipal SecurityPrincipal currentUser
+    ) {
+        return locationService.getStoreLocation(currentUser.id());
+    }
+
     @GetMapping("/saved")
     public ResponseEntity<LocationSearchResponse> getSavedLocation(
             @AuthenticationPrincipal SecurityPrincipal currentUser
