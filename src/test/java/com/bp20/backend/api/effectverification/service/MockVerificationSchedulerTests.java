@@ -3,6 +3,7 @@ package com.bp20.backend.api.effectverification.service;
 import com.bp20.backend.api.effectverification.domain.EffectVerificationExecution;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationExecutionRepository;
+import com.bp20.backend.api.store.domain.Store;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class MockVerificationSchedulerTests {
@@ -145,9 +147,10 @@ class MockVerificationSchedulerTests {
     }
 
     private EffectVerificationExecution execution(String recommendationId, int attempts) {
+        Store store = mock(Store.class);
         return EffectVerificationExecution.builder()
                 .aiRecommendationId(recommendationId)
-                .storeId(1L)
+                .store(store)
                 .status(VerificationStatus.COLLECTING)
                 .attemptCount(attempts)
                 .verificationDueAt(LocalDateTime.now().minusDays(1))

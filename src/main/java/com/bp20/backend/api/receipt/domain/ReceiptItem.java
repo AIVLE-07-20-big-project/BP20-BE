@@ -1,5 +1,6 @@
 package com.bp20.backend.api.receipt.domain;
 
+import com.bp20.backend.api.product.domain.Product;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -49,8 +50,9 @@ public class ReceiptItem {
     @Column(nullable = false)
     private Integer totalPrice;
 
-    @Column(name = "matched_product_id")
-    private Long matchedProductId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "matched_product_id")
+    private Product matchedProduct;
 
     private ReceiptItem(Integer lineNumber, String itemName, Integer quantity, String unit,
                          Integer unitPrice, Integer totalPrice) {
@@ -69,5 +71,9 @@ public class ReceiptItem {
 
     void assignReceipt(Receipt receipt) {
         this.receipt = receipt;
+    }
+
+    public void matchProduct(Product product) {
+        this.matchedProduct = product;
     }
 }

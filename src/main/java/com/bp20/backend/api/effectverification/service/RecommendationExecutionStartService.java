@@ -38,7 +38,7 @@ public class RecommendationExecutionStartService {
             Long userId,
             RecommendationExecutionStartRequest input
     ) {
-        if (executionRepository.existsByThreadId(input.getThreadId())) {
+        if (executionRepository.existsByRecommendationRun_ThreadId(input.getThreadId())) {
             return lifecycleService.getExecution(userId, input.getThreadId());
         }
 

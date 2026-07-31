@@ -140,8 +140,8 @@ class MockAutomaticExecutionServiceTests {
                 ArgumentCaptor.forClass(ExecutionRegistrationRequest.class);
         verify(lifecycleService).registerExecution(isNull(), captor.capture());
         ExecutionRegistrationRequest request = captor.getValue();
-        assertThat(request.getRecommendationId()).isNull();
-        assertThat(request.getThreadId()).isEqualTo(threadId);
+        assertThat(request.getRecommendationId()).isEqualTo(threadId);
+        assertThat(request.getThreadId()).isNull();
         assertThat(request.getBefore()).isSameAs(baseline);
         assertThat(request.getExecutedAt()).isEqualTo(executedAt);
     }

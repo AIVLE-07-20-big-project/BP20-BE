@@ -1,5 +1,7 @@
 package com.bp20.backend.api.ai.domain;
 
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.global.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -16,10 +18,15 @@ import lombok.NoArgsConstructor;
 public class AiAnalysis extends BaseTimeEntity {
     @Id @Column(name = "analysis_id", length = 36)
     private String analysisId;
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-    @Column(name = "store_id", length = 100)
-    private String storeId;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id")
+    private Store store;
+
     @Column(name = "trdar_cd", nullable = false, length = 30)
     private String trdarCd;
     @Column(name = "svc_induty_cd", nullable = false, length = 30)
@@ -29,19 +36,19 @@ public class AiAnalysis extends BaseTimeEntity {
     @Lob @Column(name = "result_json", nullable = false, columnDefinition = "LONGTEXT")
     private String resultJson;
 
-    private AiAnalysis(String analysisId, Long userId, String storeId, String trdarCd,
+    private AiAnalysis(String analysisId, User user, Store store, String trdarCd,
                        String svcIndutyCd, Integer yyquCd, String resultJson) {
         this.analysisId = analysisId;
-        this.userId = userId;
-        this.storeId = storeId;
+        this.user = user;
+        this.store = store;
         this.trdarCd = trdarCd;
         this.svcIndutyCd = svcIndutyCd;
         this.yyquCd = yyquCd;
         this.resultJson = resultJson;
     }
 
-    public static AiAnalysis create(String analysisId, Long userId, String storeId, String trdarCd,
+    public static AiAnalysis create(String analysisId, User user, Store store, String trdarCd,
                                     String svcIndutyCd, Integer yyquCd, String resultJson) {
-        return new AiAnalysis(analysisId, userId, storeId, trdarCd, svcIndutyCd, yyquCd, resultJson);
+        return new AiAnalysis(analysisId, user, store, trdarCd, svcIndutyCd, yyquCd, resultJson);
     }
 }

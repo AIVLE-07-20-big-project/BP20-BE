@@ -1,11 +1,15 @@
 package com.bp20.backend.api.location.domain;
 
+import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.global.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -29,8 +33,9 @@ public class StoreOwnerLocation extends BaseTimeEntity {
     @Column(name = "location_id")
     private Long id;
 
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false, unique = true)
+    private User owner;
 
     @Column(name = "display_name", nullable = false, length = 200)
     private String displayName;
@@ -42,23 +47,23 @@ public class StoreOwnerLocation extends BaseTimeEntity {
     private double longitude;
 
     private StoreOwnerLocation(
-            Long ownerId,
+            User owner,
             String displayName,
             double latitude,
             double longitude
     ) {
-        this.ownerId = ownerId;
+        this.owner = owner;
         update(displayName, latitude, longitude);
     }
 
     public static StoreOwnerLocation create(
-            Long ownerId,
+            User owner,
             String displayName,
             double latitude,
             double longitude
     ) {
         return new StoreOwnerLocation(
-                ownerId,
+                owner,
                 displayName,
                 latitude,
                 longitude

@@ -13,8 +13,8 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
 
     boolean existsByDedupeKey(String dedupeKey);
 
-    List<Receipt> findByStoreIdAndTransactionDateBetweenOrderByTransactionDateAsc(
+    List<Receipt> findByStore_IdAndTransactionDateBetweenOrderByTransactionDateAsc(
             Long storeId, LocalDate from, LocalDate to);
 
-    List<Receipt> findByStoreIdOrderByTransactionDateDesc(Long storeId);
+    List<Receipt> findByStore_IdOrderByTransactionDateDesc(Long storeId);
 }
