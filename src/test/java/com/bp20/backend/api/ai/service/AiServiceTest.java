@@ -46,9 +46,9 @@ class AiServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "sales.csv", "text/csv", new byte[0]);
         Map<String, Object> result = Map.of("job_id", "job-1", "status", "queued");
         when(storeProfileRepository.findById(7L)).thenReturn(Optional.empty());
-        when(client.createAnalysis(file, "1", "A", 20261, 7L, "store-1")).thenReturn(result);
+        when(client.createAnalysis(file, "1", "A", 20261, 7L)).thenReturn(result);
 
-        assertThat(service.createAnalysis(7L, "store-1", file, "1", "A", 20261)).isEqualTo(result);
+        assertThat(service.createAnalysis(7L, file, "1", "A", 20261)).isEqualTo(result);
         verify(analysisRepository, never()).save(org.mockito.ArgumentMatchers.any());
         verify(storeProfileRepository).save(argThat(profile ->
                 profile.getUserId().equals(7L) && profile.getTrdarCd().equals("1")
@@ -61,10 +61,10 @@ class AiServiceTest {
         Map<String, Object> result = Map.of("job_id", "job-2", "status", "queued");
         when(storeProfileRepository.findById(7L))
                 .thenReturn(Optional.of(AiStoreProfile.create(7L, "1", "A")));
-        when(client.createAnalysis(file, "1", "A", null, 7L, "store-1")).thenReturn(result);
+        when(client.createAnalysis(file, "1", "A", null, 7L)).thenReturn(result);
 
-        assertThat(service.createAnalysis(7L, "store-1", file, null, null, null)).isEqualTo(result);
-        verify(client).createAnalysis(file, "1", "A", null, 7L, "store-1");
+        assertThat(service.createAnalysis(7L, file, null, null, null)).isEqualTo(result);
+        verify(client).createAnalysis(file, "1", "A", null, 7L);
         verify(storeProfileRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
@@ -73,7 +73,7 @@ class AiServiceTest {
         Map<String, Object> job = Map.of("job_id", "job-3", "status", "completed", "analysis_id", "analysis-3");
         Map<String, Object> analysis = Map.of(
                 "analysis_id", "analysis-3", "trdar_cd", "1", "svc_induty_cd", "A",
-                "yyqu_cd", 20261, "store_id", "store-1"
+                "yyqu_cd", 20261
         );
         when(client.getJobStatus("job-3", 7L)).thenReturn(job);
         when(analysisRepository.findByAnalysisIdAndUserId("analysis-3", 7L)).thenReturn(Optional.empty());
@@ -83,13 +83,13 @@ class AiServiceTest {
 
         verify(analysisRepository).save(argThat(saved ->
                 saved.getAnalysisId().equals("analysis-3") && saved.getUserId().equals(7L)
-                        && saved.getStoreId().equals("store-1") && saved.getYyquCd().equals(20261)));
+                        && saved.getYyquCd().equals(20261)));
     }
 
     @Test
     void getAnalysisJobStatusDoesNotRefetchAlreadySavedAnalysis() {
         Map<String, Object> job = Map.of("job_id", "job-4", "status", "completed", "analysis_id", "analysis-4");
-        AiAnalysis existing = AiAnalysis.create("analysis-4", 7L, "store-1", "1", "A", 20261, "{}");
+        AiAnalysis existing = AiAnalysis.create("analysis-4", 7L, "1", "A", 20261, "{}");
         when(client.getJobStatus("job-4", 7L)).thenReturn(job);
         when(analysisRepository.findByAnalysisIdAndUserId("analysis-4", 7L)).thenReturn(Optional.of(existing));
 
@@ -114,7 +114,7 @@ class AiServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "sales.csv", "text/csv", new byte[0]);
         when(storeProfileRepository.findById(7L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createAnalysis(7L, "store-1", file, null, null, null))
+        assertThatThrownBy(() -> service.createAnalysis(7L, file, null, null, null))
                 .isInstanceOf(ApiException.class)
                 .extracting(e -> ((ApiException) e).getErrorCode())
                 .isEqualTo(ErrorCode.NOT_FOUND_STORE);
@@ -123,7 +123,7 @@ class AiServiceTest {
     @Test
     void recommendationReloadsOwnedAnalysisAndPersistsThread() {
         AiAnalysis analysis = AiAnalysis.create(
-                "analysis-1", 7L, "store-1", "1", "A", 20261,
+                "analysis-1", 7L, "1", "A", 20261,
                 "{\"diagnosis\":{\"5_처방\":{\"등급\":\"고객_회복\"}},\"warnings\":[]}"
         );
         when(analysisRepository.findByAnalysisIdAndUserId("analysis-1", 7L))
@@ -147,20 +147,20 @@ class AiServiceTest {
         );
         when(runRepository.findAllByUserIdOrderByCreatedAtDesc(7L)).thenReturn(java.util.List.of(run));
 
-        java.util.List<Map<String, Object>> result = service.getRecommendations(7L, null);
+        java.util.List<Map<String, Object>> result = service.getRecommendations(7L);
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    void getRecommendationsIgnoresStoreIdFilter() {
+    void getRecommendationsReturnsOwnedRuns() {
         AiRecommendationRun run = AiRecommendationRun.create(
                 "thread-2", "analysis-2", 7L, "{\"상태\":\"승인 대기\"}"
         );
         when(runRepository.findAllByUserIdOrderByCreatedAtDesc(7L))
                 .thenReturn(java.util.List.of(run));
 
-        java.util.List<Map<String, Object>> result = service.getRecommendations(7L, "store-2");
+        java.util.List<Map<String, Object>> result = service.getRecommendations(7L);
 
         assertThat(result).hasSize(1);
         verify(runRepository).findAllByUserIdOrderByCreatedAtDesc(7L);
