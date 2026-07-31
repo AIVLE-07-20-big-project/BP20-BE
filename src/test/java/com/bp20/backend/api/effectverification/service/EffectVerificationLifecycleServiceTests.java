@@ -6,6 +6,7 @@ import com.bp20.backend.api.effectverification.dto.response.VerificationExecutio
 import com.bp20.backend.api.effectverification.domain.EffectVerificationExecution;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationExecutionRepository;
+import com.bp20.backend.api.ai.repository.AiRecommendationRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,13 +37,17 @@ class EffectVerificationLifecycleServiceTests {
     @Mock
     private EffectVerificationService verificationService;
 
+    @Mock
+    private AiRecommendationRunRepository recommendationRunRepository;
+
     private EffectVerificationLifecycleService lifecycleService;
 
     @BeforeEach
     void setUp() {
         lifecycleService = new EffectVerificationLifecycleService(
                 executionRepository,
-                verificationService
+                verificationService,
+                recommendationRunRepository
         );
     }
 
