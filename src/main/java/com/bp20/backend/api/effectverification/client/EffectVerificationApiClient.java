@@ -1,6 +1,8 @@
 package com.bp20.backend.api.effectverification.client;
 
+import com.bp20.backend.api.effectverification.dto.request.EffectVerificationFromAnalysesRequest;
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
+import com.bp20.backend.api.effectverification.dto.response.EffectVerificationFromAnalysesResponse;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -45,6 +47,34 @@ public class EffectVerificationApiClient {
 
             throw new IllegalStateException(
                     "Effect Verification AI 호출 실패",
+                    e
+            );
+        }
+    }
+
+    public EffectVerificationFromAnalysesResponse verifyEffectFromAnalyses(
+            EffectVerificationFromAnalysesRequest request
+    ) {
+        try {
+
+            EffectVerificationFromAnalysesResponse response = restClient.post()
+                    .uri("/effect-verification/verify-from-analyses")
+                    .body(request)
+                    .retrieve()
+                    .body(EffectVerificationFromAnalysesResponse.class);
+
+            if (response == null) {
+                throw new IllegalStateException(
+                        "AI 서버가 빈 응답을 반환했습니다."
+                );
+            }
+
+            return response;
+
+        } catch (RestClientException e) {
+
+            throw new IllegalStateException(
+                    "Effect Verification(analyses) AI 호출 실패",
                     e
             );
         }
