@@ -24,7 +24,8 @@ public class EffectVerificationRoiService {
     @Transactional(readOnly = true)
     public EffectVerificationRoiResponse getSummary(Long storeId) {
         List<EffectVerificationResult> results = resultRepository.findAll().stream()
-                .filter(result -> storeId == null || storeId.equals(result.getStoreId()))
+                .filter(result -> storeId == null
+                        || storeId.equals(result.getStore().getId()))
                 .toList();
 
         long effectiveCount = results.stream()
@@ -37,7 +38,7 @@ public class EffectVerificationRoiService {
         long inconclusiveCount = results.size() - effectiveCount - ineffectiveCount;
 
         Map<Long, List<EffectVerificationResult>> byStore = results.stream()
-                .collect(Collectors.groupingBy(EffectVerificationResult::getStoreId));
+                .collect(Collectors.groupingBy(result -> result.getStore().getId()));
         List<EffectVerificationRoiResponse.StoreSummary> storeSummaries =
                 byStore.entrySet().stream()
                         .sorted(Map.Entry.comparingByKey())
@@ -70,7 +71,7 @@ public class EffectVerificationRoiService {
                         .limit(RECENT_RESULT_LIMIT)
                         .map(result -> new EffectVerificationRoiResponse.RecentResult(
                                 result.getAiRecommendationId(),
-                                result.getStoreId(),
+                                result.getStore().getId(),
                                 result.getRecommendationType(),
                                 rounded(result.getEffectScore()),
                                 result.getVerdict(),

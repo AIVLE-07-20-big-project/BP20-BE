@@ -26,7 +26,7 @@ public class EffectVerificationRetryService {
     public VerificationExecutionResponse retry(Long userId, String recommendationId) {
         EffectVerificationExecution execution = (userId == null
                 ? executionRepository.findByAiRecommendationId(recommendationId)
-                : executionRepository.findByAiRecommendationIdAndUserId(
+                : executionRepository.findByAiRecommendationIdAndUser_Id(
                         recommendationId,
                         userId
                 ))

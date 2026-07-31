@@ -1,6 +1,9 @@
 package com.bp20.backend.api.effectverification.domain;
 
+import com.bp20.backend.api.ai.domain.AiRecommendationRun;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -26,17 +29,20 @@ public class EffectVerificationExecution {
     @Column(name = "AIRecommendationID", nullable = false, unique = true, length = 64)
     private String aiRecommendationId;
 
-    @Column(name = "RecommendationThreadID", unique = true, length = 36)
-    private String threadId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RecommendationThreadID", unique = true)
+    private AiRecommendationRun recommendationRun;
 
     @Column(name = "CampaignDecisionID", unique = true, length = 36)
     private String decisionId;
 
-    @Column(name = "UserID")
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "UserID")
+    private User user;
 
-    @Column(name = "StoreID", nullable = false)
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "StoreID", nullable = false)
+    private Store store;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "RecommendationType", nullable = false, length = 20)

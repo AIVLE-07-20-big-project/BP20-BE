@@ -6,7 +6,12 @@ import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.MetricResult;
 import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
+import com.bp20.backend.api.effectverification.repository.EffectVerificationExecutionRepository;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationResultRepository;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,14 +41,36 @@ class EffectVerificationServiceTests {
     @Mock
     private EffectVerificationResultRepository resultRepository;
 
+    @Mock
+    private EffectVerificationExecutionRepository executionRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private StoreRepository storeRepository;
+
+    @Mock
+    private User user;
+
+    @Mock
+    private Store store;
+
     private EffectVerificationService service;
 
     @BeforeEach
     void setUp() {
         service = new EffectVerificationService(
                 apiClient,
-                resultRepository
+                resultRepository,
+                executionRepository,
+                userRepository,
+                storeRepository
         );
+        lenient().when(user.getId()).thenReturn(USER_ID);
+        lenient().when(store.getId()).thenReturn(10L);
+        lenient().when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        lenient().when(storeRepository.findById(10L)).thenReturn(Optional.of(store));
     }
 
     @Test
@@ -50,7 +78,7 @@ class EffectVerificationServiceTests {
         EffectVerificationRequest request = new EffectVerificationRequest();
         EffectVerificationResponse aiResponse = createResponse();
         when(apiClient.verifyEffect(request)).thenReturn(aiResponse);
-        when(resultRepository.findByAiRecommendationIdAndUserId("1", USER_ID))
+        when(resultRepository.findByAiRecommendationIdAndUser_Id("1", USER_ID))
                 .thenReturn(Optional.empty());
         when(resultRepository.save(any(EffectVerificationResult.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -63,8 +91,8 @@ class EffectVerificationServiceTests {
         EffectVerificationResult saved = captor.getValue();
 
         assertThat(saved.getAiRecommendationId()).isEqualTo("1");
-        assertThat(saved.getUserId()).isEqualTo(USER_ID);
-        assertThat(saved.getStoreId()).isEqualTo(10L);
+        assertThat(saved.getUser().getId()).isEqualTo(USER_ID);
+        assertThat(saved.getStore().getId()).isEqualTo(10L);
         assertThat(saved.getRecommendationType()).isEqualTo(RecommendationType.SALES);
         assertThat(saved.getEffectScore()).isEqualTo(96.0);
         assertThat(saved.getMetricResults()).contains("target_sales");
@@ -79,8 +107,8 @@ class EffectVerificationServiceTests {
                 .writeValueAsString(original.getMetricResults());
         EffectVerificationResult saved = EffectVerificationResult.builder()
                 .aiRecommendationId("1")
-                .userId(USER_ID)
-                .storeId(10L)
+                .user(user)
+                .store(store)
                 .recommendationType(RecommendationType.SALES)
                 .effectScore(96.0)
                 .verdict("EFFECTIVE")
@@ -88,7 +116,7 @@ class EffectVerificationServiceTests {
                 .summary("success")
                 .verifiedDate(verifiedDate)
                 .build();
-        when(resultRepository.findByAiRecommendationIdAndUserId("1", USER_ID))
+        when(resultRepository.findByAiRecommendationIdAndUser_Id("1", USER_ID))
                 .thenReturn(Optional.of(saved));
 
         EffectVerificationResponse response =
