@@ -1,11 +1,15 @@
 package com.bp20.backend.api.csv.domain;
 
 import com.bp20.backend.api.recommendation.dto.InventoryDataRequest;
+import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -21,8 +25,9 @@ import lombok.NoArgsConstructor;
 public class CsvInventory {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
     @Column(nullable = false, length = 100) private String name;
     @Column(nullable = false, length = 60) private String lot;
     @Column(nullable = false) private double stock;
@@ -35,8 +40,8 @@ public class CsvInventory {
     @Column(name = "supplier_price", nullable = false) private long supplierPrice;
     @Column(name = "lead_time", nullable = false) private int leadTime;
 
-    public CsvInventory(Long ownerId, InventoryDataRequest value) {
-        this.ownerId = ownerId;
+    public CsvInventory(User owner, InventoryDataRequest value) {
+        this.owner = owner;
         this.name = value.name();
         this.lot = value.lot();
         this.stock = value.stock();

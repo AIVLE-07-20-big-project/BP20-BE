@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CsvProductRepository extends JpaRepository<CsvProduct, Long> {
-    List<CsvProduct> findAllByOwnerIdOrderByProductCode(Long ownerId);
-    long countByOwnerId(Long ownerId);
-    void deleteAllByOwnerId(Long ownerId);
+    List<CsvProduct> findAllByOwner_IdOrderByProductCode(Long ownerId);
+    long countByOwner_Id(Long ownerId);
+    void deleteAllByOwner_Id(Long ownerId);
 }

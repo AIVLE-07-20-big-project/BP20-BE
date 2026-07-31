@@ -18,7 +18,7 @@ public record ReceiptPayload(
     public static ReceiptPayload from(Receipt receipt) {
         return new ReceiptPayload(
                 receipt.getId(),
-                receipt.getStoreId(),
+                receipt.getStore() == null ? null : receipt.getStore().getId(),
                 receipt.getVendorName(),
                 receipt.getTransactionDate().toString(),
                 receipt.getTransactionTime() == null ? null : receipt.getTransactionTime().toString(),

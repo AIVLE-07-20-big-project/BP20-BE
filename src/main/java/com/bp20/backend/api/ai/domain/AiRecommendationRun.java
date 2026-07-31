@@ -20,21 +20,15 @@ import java.time.LocalDateTime;
 public class AiRecommendationRun extends BaseTimeEntity {
     @Id @Column(name = "thread_id", length = 36)
     private String threadId;
-    @Column(name = "analysis_id", nullable = false, length = 36)
-    private String analysisId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "analysis_id", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_ai_runs_analysis"))
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "analysis_id", nullable = false)
     private AiAnalysis analysis;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_ai_runs_user"))
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
     @Lob @Column(name = "result_json", nullable = false, columnDefinition = "LONGTEXT")
     private String resultJson;
     @Column(name = "execution_started_at")
@@ -44,16 +38,25 @@ public class AiRecommendationRun extends BaseTimeEntity {
     @Column(name = "selected_action", length = 100)
     private String selectedAction;
 
-    private AiRecommendationRun(String threadId, String analysisId, Long userId, String resultJson) {
+    private AiRecommendationRun(
+            String threadId,
+            AiAnalysis analysis,
+            User user,
+            String resultJson
+    ) {
         this.threadId = threadId;
-        this.analysisId = analysisId;
-        this.userId = userId;
+        this.analysis = analysis;
+        this.user = user;
         this.resultJson = resultJson;
     }
 
-    public static AiRecommendationRun create(String threadId, String analysisId,
-                                             Long userId, String resultJson) {
-        return new AiRecommendationRun(threadId, analysisId, userId, resultJson);
+    public static AiRecommendationRun create(
+            String threadId,
+            AiAnalysis analysis,
+            User user,
+            String resultJson
+    ) {
+        return new AiRecommendationRun(threadId, analysis, user, resultJson);
     }
 
     public void updateResult(String resultJson) {

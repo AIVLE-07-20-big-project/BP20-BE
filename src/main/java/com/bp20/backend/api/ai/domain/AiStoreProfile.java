@@ -2,7 +2,14 @@ package com.bp20.backend.api.ai.domain;
 
 import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.global.domain.BaseTimeEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,11 +23,11 @@ public class AiStoreProfile extends BaseTimeEntity {
 
     @Id
     @Column(name = "user_id")
-    private Long userId;
+    private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_ai_store_profiles_user"))
+    @MapsId
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "trdar_cd", nullable = false, length = 30)
@@ -29,14 +36,14 @@ public class AiStoreProfile extends BaseTimeEntity {
     @Column(name = "svc_induty_cd", nullable = false, length = 30)
     private String svcIndutyCd;
 
-    private AiStoreProfile(Long userId, String trdarCd, String svcIndutyCd) {
-        this.userId = userId;
+    private AiStoreProfile(User user, String trdarCd, String svcIndutyCd) {
+        this.user = user;
         this.trdarCd = trdarCd;
         this.svcIndutyCd = svcIndutyCd;
     }
 
-    public static AiStoreProfile create(Long userId, String trdarCd, String svcIndutyCd) {
-        return new AiStoreProfile(userId, trdarCd, svcIndutyCd);
+    public static AiStoreProfile create(User user, String trdarCd, String svcIndutyCd) {
+        return new AiStoreProfile(user, trdarCd, svcIndutyCd);
     }
 
     public void updateCodes(String trdarCd, String svcIndutyCd) {

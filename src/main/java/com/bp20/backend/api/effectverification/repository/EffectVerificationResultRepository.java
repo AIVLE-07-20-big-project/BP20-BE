@@ -10,7 +10,7 @@ public interface EffectVerificationResultRepository
 
     Optional<EffectVerificationResult> findByAiRecommendationId(String aiRecommendationId);
 
-    Optional<EffectVerificationResult> findByAiRecommendationIdAndUserId(
+    Optional<EffectVerificationResult> findByAiRecommendationIdAndUser_Id(
             String aiRecommendationId,
             Long userId
     );

@@ -7,7 +7,13 @@ import com.bp20.backend.api.effectverification.dto.response.EffectVerificationFr
 import com.bp20.backend.api.effectverification.dto.response.MetricResult;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
+import com.bp20.backend.api.effectverification.domain.EffectVerificationExecution;
+import com.bp20.backend.api.effectverification.repository.EffectVerificationExecutionRepository;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationResultRepository;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +33,9 @@ public class EffectVerificationService {
 
     private final EffectVerificationApiClient effectVerificationApiClient;
     private final EffectVerificationResultRepository resultRepository;
+    private final EffectVerificationExecutionRepository executionRepository;
+    private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
@@ -71,18 +80,38 @@ public class EffectVerificationService {
         String metricResults = writeMetricResults(response.getMetricResults());
         String strategyReportJson = writeStrategyReport(response.getStrategyReport());
 
+        User user = userId == null
+                ? null
+                : userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+        Store store = storeRepository.findById(response.getStoreId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Store not found"
+                ));
+        // AI 응답의 recommendation_id는 verify-from-analyses 경로에서 숫자(내부 실행 ID)라
+        // BE 저장 키(문자열 thread_id 등)와 다를 수 있다 — 조회·저장은 항상 resultRecommendationId 기준.
+        EffectVerificationExecution execution = executionRepository
+                .findByAiRecommendationId(resultRecommendationId)
+                .orElse(null);
+
         EffectVerificationResult result = resultRepository
-                .findByAiRecommendationIdAndUserId(
+                .findByAiRecommendationIdAndUser_Id(
                         resultRecommendationId,
                         userId
                 )
                 .orElseGet(() -> EffectVerificationResult.builder()
                         .aiRecommendationId(resultRecommendationId)
-                        .userId(userId)
+                        .execution(execution)
+                        .user(user)
+                        .store(store)
                         .build());
 
         result.update(
-                response.getStoreId(),
+                store,
                 response.getRecommendationType(),
                 response.getEffectScore(),
                 response.getVerdict(),
@@ -91,6 +120,9 @@ public class EffectVerificationService {
                 strategyReportJson,
                 verifiedDate
         );
+        if (execution != null) {
+            result.linkExecution(execution);
+        }
         resultRepository.save(result);
         response.setVerifiedDate(verifiedDate);
     }
@@ -101,14 +133,14 @@ public class EffectVerificationService {
             String recommendationId
     ) {
         EffectVerificationResult result = resultRepository
-                .findByAiRecommendationIdAndUserId(recommendationId, userId)
+                .findByAiRecommendationIdAndUser_Id(recommendationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Effect verification result not found"
                 ));
 
         EffectVerificationResponse response = new EffectVerificationResponse();
-        response.setStoreId(result.getStoreId());
+        response.setStoreId(result.getStore().getId());
         response.setRecommendationId(result.getAiRecommendationId());
         response.setRecommendationType(result.getRecommendationType());
         response.setEffectScore(result.getEffectScore());

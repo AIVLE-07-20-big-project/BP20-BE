@@ -21,9 +21,9 @@ public interface ReviewAnalysisRepository extends JpaRepository<ReviewAnalysis, 
            "                 WHEN ra.sentiment = '부정' THEN 1.0 ELSE 0.0 END), 1) " +
            ") " +
            "FROM ReviewAnalysis ra " +
-           "JOIN Review r ON ra.reviewId = r.id " +
-           "WHERE r.storeId = :storeId " +
-           "  AND r.reviewedDate >= :startDate AND r.reviewedDate < :endDate " +
+           "WHERE ra.review.store.id = :storeId " +
+           "  AND ra.review.reviewedDate >= :startDate " +
+           "  AND ra.review.reviewedDate < :endDate " +
            "GROUP BY ra.aspect")
     List<AspectScoreDto> findAspectScoresByStoreAndDate(
         @Param("storeId") Long storeId,
@@ -38,8 +38,7 @@ public interface ReviewAnalysisRepository extends JpaRepository<ReviewAnalysis, 
             "  SUM(CASE WHEN ra.sentiment = '부정' THEN 1L ELSE 0L END) " +
             ") " +
             "FROM ReviewAnalysis ra " +
-            "JOIN Review r ON ra.reviewId = r.id " +
-            "WHERE r.storeId = :storeId " +
+            "WHERE ra.review.store.id = :storeId " +
             "GROUP BY ra.aspect")
     List<AspectStatResponseDto> findAspectStatsByStoreId(@Param("storeId") Long storeId);
 }

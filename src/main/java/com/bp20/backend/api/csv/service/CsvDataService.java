@@ -10,6 +10,10 @@ import com.bp20.backend.api.ai.service.AiSalesFeedbackService;
 import com.bp20.backend.api.recommendation.dto.DailySalesDto;
 import com.bp20.backend.api.recommendation.dto.InventoryDataRequest;
 import com.bp20.backend.api.recommendation.dto.ProductDataRequest;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
+import com.bp20.backend.global.exception.ApiException;
+import com.bp20.backend.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -34,6 +38,7 @@ public class CsvDataService {
     private final CsvProductRepository productRepository;
     private final CsvDailySalesRepository salesRepository;
     private final CsvInventoryRepository inventoryRepository;
+    private final UserRepository userRepository;
     private final AiSalesFeedbackService aiSalesFeedbackService;
 
     /**
@@ -41,6 +46,7 @@ public class CsvDataService {
      */
     @Transactional
     public int loadProducts(Long ownerId, MultipartFile file) {
+        User owner = findOwner(ownerId);
         List<ProductDataRequest> result = new ArrayList<>();
 
         try (
@@ -78,10 +84,12 @@ public class CsvDataService {
              *
              * 파일 처리 도중 오류가 발생하면 기존 데이터가 유지된다.
              */
-            productRepository.deleteAllByOwnerId(ownerId);
+            productRepository.deleteAllByOwner_Id(ownerId);
             productRepository.flush();
             productRepository.saveAll(
-                    result.stream().map(value -> new CsvProduct(ownerId, value)).toList()
+                    result.stream()
+                            .map(value -> new CsvProduct(owner, value))
+                            .toList()
             );
             return result.size();
 
@@ -98,6 +106,7 @@ public class CsvDataService {
      */
     @Transactional
     public int loadSales(Long ownerId, MultipartFile file) {
+        User owner = findOwner(ownerId);
         List<DailySalesDto> result = new ArrayList<>();
 
         try (
@@ -148,13 +157,15 @@ public class CsvDataService {
                     .max(LocalDate::compareTo).orElseThrow().plusDays(1);
             if (!result.isEmpty()) {
                 // 과거 기간은 보존하고, 재업로드한 기간만 교체해 before/after 비교가 가능하도록 한다.
-                salesRepository.deleteAllByOwnerIdAndSaleDateGreaterThanEqualAndSaleDateLessThan(
+                salesRepository.deleteAllByOwner_IdAndSaleDateGreaterThanEqualAndSaleDateLessThan(
                         ownerId, from, toExclusive
                 );
                 salesRepository.flush();
             }
             salesRepository.saveAll(
-                    result.stream().map(value -> new CsvDailySales(ownerId, value)).toList()
+                    result.stream()
+                            .map(value -> new CsvDailySales(owner, value))
+                            .toList()
             );
             aiSalesFeedbackService.processUploadedSales(ownerId, from, toExclusive);
             return result.size();
@@ -172,6 +183,7 @@ public class CsvDataService {
      */
     @Transactional
     public int loadInventories(Long ownerId, MultipartFile file) {
+        User owner = findOwner(ownerId);
         List<InventoryDataRequest> result =
                 new ArrayList<>();
 
@@ -218,10 +230,10 @@ public class CsvDataService {
                 result.add(inventory);
             }
 
-            inventoryRepository.deleteAllByOwnerId(ownerId);
+            inventoryRepository.deleteAllByOwner_Id(ownerId);
             inventoryRepository.flush();
             inventoryRepository.saveAll(
-                    result.stream().map(value -> new CsvInventory(ownerId, value)).toList()
+                    result.stream().map(value -> new CsvInventory(owner, value)).toList()
             );
             return result.size();
 
@@ -343,7 +355,7 @@ public class CsvDataService {
      */
     @Transactional(readOnly = true)
     public List<ProductDataRequest> getProducts(Long ownerId) {
-        return productRepository.findAllByOwnerIdOrderByProductCode(ownerId)
+        return productRepository.findAllByOwner_IdOrderByProductCode(ownerId)
                 .stream().map(CsvProduct::toDto).toList();
     }
 
@@ -352,7 +364,7 @@ public class CsvDataService {
      */
     @Transactional(readOnly = true)
     public List<DailySalesDto> getSales(Long ownerId) {
-        return salesRepository.findAllByOwnerIdOrderBySaleDateAscProductCodeAsc(ownerId)
+        return salesRepository.findAllByOwner_IdOrderBySaleDateAscProductCodeAsc(ownerId)
                 .stream().map(CsvDailySales::toDto).toList();
     }
 
@@ -361,16 +373,21 @@ public class CsvDataService {
      */
     @Transactional(readOnly = true)
     public List<InventoryDataRequest> getInventories(Long ownerId) {
-        return inventoryRepository.findAllByOwnerIdOrderByName(ownerId)
+        return inventoryRepository.findAllByOwner_IdOrderByName(ownerId)
                 .stream().map(CsvInventory::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public Map<String, Long> getStatus(Long ownerId) {
         return Map.of(
-                "productCount", productRepository.countByOwnerId(ownerId),
-                "salesCount", salesRepository.countByOwnerId(ownerId),
-                "inventoryCount", inventoryRepository.countByOwnerId(ownerId)
+                "productCount", productRepository.countByOwner_Id(ownerId),
+                "salesCount", salesRepository.countByOwner_Id(ownerId),
+                "inventoryCount", inventoryRepository.countByOwner_Id(ownerId)
         );
+    }
+
+    private User findOwner(Long ownerId) {
+        return userRepository.findById(ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_USER));
     }
 }
