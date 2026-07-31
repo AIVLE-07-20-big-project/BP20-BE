@@ -5,6 +5,10 @@ import com.bp20.backend.api.location.domain.StoreOwnerLocation;
 import com.bp20.backend.api.location.dto.LocationSearchResponse;
 import com.bp20.backend.api.location.dto.SaveLocationRequest;
 import com.bp20.backend.api.location.repository.StoreOwnerLocationRepository;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.global.exception.ApiException;
+import com.bp20.backend.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +21,7 @@ import java.util.Optional;
 public class LocationService {
     private final KakaoLocalClient kakaoLocalClient;
     private final StoreOwnerLocationRepository locationRepository;
+    private final StoreRepository storeRepository;
 
     public List<LocationSearchResponse> search(String query) {
         String normalized = query == null ? "" : query.trim();
@@ -27,8 +32,33 @@ public class LocationService {
     }
 
     @Transactional(readOnly = true)
+    public LocationSearchResponse getStoreLocation(Long ownerId) {
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+
+        String weatherLocationName = toWeatherLocationName(store.getAddress());
+
+        return kakaoLocalClient.search(store.getAddress()).stream()
+                .findFirst()
+                .map(location -> new LocationSearchResponse(
+                        weatherLocationName,
+                        location.latitude(),
+                        location.longitude()
+                ))
+                .orElseThrow(() -> new IllegalStateException(
+                        "등록된 매장 주소의 위치를 찾지 못했습니다. 도로명 주소를 확인해 주세요."
+                ));
+    }
+
+    private String toWeatherLocationName(String roadAddress) {
+        String normalized = roadAddress == null ? "" : roadAddress.trim();
+        String withoutBuildingNumber = normalized.replaceFirst("\\d.*$", "").trim();
+        return withoutBuildingNumber.isBlank() ? normalized : withoutBuildingNumber;
+    }
+
+    @Transactional(readOnly = true)
     public Optional<LocationSearchResponse> getSavedLocation(Long ownerId) {
-        return locationRepository.findByOwnerId(ownerId)
+        return locationRepository.findByOwner_Id(ownerId)
                 .map(location -> new LocationSearchResponse(
                         location.getDisplayName(),
                         location.getLatitude(),
@@ -42,9 +72,11 @@ public class LocationService {
             SaveLocationRequest request
     ) {
         String displayName = request.displayName().trim();
-        StoreOwnerLocation location = locationRepository.findByOwnerId(ownerId)
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+        StoreOwnerLocation location = locationRepository.findByOwner_Id(ownerId)
                 .orElseGet(() -> StoreOwnerLocation.create(
-                        ownerId,
+                        store.getOwner(),
                         displayName,
                         request.latitude(),
                         request.longitude()

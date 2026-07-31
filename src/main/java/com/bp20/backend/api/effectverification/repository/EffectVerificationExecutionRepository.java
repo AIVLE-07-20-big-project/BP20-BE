@@ -11,52 +11,63 @@ import java.util.List;
 public interface EffectVerificationExecutionRepository
         extends JpaRepository<EffectVerificationExecution, Long> {
 
-    Optional<EffectVerificationExecution> findByAiRecommendationId(Long aiRecommendationId);
+    Optional<EffectVerificationExecution> findByAiRecommendationId(String aiRecommendationId);
 
-    Optional<EffectVerificationExecution> findByAiRecommendationIdAndUserId(
-            Long aiRecommendationId,
+    Optional<EffectVerificationExecution> findByAiRecommendationIdAndUser_Id(
+            String aiRecommendationId,
             Long userId
     );
 
-    boolean existsByAiRecommendationId(Long aiRecommendationId);
+    boolean existsByAiRecommendationId(String aiRecommendationId);
+
+    boolean existsByRecommendationRun_ThreadId(String threadId);
+
+    boolean existsByDecisionId(String decisionId);
+
+    Optional<EffectVerificationExecution> findByRecommendationRun_ThreadId(String threadId);
+
+    Optional<EffectVerificationExecution> findByRecommendationRun_ThreadIdAndUser_Id(
+            String threadId,
+            Long userId
+    );
 
     List<EffectVerificationExecution> findByStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             VerificationStatus status,
             LocalDateTime dueAt
     );
 
-    List<EffectVerificationExecution> findByStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+    List<EffectVerificationExecution> findByStore_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             Long storeId,
             VerificationStatus status,
             LocalDateTime dueAt
     );
 
-    List<EffectVerificationExecution> findByUserIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+    List<EffectVerificationExecution> findByUser_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             Long userId,
             VerificationStatus status,
             LocalDateTime dueAt
     );
 
-    List<EffectVerificationExecution> findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+    List<EffectVerificationExecution> findByUser_IdAndStore_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
             Long userId,
             Long storeId,
             VerificationStatus status,
             LocalDateTime dueAt
     );
 
-    List<EffectVerificationExecution> findByStoreIdOrderByExecutedAtDesc(Long storeId);
+    List<EffectVerificationExecution> findByStore_IdOrderByExecutedAtDesc(Long storeId);
 
-    List<EffectVerificationExecution> findByUserIdAndStoreIdOrderByExecutedAtDesc(
+    List<EffectVerificationExecution> findByUser_IdAndStore_IdOrderByExecutedAtDesc(
             Long userId,
             Long storeId
     );
 
-    List<EffectVerificationExecution> findByStoreIdAndStatusOrderByExecutedAtDesc(
+    List<EffectVerificationExecution> findByStore_IdAndStatusOrderByExecutedAtDesc(
             Long storeId,
             VerificationStatus status
     );
 
-    List<EffectVerificationExecution> findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+    List<EffectVerificationExecution> findByUser_IdAndStore_IdAndStatusOrderByExecutedAtDesc(
             Long userId,
             Long storeId,
             VerificationStatus status

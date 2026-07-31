@@ -1,6 +1,9 @@
 package com.bp20.backend.api.effectverification.domain;
 
+import com.bp20.backend.api.ai.domain.AiRecommendationRun;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -23,14 +26,23 @@ public class EffectVerificationExecution {
     @Column(name = "EffectVerificationExecutionID")
     private Long effectVerificationExecutionId;
 
-    @Column(name = "AIRecommendationID", nullable = false, unique = true)
-    private Long aiRecommendationId;
+    @Column(name = "AIRecommendationID", nullable = false, unique = true, length = 64)
+    private String aiRecommendationId;
 
-    @Column(name = "UserID")
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RecommendationThreadID", unique = true)
+    private AiRecommendationRun recommendationRun;
 
-    @Column(name = "StoreID", nullable = false)
-    private Long storeId;
+    @Column(name = "CampaignDecisionID", unique = true, length = 36)
+    private String decisionId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "UserID")
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "StoreID", nullable = false)
+    private Store store;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "RecommendationType", nullable = false, length = 20)
@@ -45,6 +57,9 @@ public class EffectVerificationExecution {
 
     @Column(name = "BeforeMetricsJson", nullable = false, columnDefinition = "TEXT")
     private String beforeMetricsJson;
+
+    @Column(name = "SelectedActionJson", columnDefinition = "TEXT")
+    private String selectedActionJson;
 
     @Column(name = "AfterMetricsJson", columnDefinition = "TEXT")
     private String afterMetricsJson;
@@ -88,5 +103,9 @@ public class EffectVerificationExecution {
     public void beginAttempt(LocalDateTime attemptedAt) {
         this.attemptCount = this.attemptCount == null ? 1 : this.attemptCount + 1;
         this.lastAttemptAt = attemptedAt;
+    }
+
+    public void linkDecision(String decisionId) {
+        this.decisionId = decisionId;
     }
 }

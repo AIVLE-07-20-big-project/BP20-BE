@@ -1,13 +1,18 @@
 package com.bp20.backend.api.effectverification.controller;
 
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
+import com.bp20.backend.api.effectverification.dto.request.CampaignDecisionLinkRequest;
 import com.bp20.backend.api.effectverification.dto.request.ExecutionRegistrationRequest;
+import com.bp20.backend.api.effectverification.dto.request.RecommendationExecutionStartRequest;
 import com.bp20.backend.api.effectverification.dto.request.VerificationCompletionRequest;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.VerificationExecutionResponse;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.bp20.backend.api.effectverification.service.EffectVerificationLifecycleService;
+import com.bp20.backend.api.effectverification.service.EffectVerificationRetryService;
 import com.bp20.backend.api.effectverification.service.EffectVerificationService;
+import com.bp20.backend.api.effectverification.service.EffectVerificationStoreAccessService;
+import com.bp20.backend.api.effectverification.service.RecommendationExecutionStartService;
 import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -16,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,12 +38,26 @@ public class EffectVerificationController {
 
     private final EffectVerificationService effectVerificationService;
     private final EffectVerificationLifecycleService lifecycleService;
+    private final RecommendationExecutionStartService executionStartService;
+    private final EffectVerificationRetryService retryService;
+    private final EffectVerificationStoreAccessService storeAccessService;
+
+    @PostMapping("/executions/start")
+    public ResponseEntity<VerificationExecutionResponse> startExecution(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @Valid @RequestBody RecommendationExecutionStartRequest request
+    ) {
+        return ResponseEntity.ok(
+                executionStartService.start(userId(currentUser), request)
+        );
+    }
 
     @PostMapping("/executions")
     public ResponseEntity<VerificationExecutionResponse> registerExecution(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @Valid @RequestBody ExecutionRegistrationRequest request
     ) {
+        storeAccessService.validateOwner(userId(currentUser), request.getStoreId());
         return ResponseEntity.ok(
                 lifecycleService.registerExecution(userId(currentUser), request)
         );
@@ -46,7 +66,7 @@ public class EffectVerificationController {
     @PostMapping("/executions/{recommendationId}/complete")
     public ResponseEntity<EffectVerificationResponse> completeVerification(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @PathVariable Long recommendationId,
+            @PathVariable String recommendationId,
             @Valid @RequestBody VerificationCompletionRequest request
     ) {
         return ResponseEntity.ok(
@@ -61,10 +81,35 @@ public class EffectVerificationController {
     @GetMapping("/executions/{recommendationId}")
     public ResponseEntity<VerificationExecutionResponse> getExecution(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @PathVariable Long recommendationId
+            @PathVariable String recommendationId
     ) {
         return ResponseEntity.ok(
                 lifecycleService.getExecution(userId(currentUser), recommendationId)
+        );
+    }
+
+    @PatchMapping("/executions/by-thread/{threadId}/decision")
+    public ResponseEntity<VerificationExecutionResponse> linkCampaignDecision(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable String threadId,
+            @Valid @RequestBody CampaignDecisionLinkRequest request
+    ) {
+        return ResponseEntity.ok(
+                lifecycleService.linkCampaignDecision(
+                        userId(currentUser),
+                        threadId,
+                        request.getDecisionId()
+                )
+        );
+    }
+
+    @PostMapping("/executions/{recommendationId}/retry")
+    public ResponseEntity<VerificationExecutionResponse> retryVerification(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable String recommendationId
+    ) {
+        return ResponseEntity.ok(
+                retryService.retry(userId(currentUser), recommendationId)
         );
     }
 
@@ -73,6 +118,9 @@ public class EffectVerificationController {
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestParam(name = "store_id", required = false) Long storeId
     ) {
+        if (storeId != null) {
+            storeAccessService.validateOwner(userId(currentUser), storeId);
+        }
         return ResponseEntity.ok(
                 lifecycleService.getDueExecutions(userId(currentUser), storeId)
         );
@@ -84,6 +132,7 @@ public class EffectVerificationController {
             @RequestParam(name = "store_id") Long storeId,
             @RequestParam(name = "status", required = false) VerificationStatus status
     ) {
+        storeAccessService.validateOwner(userId(currentUser), storeId);
         return ResponseEntity.ok(
                 lifecycleService.getExecutionHistory(
                         userId(currentUser),
@@ -98,6 +147,7 @@ public class EffectVerificationController {
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @Valid @RequestBody EffectVerificationRequest request
     ) {
+        storeAccessService.validateOwner(userId(currentUser), request.getStoreId());
         EffectVerificationResponse response =
                 effectVerificationService.verifyEffect(userId(currentUser), request);
 
@@ -107,7 +157,7 @@ public class EffectVerificationController {
     @GetMapping("/recommendations/{recommendationId}")
     public ResponseEntity<EffectVerificationResponse> getByRecommendationId(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @PathVariable Long recommendationId
+            @PathVariable String recommendationId
     ) {
         return ResponseEntity.ok(
                 effectVerificationService.getByRecommendationId(

@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface StoreOwnerLocationRepository
         extends JpaRepository<StoreOwnerLocation, Long> {
 
-    Optional<StoreOwnerLocation> findByOwnerId(Long ownerId);
+    Optional<StoreOwnerLocation> findByOwner_Id(Long ownerId);
 }

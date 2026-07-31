@@ -1,6 +1,7 @@
 package com.bp20.backend.api.effectverification.dto.response;
 
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
+import com.bp20.backend.api.effectverification.dto.request.SelectedActionRequest;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
@@ -16,10 +17,19 @@ public class VerificationExecutionResponse {
     private Long storeId;
 
     @JsonProperty("recommendation_id")
-    private Long recommendationId;
+    private String recommendationId;
+
+    @JsonProperty("thread_id")
+    private String threadId;
+
+    @JsonProperty("decision_id")
+    private String decisionId;
 
     @JsonProperty("recommendation_type")
     private RecommendationType recommendationType;
+
+    @JsonProperty("selected_action")
+    private SelectedActionRequest selectedAction;
 
     private VerificationStatus status;
 

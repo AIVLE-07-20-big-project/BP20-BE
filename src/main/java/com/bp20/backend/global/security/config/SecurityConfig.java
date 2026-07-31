@@ -67,7 +67,8 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/notices/**"
                         ).permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/iam/invitation/store-owner")
                             .hasAuthority(Permission.ADMIN_MANAGE.name())
@@ -78,6 +79,8 @@ public class SecurityConfig {
                             .requestMatchers("/api/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                             .requestMatchers("/api/admin/iam/**").hasAuthority(Permission.IAM_ADMIN_MANAGE.name())
                             .requestMatchers("/api/admin/**").hasAuthority(Permission.ADMIN_MANAGE.name())
+                            .requestMatchers("/api/effect-verifications/**")
+                            .hasAuthority(Permission.STORE_OWNER_ACCESS.name())
                             .requestMatchers("/api/store-owner/**").hasAuthority(Permission.STORE_OWNER_ACCESS.name())
                             .anyRequest().authenticated();
                 })

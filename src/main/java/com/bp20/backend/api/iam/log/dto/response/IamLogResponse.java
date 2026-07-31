@@ -25,7 +25,10 @@ public record IamLogResponse(
 ) {
     public static IamLogResponse from(IamLog log) {
         return new IamLogResponse(
-                log.getId(), log.getActorUserId(), log.getAction(), log.getTargetUserId(),
+                log.getId(),
+                log.getActorUser() == null ? null : log.getActorUser().getId(),
+                log.getAction(),
+                log.getTargetUser() == null ? null : log.getTargetUser().getId(),
                 log.getTargetEmail(), log.getSourceIp(), log.getCreatedAt()
         );
     }
