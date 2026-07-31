@@ -40,7 +40,7 @@ public class FastApiClient {
     // store_id가 없으면 캠페인 실행 등록(효과검증) 단계가 실패하므로, 알 수 있을 때는 함께 보낸다.
     public Map<String, Object> createAnalysis(
             MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
-            Long userId, Long storeId
+            Long userId, String storeId
     ) {
         return postMultipart("/api/v1/analyses",
                 multipartBody(file, trdarCd, svcIndutyCd, yyquCd, userId, storeId));
@@ -48,7 +48,7 @@ public class FastApiClient {
 
     private MultiValueMap<String, Object> multipartBody(
             MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
-            Long userId, Long storeId
+            Long userId, String storeId
     ) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("trdar_cd", trdarCd);
@@ -59,8 +59,8 @@ public class FastApiClient {
         if (userId != null) {
             body.add("user_id", userId.toString());
         }
-        if (storeId != null) {
-            body.add("store_id", storeId.toString());
+        if (storeId != null && !storeId.isBlank()) {
+            body.add("store_id", storeId);
         }
         body.add("file", toResource(file));
         return body;

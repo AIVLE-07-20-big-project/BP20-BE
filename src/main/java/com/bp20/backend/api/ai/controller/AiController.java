@@ -50,12 +50,13 @@ public class AiController {
             @RequestParam MultipartFile file,
             @RequestParam(value = "trdar_cd", required = false) String trdarCd,
             @RequestParam(value = "svc_induty_cd", required = false) String svcIndutyCd,
-            @RequestParam(value = "yyqu_cd", required = false) Integer yyquCd
+            @RequestParam(value = "yyqu_cd", required = false) Integer yyquCd,
+            @RequestParam(value = "store_id", required = false) String storeId
     ) {
         validateCsv(file);
         return ApiResponse.success(
                 SuccessCode.SUCCESS_AI_ANALYSIS_JOB_ACCEPTED,
-                aiService.createAnalysis(currentUser.id(), file, trdarCd, svcIndutyCd, yyquCd)
+                aiService.createAnalysis(currentUser.id(), storeId, file, trdarCd, svcIndutyCd, yyquCd)
         );
     }
 

@@ -31,7 +31,7 @@ public class AiSalesFeedbackService {
     /** 새 매출 CSV 저장 후 실행 기간이 끝난 승인 방안의 전후 매출을 학습자료로 저장한다. */
     @Transactional
     public int processUploadedSales(Long userId, LocalDate uploadedFrom, LocalDate uploadedToExclusive) {
-        List<AiRecommendationRun> runs = runRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        List<AiRecommendationRun> runs = runRepository.findAllByUser_IdOrderByCreatedAtDesc(userId);
         int processed = 0;
         for (AiRecommendationRun run : runs) {
             if (run.getExecutionStartedAt() == null || run.getExecutionEndedAt() == null
@@ -102,7 +102,7 @@ public class AiSalesFeedbackService {
         if (target == null || target.getBeforeValue() == null || target.getAfterValue() == null) {
             return;
         }
-        AiRecommendationRun run = runRepository.findByThreadIdAndUserId(threadId, userId).orElse(null);
+        AiRecommendationRun run = runRepository.findByThreadIdAndUser_Id(threadId, userId).orElse(null);
         if (run == null) {
             return;
         }
@@ -132,7 +132,7 @@ public class AiSalesFeedbackService {
 
     private double sumSales(Long userId, LocalDate from, LocalDate toExclusive) {
         return salesRepository
-                .findByOwnerIdAndSaleDateGreaterThanEqualAndSaleDateLessThan(userId, from, toExclusive)
+                .findByOwner_IdAndSaleDateGreaterThanEqualAndSaleDateLessThan(userId, from, toExclusive)
                 .stream()
                 .mapToDouble(CsvDailySales::getSalesAmount)
                 .sum();
