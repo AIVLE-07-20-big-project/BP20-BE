@@ -1,7 +1,9 @@
 package com.bp20.backend.api.effectverification.service;
 
 import com.bp20.backend.api.effectverification.client.EffectVerificationApiClient;
+import com.bp20.backend.api.effectverification.dto.request.EffectVerificationFromAnalysesRequest;
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
+import com.bp20.backend.api.effectverification.dto.response.EffectVerificationFromAnalysesResponse;
 import com.bp20.backend.api.effectverification.dto.response.MetricResult;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
@@ -17,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,16 +35,49 @@ public class EffectVerificationService {
             EffectVerificationRequest request
     ) {
         EffectVerificationResponse response = effectVerificationApiClient.verifyEffect(request);
+        saveResult(userId, response, response.getRecommendationId());
+        return response;
+    }
+
+    /** 저장된 적용전·적용후 분석(analysis_id) 두 건을 AI에 넘겨 매출형 전략검증을 수행한다. */
+    @Transactional
+    public EffectVerificationResponse verifyEffectFromAnalyses(
+            Long userId,
+            String beforeAnalysisId,
+            String afterAnalysisId,
+            Long storeId,
+            Long recommendationId,
+            String resultRecommendationId,
+            Integer startHour,
+            Integer endHour
+    ) {
+        EffectVerificationFromAnalysesRequest request = new EffectVerificationFromAnalysesRequest(
+                beforeAnalysisId, afterAnalysisId, storeId, recommendationId, startHour, endHour, null
+        );
+        EffectVerificationFromAnalysesResponse response =
+                effectVerificationApiClient.verifyEffectFromAnalyses(request);
+        // AI 응답의 recommendation_id는 숫자(내부 실행 ID)라 BE 저장 키(문자열 thread_id 등)와 다르다 —
+        // 저장·조회는 항상 이 문자열 키를 기준으로 한다.
+        saveResult(userId, response, resultRecommendationId);
+        return response;
+    }
+
+    private void saveResult(
+            Long userId,
+            EffectVerificationResponse response,
+            String resultRecommendationId
+    ) {
         LocalDateTime verifiedDate = LocalDateTime.now();
         String metricResults = writeMetricResults(response.getMetricResults());
+        String strategyReportJson = writeStrategyReport(response.getStrategyReport());
 
         EffectVerificationResult result = resultRepository
                 .findByAiRecommendationIdAndUserId(
-                        response.getRecommendationId(),
+                        resultRecommendationId,
                         userId
                 )
                 .orElseGet(() -> EffectVerificationResult.builder()
-                        .aiRecommendationId(response.getRecommendationId())
+                        .aiRecommendationId(resultRecommendationId)
                         .userId(userId)
                         .build());
 
@@ -52,12 +88,11 @@ public class EffectVerificationService {
                 response.getVerdict(),
                 metricResults,
                 response.getSummary(),
+                strategyReportJson,
                 verifiedDate
         );
         resultRepository.save(result);
         response.setVerifiedDate(verifiedDate);
-
-        return response;
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +115,7 @@ public class EffectVerificationService {
         response.setVerdict(result.getVerdict());
         response.setMetricResults(readMetricResults(result.getMetricResults()));
         response.setSummary(result.getSummary());
+        response.setStrategyReport(readStrategyReport(result.getStrategyReportJson()));
         response.setVerifiedDate(result.getVerifiedDate());
         return response;
     }
@@ -100,6 +136,31 @@ public class EffectVerificationService {
             );
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to deserialize metric results", e);
+        }
+    }
+
+    private String writeStrategyReport(Map<String, Object> strategyReport) {
+        if (strategyReport == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(strategyReport);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize strategy report", e);
+        }
+    }
+
+    private Map<String, Object> readStrategyReport(String strategyReportJson) {
+        if (strategyReportJson == null) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(
+                    strategyReportJson,
+                    new TypeReference<Map<String, Object>>() { }
+            );
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to deserialize strategy report", e);
         }
     }
 }
