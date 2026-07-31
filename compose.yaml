@@ -139,7 +139,7 @@ services:
     env_file:
       - .env
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: docker,mock
       FASTAPI_BASE_URL: http://fastapi:8000
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
     depends_on:
