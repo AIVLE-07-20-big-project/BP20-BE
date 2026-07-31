@@ -2,6 +2,10 @@ package com.bp20.backend.api.receipt.service;
 
 import com.bp20.backend.api.budget.domain.Budget;
 import com.bp20.backend.api.budget.repository.BudgetRepository;
+import com.bp20.backend.api.order.domain.MenuItem;
+import com.bp20.backend.api.order.domain.Order;
+import com.bp20.backend.api.order.repository.MenuItemRepository;
+import com.bp20.backend.api.order.repository.OrderRepository;
 import com.bp20.backend.api.receipt.client.OcrServiceClient;
 import com.bp20.backend.api.receipt.domain.Receipt;
 import com.bp20.backend.api.receipt.domain.ReceiptItem;
@@ -25,6 +29,8 @@ public class ReceiptAnalyticsService {
 
     private final ReceiptRepository receiptRepository;
     private final BudgetRepository budgetRepository;
+    private final MenuItemRepository menuItemRepository;
+    private final OrderRepository orderRepository;
     private final OcrServiceClient ocrServiceClient;
 
     public List<ExpenseAnomalyResponse> getExpenseAnomalies(Long storeId, double zThreshold) {
@@ -44,7 +50,9 @@ public class ReceiptAnalyticsService {
         List<ReceiptItem> items = receipts.stream()
                 .flatMap(receipt -> receipt.getItems().stream())
                 .toList();
+        List<MenuItem> menuItems = menuItemRepository.findByStoreId(storeId);
+        List<Order> orders = orderRepository.findByStoreIdOrderByOrderedDateDesc(storeId);
 
-        return ocrServiceClient.getReport(receipts, budgets, items, storeName, reportType, year, month);
+        return ocrServiceClient.getReport(receipts, budgets, items, menuItems, orders, storeName, reportType, year, month);
     }
 }
