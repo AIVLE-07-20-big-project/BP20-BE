@@ -6,6 +6,7 @@ import com.bp20.backend.api.csv.domain.CsvProduct;
 import com.bp20.backend.api.csv.repository.CsvDailySalesRepository;
 import com.bp20.backend.api.csv.repository.CsvInventoryRepository;
 import com.bp20.backend.api.csv.repository.CsvProductRepository;
+import com.bp20.backend.api.ai.service.AiSalesFeedbackService;
 import com.bp20.backend.api.recommendation.dto.DailySalesDto;
 import com.bp20.backend.api.recommendation.dto.InventoryDataRequest;
 import com.bp20.backend.api.recommendation.dto.ProductDataRequest;
@@ -33,6 +34,7 @@ public class CsvDataService {
     private final CsvProductRepository productRepository;
     private final CsvDailySalesRepository salesRepository;
     private final CsvInventoryRepository inventoryRepository;
+    private final AiSalesFeedbackService aiSalesFeedbackService;
 
     /**
      * 상품 CSV 파일을 읽어 로그인한 점주의 데이터로 교체 저장한다.
@@ -141,11 +143,20 @@ public class CsvDataService {
                 result.add(sale);
             }
 
-            salesRepository.deleteAllByOwnerId(ownerId);
-            salesRepository.flush();
+            LocalDate from = result.stream().map(DailySalesDto::saleDate).min(LocalDate::compareTo).orElseThrow();
+            LocalDate toExclusive = result.stream().map(DailySalesDto::saleDate)
+                    .max(LocalDate::compareTo).orElseThrow().plusDays(1);
+            if (!result.isEmpty()) {
+                // 과거 기간은 보존하고, 재업로드한 기간만 교체해 before/after 비교가 가능하도록 한다.
+                salesRepository.deleteAllByOwnerIdAndSaleDateGreaterThanEqualAndSaleDateLessThan(
+                        ownerId, from, toExclusive
+                );
+                salesRepository.flush();
+            }
             salesRepository.saveAll(
                     result.stream().map(value -> new CsvDailySales(ownerId, value)).toList()
             );
+            aiSalesFeedbackService.processUploadedSales(ownerId, from, toExclusive);
             return result.size();
 
         } catch (Exception e) {
