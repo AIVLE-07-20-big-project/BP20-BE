@@ -1,6 +1,8 @@
 package com.bp20.backend.api.store.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,8 +10,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(name = "review_keyword")
+@Table(name = "store_review_keywords")
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class StoreReviewKeyword {
 
     @Id

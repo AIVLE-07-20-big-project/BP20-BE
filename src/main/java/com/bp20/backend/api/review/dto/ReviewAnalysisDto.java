@@ -1,8 +1,9 @@
 package com.bp20.backend.api.review.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record ReviewAnalysisDto(
-        Long reviewId,
-        List<AspectSentimentDto> results
+        @JsonProperty("review_id") Long reviewId,
+        @JsonProperty("results") List<AspectSentimentDto> results
 ) {}

@@ -16,16 +16,15 @@ public class ReviewAnalysis {
     @Column(name = "review_analysis_id")
     private Long id;
 
-    @Column(name = "review_id", nullable = false)
+    @Column(nullable = false)
     private Long reviewId;
 
-    @Column(name = "aspect", nullable = false)
+    @Column(nullable = false)
     private String aspect;
 
-    @Column(name = "sentiment", nullable = false)
+    @Column(nullable = false)
     private String sentiment;
 
-    @Column(name = "confidence")
     private Double confidence;
 
     @Builder
