@@ -4,6 +4,7 @@ import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationRoiResponse;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationResultRepository;
+import com.bp20.backend.api.store.domain.Store;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class EffectVerificationRoiServiceTests {
@@ -27,14 +29,15 @@ class EffectVerificationRoiServiceTests {
 
     @Test
     void aggregatesOverallStoreTypeAndRecentStatistics() {
-        when(resultRepository.findAll()).thenReturn(List.of(
+        List<EffectVerificationResult> results = List.of(
                 result("r1", 1L, RecommendationType.SALES, 90.0,
                         "EFFECTIVE", LocalDateTime.of(2026, 7, 3, 0, 0)),
                 result("r2", 1L, RecommendationType.REVIEW, 60.0,
                         "INCONCLUSIVE", LocalDateTime.of(2026, 7, 2, 0, 0)),
                 result("r3", 2L, RecommendationType.SALES, 30.0,
                         "INEFFECTIVE", LocalDateTime.of(2026, 7, 1, 0, 0))
-        ));
+        );
+        when(resultRepository.findAll()).thenReturn(results);
 
         EffectVerificationRoiResponse response = service.getSummary(null);
 
@@ -52,12 +55,13 @@ class EffectVerificationRoiServiceTests {
 
     @Test
     void filtersStatisticsByStore() {
-        when(resultRepository.findAll()).thenReturn(List.of(
+        List<EffectVerificationResult> results = List.of(
                 result("r1", 1L, RecommendationType.SALES, 80.0,
                         "EFFECTIVE", LocalDateTime.of(2026, 7, 2, 0, 0)),
                 result("r2", 2L, RecommendationType.REVIEW, 20.0,
                         "NOT_EFFECTIVE", LocalDateTime.of(2026, 7, 1, 0, 0))
-        ));
+        );
+        when(resultRepository.findAll()).thenReturn(results);
 
         EffectVerificationRoiResponse response = service.getSummary(1L);
 
@@ -90,9 +94,11 @@ class EffectVerificationRoiServiceTests {
             String verdict,
             LocalDateTime verifiedDate
     ) {
+        Store store = mock(Store.class);
+        when(store.getId()).thenReturn(storeId);
         return EffectVerificationResult.builder()
                 .aiRecommendationId(recommendationId)
-                .storeId(storeId)
+                .store(store)
                 .recommendationType(type)
                 .effectScore(score)
                 .verdict(verdict)

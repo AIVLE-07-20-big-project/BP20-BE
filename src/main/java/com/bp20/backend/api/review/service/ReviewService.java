@@ -16,7 +16,7 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public List<ReviewResponseDto> getReviewsByStoreId(Long storeId) {
-        return reviewRepository.findByStoreId(storeId).stream()
+        return reviewRepository.findByStore_Id(storeId).stream()
                 .map(ReviewResponseDto::from)
                 .toList();
     }

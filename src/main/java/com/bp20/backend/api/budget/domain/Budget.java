@@ -1,5 +1,6 @@
 package com.bp20.backend.api.budget.domain;
 
+import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.global.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,6 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -29,8 +33,9 @@ public class Budget extends BaseTimeEntity {
     @Column(name = "budget_id")
     private Long id;
 
-    @Column(name = "store_id", nullable = false)
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     @Column(name = "budget_month", nullable = false, length = 7)
     private String yearMonth; // "2026-06"
@@ -41,15 +46,15 @@ public class Budget extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer budgetAmount;
 
-    private Budget(Long storeId, String yearMonth, String category, Integer budgetAmount) {
-        this.storeId = storeId;
+    private Budget(Store store, String yearMonth, String category, Integer budgetAmount) {
+        this.store = store;
         this.yearMonth = yearMonth;
         this.category = category;
         this.budgetAmount = budgetAmount;
     }
 
-    public static Budget create(Long storeId, String yearMonth, String category, Integer budgetAmount) {
-        return new Budget(storeId, yearMonth, category, budgetAmount);
+    public static Budget create(Store store, String yearMonth, String category, Integer budgetAmount) {
+        return new Budget(store, yearMonth, category, budgetAmount);
     }
 
     public void updateAmount(Integer budgetAmount) {

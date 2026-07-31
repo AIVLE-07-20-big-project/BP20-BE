@@ -45,21 +45,21 @@ services:
   # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
   fastapi:
     build:
-      context: ../../20BGAI/BP20-AI
+      context: ${BP20_AI_PATH:-../../20BGAI/BP20-AI}
     container_name: fastapi_bp20
     restart: always
     ports:
       - "8000:8000"
     env_file:
-      - ../../20BGAI/BP20-AI/.env
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       MODEL_PATH: ${MODEL_PATH}
       HF_TOKEN: ${HF_TOKEN}
     volumes:
-      - ../../20BGAI/BP20-AI/data:/app/data
-      - ../../20BGAI/BP20-AI/model:/app/model
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
       - paddlex_models:/root/.paddlex  # PaddleOCR 모델 캐시(없으면 재생성마다 재다운로드)
     depends_on:
       redis:
@@ -77,20 +77,20 @@ services:
   # Celery 워커 — 무거운 매출 분석 오프로드. 동시성 2(워커당 RSS 약 531MB 기준)
   celery-worker:
     build:
-      context: ../../20BGAI/BP20-AI
+      context: ${BP20_AI_PATH:-../../20BGAI/BP20-AI}
     container_name: celery_worker_bp20
     restart: always
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     env_file:
-      - ../../20BGAI/BP20-AI/.env
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       MODEL_PATH: ${MODEL_PATH}
       HF_TOKEN: ${HF_TOKEN}
     volumes:
-      - ../../20BGAI/BP20-AI/data:/app/data
-      - ../../20BGAI/BP20-AI/model:/app/model
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
     depends_on:
       redis:
         condition: service_healthy
@@ -106,12 +106,12 @@ services:
   # Celery beat — 정체된 queued/running 잡 청소 스케줄러
   celery-beat:
     build:
-      context: ../../20BGAI/BP20-AI
+      context: ${BP20_AI_PATH:-../../20BGAI/BP20-AI}
     container_name: celery_beat_bp20
     restart: always
     command: celery -A app.celery_app beat --loglevel=info
     env_file:
-      - ../../20BGAI/BP20-AI/.env
+      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
