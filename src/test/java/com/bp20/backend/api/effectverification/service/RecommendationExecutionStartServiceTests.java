@@ -75,7 +75,6 @@ class RecommendationExecutionStartServiceTests {
                 eq(20263),
                 any(LocalDateTime.class)
         )).thenReturn(Map.of(
-                "decision_id", "decision-uuid",
                 "store_id", "1",
                 "action_id", "쿠폰발행"
         ));
@@ -104,7 +103,7 @@ class RecommendationExecutionStartServiceTests {
         ExecutionRegistrationRequest registration = requestCaptor.getValue();
         assertThat(actual).isSameAs(expected);
         assertThat(registration.getThreadId()).isEqualTo("thread-uuid");
-        assertThat(registration.getDecisionId()).isEqualTo("decision-uuid");
+        assertThat(registration.getDecisionId()).isNull();
         assertThat(registration.getStoreId()).isEqualTo(1L);
         assertThat(registration.getRecommendationType())
                 .isEqualTo(RecommendationType.SALES);

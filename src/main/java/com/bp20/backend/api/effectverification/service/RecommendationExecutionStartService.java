@@ -71,7 +71,7 @@ public class RecommendationExecutionStartService {
         );
         Long storeId = requiredLong(campaign, "store_id");
         storeAccessService.validateOwner(userId, storeId);
-        String decisionId = requiredString(campaign, "decision_id");
+        String decisionId = optionalString(campaign, "decision_id");
         String actionId = firstRequiredString(
                 campaign,
                 "action_id",
@@ -121,6 +121,13 @@ public class RecommendationExecutionStartService {
             throw invalidCampaignResponse(key);
         }
         return field.toString();
+    }
+
+    private String optionalString(Map<String, Object> value, String key) {
+        Object field = value.get(key);
+        return field == null || field.toString().isBlank()
+                ? null
+                : field.toString();
     }
 
     private String firstRequiredString(
