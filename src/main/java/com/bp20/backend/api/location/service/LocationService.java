@@ -58,7 +58,7 @@ public class LocationService {
 
     @Transactional(readOnly = true)
     public Optional<LocationSearchResponse> getSavedLocation(Long ownerId) {
-        return locationRepository.findByOwnerId(ownerId)
+        return locationRepository.findByOwner_Id(ownerId)
                 .map(location -> new LocationSearchResponse(
                         location.getDisplayName(),
                         location.getLatitude(),
@@ -72,9 +72,11 @@ public class LocationService {
             SaveLocationRequest request
     ) {
         String displayName = request.displayName().trim();
-        StoreOwnerLocation location = locationRepository.findByOwnerId(ownerId)
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+        StoreOwnerLocation location = locationRepository.findByOwner_Id(ownerId)
                 .orElseGet(() -> StoreOwnerLocation.create(
-                        ownerId,
+                        store.getOwner(),
                         displayName,
                         request.latitude(),
                         request.longitude()
