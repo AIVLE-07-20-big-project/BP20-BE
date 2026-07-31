@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
+import java.util.HashMap;
 
 @Component
 public class FastApiClient {
@@ -30,7 +31,16 @@ public class FastApiClient {
 
     public Map<String, Object> createAnalysis(
             MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
-            Long userId, String storeId
+            Long userId
+    ) {
+        return postMultipart("/api/v1/analyses",
+                multipartBody(file, trdarCd, svcIndutyCd, yyquCd, userId, null));
+    }
+
+    // store_id가 없으면 캠페인 실행 등록(효과검증) 단계가 실패하므로, 알 수 있을 때는 함께 보낸다.
+    public Map<String, Object> createAnalysis(
+            MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
+            Long userId, Long storeId
     ) {
         return postMultipart("/api/v1/analyses",
                 multipartBody(file, trdarCd, svcIndutyCd, yyquCd, userId, storeId));
@@ -38,7 +48,7 @@ public class FastApiClient {
 
     private MultiValueMap<String, Object> multipartBody(
             MultipartFile file, String trdarCd, String svcIndutyCd, Integer yyquCd,
-            Long userId, String storeId
+            Long userId, Long storeId
     ) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("trdar_cd", trdarCd);
@@ -49,8 +59,8 @@ public class FastApiClient {
         if (userId != null) {
             body.add("user_id", userId.toString());
         }
-        if (storeId != null && !storeId.isBlank()) {
-            body.add("store_id", storeId);
+        if (storeId != null) {
+            body.add("store_id", storeId.toString());
         }
         body.add("file", toResource(file));
         return body;
@@ -109,6 +119,37 @@ public class FastApiClient {
                 .header("X-User-Id", userId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
+                .retrieve()
+                .body(MAP_TYPE));
+    }
+
+    public Map<String, Object> getLocations() {
+        return exchange(() -> restClient.get()
+                .uri("/api/v1/locations")
+                .retrieve()
+                .body(MAP_TYPE));
+    }
+
+    public Map<String, Object> getIndustries() {
+        return exchange(() -> restClient.get()
+                .uri("/api/v1/industries")
+                .retrieve()
+                .body(MAP_TYPE));
+    }
+
+    public Map<String, Object> recordSalesFeedback(
+            String threadId, double beforeSales, double afterSales, int measurementDays, Long userId
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("thread_id", threadId);
+        body.put("before_sales", beforeSales);
+        body.put("after_sales", afterSales);
+        body.put("measurement_days", measurementDays);
+        return exchange(() -> restClient.post()
+                .uri("/api/v1/ai-learning/sales-feedback")
+                .header("X-User-Id", userId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
                 .retrieve()
                 .body(MAP_TYPE));
     }
