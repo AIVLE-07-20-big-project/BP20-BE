@@ -1,10 +1,8 @@
 package com.bp20.backend.api.ai.domain;
 
+import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.global.domain.BaseTimeEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +17,11 @@ public class AiStoreProfile extends BaseTimeEntity {
     @Id
     @Column(name = "user_id")
     private Long userId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "fk_ai_store_profiles_user"))
+    private User user;
 
     @Column(name = "trdar_cd", nullable = false, length = 30)
     private String trdarCd;
