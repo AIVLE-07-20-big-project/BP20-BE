@@ -1,7 +1,8 @@
 package com.bp20.backend.api.store.service;
 
 import com.bp20.backend.api.store.domain.StoreReviewRecommendation;
-import com.bp20.backend.api.store.dto.response.RecommendationResponseDto;
+import com.bp20.backend.api.store.dto.response.FastAPIRecommendationResponseDto;
+import com.bp20.backend.api.store.dto.response.StoreRecommendationResponseDto;
 import com.bp20.backend.api.store.repository.StoreReviewRecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class StoreReviewRecommendationService {
     private final StoreReviewRecommendationRepository storeReviewRecommendationRepository;
 
     @Transactional
-    public StoreReviewRecommendation saveRecommendation(RecommendationResponseDto responseDto) {
+    public StoreReviewRecommendation saveRecommendation(FastAPIRecommendationResponseDto responseDto) {
         var report = responseDto.improvementReport();
 
         List<StoreReviewRecommendation.ActionItem> actionItems = report.actionItems()
@@ -28,7 +29,8 @@ public class StoreReviewRecommendationService {
                         item.trendSummary(),
                         item.problemCause(),
                         item.actionPlan(),
-                        item.expectedOutcome()
+                        item.expectedOutcome(),
+                        item.executedAt()
                 ))
                 .toList();
 
@@ -38,5 +40,32 @@ public class StoreReviewRecommendationService {
                 .actionItems(actionItems)
                 .build();
         return storeReviewRecommendationRepository.save(recommendation);
+    }
+
+    @Transactional(readOnly = true)
+    public StoreRecommendationResponseDto getLatestRecommendation(Long storeId) {
+        StoreReviewRecommendation recommendation = storeReviewRecommendationRepository.findTopByStoreIdOrderByCreatedAtDesc(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 매장의 AI 추천 내용이 없습니다"));
+
+        List<StoreRecommendationResponseDto.ActionItemDto> actionItemDtos = recommendation.getActionItems()
+                .stream()
+                .map(item -> new StoreRecommendationResponseDto.ActionItemDto(
+                        item.priority(),
+                        item.aspect(),
+                        item.keyword(),
+                        item.trendSummary(),
+                        item.problemCause(),
+                        item.actionPlan(),
+                        item.expectedOutcome(),
+                        item.executedAt()
+                ))
+                .toList();
+        return new StoreRecommendationResponseDto(
+                recommendation.getId(),
+                recommendation.getStoreId(),
+                recommendation.getExecutiveSummary(),
+                actionItemDtos,
+                recommendation.getCreatedAt()
+        );
     }
 }

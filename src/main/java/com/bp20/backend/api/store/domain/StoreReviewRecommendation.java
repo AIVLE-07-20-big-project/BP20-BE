@@ -50,6 +50,7 @@ public class StoreReviewRecommendation {
             String trendSummary,
             String problemCause,
             String actionPlan,
-            String expectedOutcome
+            String expectedOutcome,
+            LocalDateTime executedAt
     ) {}
 }

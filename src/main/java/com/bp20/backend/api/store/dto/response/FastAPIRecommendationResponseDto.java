@@ -2,9 +2,10 @@ package com.bp20.backend.api.store.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-public record RecommendationResponseDto(
+public record FastAPIRecommendationResponseDto(
         @JsonProperty("store_id") Long storeId,
         @JsonProperty("improvement_report") ImprovementReportDto improvementReport
 ) {
@@ -20,6 +21,7 @@ public record RecommendationResponseDto(
             @JsonProperty("trend_summary") String trendSummary,
             @JsonProperty("problem_cause") String problemCause,
             @JsonProperty("action_plan") String actionPlan,
-            @JsonProperty("expected_outcome") String expectedOutcome
+            @JsonProperty("expected_outcome") String expectedOutcome,
+            LocalDateTime executedAt
     ) {}
 }
