@@ -50,4 +50,8 @@ public class AiAnalysis extends BaseTimeEntity {
                                     String svcIndutyCd, Integer yyquCd, String resultJson) {
         return new AiAnalysis(analysisId, user, store, trdarCd, svcIndutyCd, yyquCd, resultJson);
     }
+
+    public void attachStore(Store store) {
+        this.store = store;
+    }
 }
