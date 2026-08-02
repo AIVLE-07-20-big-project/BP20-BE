@@ -45,12 +45,11 @@ public class AiService {
     @Transactional
     public Map<String, Object> createAnalysis(Long userId, String storeId, MultipartFile file,
                                                String trdarCd, String svcIndutyCd, Integer yyquCd) {
-        if (storeId != null && !storeId.isBlank()) {
-            findOwnedStore(userId, storeId);
-        }
+        Store resolvedStore = resolveStore(userId, storeId);
         String[] resolvedCodes = resolveCodes(userId, trdarCd, svcIndutyCd);
         Map<String, Object> result = fastApiClient.createAnalysis(
-                file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId, storeId
+                file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId,
+                resolvedStore.getId().toString()
         );
         requiredString(result, "job_id");
         return result;
@@ -119,7 +118,16 @@ public class AiService {
     @Transactional
     public Map<String, Object> createRecommendation(Long userId, String analysisId) {
         AiAnalysis analysis = findAnalysis(userId, analysisId);
-        Map<String, Object> result = fastApiClient.createRecommendation(analysisId, userId);
+        Store store = analysis.getStore() != null
+                ? analysis.getStore()
+                : resolveStore(userId, null);
+        if (analysis.getStore() == null) {
+            analysis.attachStore(store);
+            analysisRepository.save(analysis);
+        }
+        Map<String, Object> result = fastApiClient.createRecommendation(
+                analysisId, userId, store.getId().toString()
+        );
         String threadId = requiredString(result, "thread_id");
         runRepository.save(AiRecommendationRun.create(
                 threadId,
@@ -218,6 +226,14 @@ public class AiService {
         } catch (NumberFormatException exception) {
             throw new ApiException(ErrorCode.NOT_FOUND_STORE, exception);
         }
+    }
+
+    private Store resolveStore(Long userId, String storeId) {
+        if (storeId != null && !storeId.isBlank()) {
+            return findOwnedStore(userId, storeId);
+        }
+        return storeRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
     }
 
     private String requiredString(Map<String, Object> value, String key) {
