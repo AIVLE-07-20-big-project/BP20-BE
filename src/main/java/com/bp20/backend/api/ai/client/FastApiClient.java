@@ -96,8 +96,18 @@ public class FastApiClient {
     }
 
     public Map<String, Object> createRecommendation(String analysisId, Long userId) {
+        return createRecommendation(analysisId, userId, null);
+    }
+
+    public Map<String, Object> createRecommendation(String analysisId, Long userId, String storeId) {
         return exchange(() -> restClient.post()
-                .uri("/api/v1/analyses/{analysisId}/recommendations", analysisId)
+                .uri(uriBuilder -> {
+                    var builder = uriBuilder.path("/api/v1/analyses/{analysisId}/recommendations");
+                    if (storeId != null && !storeId.isBlank()) {
+                        builder.queryParam("store_id", storeId);
+                    }
+                    return builder.build(analysisId);
+                })
                 .header("X-User-Id", userId.toString())
                 .retrieve()
                 .body(MAP_TYPE));
