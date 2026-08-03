@@ -55,8 +55,6 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
-      MODEL_PATH: ${MODEL_PATH}
-      HF_TOKEN: ${HF_TOKEN}
     volumes:
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
@@ -86,8 +84,6 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
-      MODEL_PATH: ${MODEL_PATH}
-      HF_TOKEN: ${HF_TOKEN}
     volumes:
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
