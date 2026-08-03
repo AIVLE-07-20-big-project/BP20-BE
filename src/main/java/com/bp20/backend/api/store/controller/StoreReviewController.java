@@ -1,12 +1,15 @@
 package com.bp20.backend.api.store.controller;
 
+import com.bp20.backend.api.effectverification.service.ReviewRecommendationExecutionStartService;
 import com.bp20.backend.api.store.dto.response.StoreRecommendationResponseDto;
 import com.bp20.backend.api.store.dto.response.StoreReviewKeywordResponseDto;
 import com.bp20.backend.api.store.service.StoreReviewKeywordService;
 import com.bp20.backend.api.store.service.StoreReviewRecommendationService;
+import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +21,7 @@ public class StoreReviewController {
 
     private final StoreReviewKeywordService storeReviewKeywordService;
     private final StoreReviewRecommendationService storeReviewRecommendationService;
+    private final ReviewRecommendationExecutionStartService reviewExecutionStartService;
 
     @GetMapping("/{storeId}/reviews/keywords")
     public ResponseEntity<List<StoreReviewKeywordResponseDto>> getStoreReviewKeywords(
@@ -38,10 +42,15 @@ public class StoreReviewController {
 
     @PatchMapping("/recommendations/{recommendationId}/action-items/complete")
     public ResponseEntity<Void> completeActionItem(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @PathVariable("recommendationId") Long recommendationId,
             @RequestParam("keyword") String keyword
     ) {
-        storeReviewRecommendationService.completeActionItem(recommendationId, keyword);
+        reviewExecutionStartService.startAction(
+                currentUser == null ? null : currentUser.id(),
+                recommendationId,
+                keyword
+        );
         return ResponseEntity.ok().build();
     }
 
