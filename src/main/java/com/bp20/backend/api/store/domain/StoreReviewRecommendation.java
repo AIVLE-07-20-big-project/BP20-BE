@@ -1,10 +1,8 @@
 package com.bp20.backend.api.store.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -14,6 +12,7 @@ import java.util.List;
 @Entity
 @Table(name = "store_review_recommendation")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StoreReviewRecommendation {
 
@@ -51,6 +50,7 @@ public class StoreReviewRecommendation {
             String problemCause,
             String actionPlan,
             String expectedOutcome,
+            @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
             LocalDateTime executedAt
     ) {}
 }

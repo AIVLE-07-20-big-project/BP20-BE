@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -67,5 +68,34 @@ public class StoreReviewRecommendationService {
                 actionItemDtos,
                 recommendation.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public void completeActionItem(Long recommendationId, String keyword) {
+        StoreReviewRecommendation recommendation = storeReviewRecommendationRepository.findById(recommendationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 추천사항이 없습니다."));
+
+        List<StoreReviewRecommendation.ActionItem> updateActionItems = recommendation.getActionItems()
+                .stream()
+                .map(item -> {
+                    if (item.keyword().equals(keyword)) {
+                        return new StoreReviewRecommendation.ActionItem(
+                                item.priority(),
+                                item.aspect(),
+                                item.keyword(),
+                                item.trendSummary(),
+                                item.problemCause(),
+                                item.actionPlan(),
+                                item.expectedOutcome(),
+                                LocalDateTime.now()
+                        );
+                    }
+                    return item;
+                })
+                .toList();
+
+        recommendation.setActionItems(updateActionItems);
+
+        storeReviewRecommendationRepository.save(recommendation);
     }
 }
