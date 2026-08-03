@@ -7,6 +7,6 @@ import java.util.Optional;
 
 public interface StoreSummaryRepository extends JpaRepository<StoreSummary, Long> {
 
-    Optional<StoreSummary> findTopByStoreIdOrderByIdDesc(Long storeId);
+    Optional<StoreSummary> findTopByStore_IdOrderByIdDesc(Long storeId);
 
 }

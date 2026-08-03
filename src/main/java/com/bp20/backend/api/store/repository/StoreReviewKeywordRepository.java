@@ -8,13 +8,13 @@ import java.util.List;
 
 public interface StoreReviewKeywordRepository extends JpaRepository<StoreReviewKeyword, Long> {
 
-    List<StoreReviewKeyword> findByStoreIdOrderByCountDesc(Long storeId);
+    List<StoreReviewKeyword> findByStore_IdOrderByCountDesc(Long storeId);
 
-    List<StoreReviewKeyword> findByStoreIdAndAnalyzedAtGreaterThanEqualOrderByCountDesc(
+    List<StoreReviewKeyword> findByStore_IdAndAnalyzedAtGreaterThanEqualOrderByCountDesc(
             Long storeId, LocalDateTime startDate
     );
 
-    List<StoreReviewKeyword> findByStoreIdAndAnalyzedAtBetween(
+    List<StoreReviewKeyword> findByStore_IdAndAnalyzedAtBetween(
             Long storeId, LocalDateTime startDate, LocalDateTime endDate
     );
 }
