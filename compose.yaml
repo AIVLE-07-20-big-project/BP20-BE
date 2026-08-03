@@ -43,6 +43,28 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis Insight - 로컬 Redis 데이터를 브라우저에서 조회하는 개발용 GUI
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight_bp20
+    restart: always
+    ports:
+      - "127.0.0.1:5540:5540"
+    environment:
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: 6379
+      RI_REDIS_ALIAS: BP20 Local
+      RI_REDIS_DB: 0
+      RI_REDIS_TLS: "false"
+      RI_ACCEPT_TERMS_AND_CONDITIONS: "true"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+
   # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
   fastapi:
     build:
@@ -162,4 +184,5 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  redisinsight_data:
   paddlex_models:
