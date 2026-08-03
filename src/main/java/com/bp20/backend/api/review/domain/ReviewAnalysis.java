@@ -20,13 +20,12 @@ public class ReviewAnalysis {
     @JoinColumn(name = "review_id", nullable = false)
     private Review review;
 
-    @Column(name = "aspect", nullable = false)
+    @Column(nullable = false)
     private String aspect;
 
-    @Column(name = "sentiment", nullable = false)
+    @Column(nullable = false)
     private String sentiment;
 
-    @Column(name = "confidence")
     private Double confidence;
 
     @Builder
