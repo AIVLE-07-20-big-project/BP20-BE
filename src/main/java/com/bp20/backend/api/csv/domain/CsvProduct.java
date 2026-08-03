@@ -1,11 +1,15 @@
 package com.bp20.backend.api.csv.domain;
 
 import com.bp20.backend.api.recommendation.dto.ProductDataRequest;
+import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -21,10 +25,12 @@ import lombok.NoArgsConstructor;
 public class CsvProduct {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
     @Column(name = "product_code", nullable = false, length = 50)
     private String productCode;
+
     @Column(name = "product_name", nullable = false, length = 100)
     private String productName;
     @Column(length = 100) private String ingredient1;
@@ -33,8 +39,8 @@ public class CsvProduct {
     @Column(length = 100) private String ingredient4;
     @Column(length = 100) private String ingredient5;
 
-    public CsvProduct(Long ownerId, ProductDataRequest value) {
-        this.ownerId = ownerId;
+    public CsvProduct(User owner, ProductDataRequest value) {
+        this.owner = owner;
         this.productCode = value.productCode();
         this.productName = value.productName();
         this.ingredient1 = value.ingredient1();

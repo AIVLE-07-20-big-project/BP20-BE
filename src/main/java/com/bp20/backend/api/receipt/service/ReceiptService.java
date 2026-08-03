@@ -11,7 +11,10 @@ import com.bp20.backend.api.receipt.dto.response.ReceiptItemData;
 import com.bp20.backend.api.receipt.dto.response.ReceiptResponse;
 import com.bp20.backend.api.receipt.repository.ReceiptRepository;
 import com.bp20.backend.api.product.repository.ProductRepository;
+import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,7 @@ public class ReceiptService {
     private final OcrServiceClient ocrServiceClient;
     private final StoreRepository storeRepository;
     private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
     /**
      * 영수증 이미지를 OCR 처리한다. (DB 저장은 하지 않음 - 프론트에서 검토/수정 후 createReceipt 호출)
@@ -54,6 +58,14 @@ public class ReceiptService {
 
         ReceiptStatus status = ReceiptStatus.CONFIRMED;
         String finalDedupeKey = dedupeKey;
+        Store store = request.storeId() == null
+                ? null
+                : storeRepository.findById(request.storeId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+        User uploadedBy = request.uploadedByUserId() == null
+                ? null
+                : userRepository.findById(request.uploadedByUserId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_USER));
 
         boolean duplicate = receiptRepository.existsByDedupeKey(dedupeKey);
         if (duplicate) {
@@ -65,8 +77,8 @@ public class ReceiptService {
         }
 
         Receipt receipt = Receipt.create(
-                request.storeId(),
-                request.uploadedByUserId(),
+                store,
+                uploadedBy,
                 request.documentType(),
                 request.storeName(),
                 request.businessNumber(),
@@ -131,7 +143,7 @@ public class ReceiptService {
     }
 
     public List<ReceiptResponse> listReceipts(Long storeId) {
-        return receiptRepository.findByStoreIdOrderByTransactionDateDesc(storeId).stream()
+        return receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId).stream()
                 .map(ReceiptResponse::from)
                 .toList();
     }

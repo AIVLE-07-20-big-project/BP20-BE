@@ -16,21 +16,21 @@ public class ReviewAnalysis {
     @Column(name = "review_analysis_id")
     private Long id;
 
-    @Column(name = "review_id", nullable = false)
-    private Long reviewId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "review_id", nullable = false)
+    private Review review;
 
-    @Column(name = "aspect", nullable = false)
+    @Column(nullable = false)
     private String aspect;
 
-    @Column(name = "sentiment", nullable = false)
+    @Column(nullable = false)
     private String sentiment;
 
-    @Column(name = "confidence")
     private Double confidence;
 
     @Builder
-    public ReviewAnalysis(Long reviewId, String aspect, String sentiment, Double confidence) {
-        this.reviewId = reviewId;
+    public ReviewAnalysis(Review review, String aspect, String sentiment, Double confidence) {
+        this.review = review;
         this.aspect = aspect;
         this.sentiment = sentiment;
         this.confidence = confidence;

@@ -1,5 +1,6 @@
 package com.bp20.backend.api.iam.log.domain;
 
+import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,6 +9,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -31,13 +35,17 @@ public class IamLog {
     @Column(name = "iam_log_id")
     private Long id;
 
-    private Long actorUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "actor_user_id")
+    private User actorUser;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private IamLogAction action;
 
-    private Long targetUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "target_user_id")
+    private User targetUser;
 
     @Column(length = 100)
     private String targetEmail;
@@ -48,18 +56,18 @@ public class IamLog {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    private IamLog(Long actorUserId, IamLogAction action, Long targetUserId,
+    private IamLog(User actorUser, IamLogAction action, User targetUser,
                    String targetEmail, String sourceIp) {
-        this.actorUserId = actorUserId;
+        this.actorUser = actorUser;
         this.action = action;
-        this.targetUserId = targetUserId;
+        this.targetUser = targetUser;
         this.targetEmail = targetEmail;
         this.sourceIp = sourceIp;
     }
 
-    public static IamLog of(Long actorUserId, IamLogAction action, Long targetUserId,
+    public static IamLog of(User actorUser, IamLogAction action, User targetUser,
                             String targetEmail, String sourceIp) {
-        return new IamLog(actorUserId, action, targetUserId, targetEmail, sourceIp);
+        return new IamLog(actorUser, action, targetUser, targetEmail, sourceIp);
     }
 
     @PrePersist

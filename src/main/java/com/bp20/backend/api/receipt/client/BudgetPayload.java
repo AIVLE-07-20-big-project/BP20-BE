@@ -10,7 +10,10 @@ public record BudgetPayload(
 ) {
     public static BudgetPayload from(Budget budget) {
         return new BudgetPayload(
-                budget.getYearMonth(), budget.getCategory(), budget.getBudgetAmount(), budget.getStoreId()
+                budget.getYearMonth(),
+                budget.getCategory(),
+                budget.getBudgetAmount(),
+                budget.getStore().getId()
         );
     }
 }

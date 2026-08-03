@@ -38,7 +38,7 @@ class EffectVerificationRetryServiceTests {
         EffectVerificationExecution execution = failedExecution(1);
         VerificationExecutionResponse expected =
                 VerificationExecutionResponse.builder().build();
-        when(executionRepository.findByAiRecommendationIdAndUserId(
+        when(executionRepository.findByAiRecommendationIdAndUser_Id(
                 "recommendation-1",
                 10L
         )).thenReturn(Optional.of(execution));
@@ -61,7 +61,7 @@ class EffectVerificationRetryServiceTests {
                 .status(VerificationStatus.COLLECTING)
                 .attemptCount(0)
                 .build();
-        when(executionRepository.findByAiRecommendationIdAndUserId(
+        when(executionRepository.findByAiRecommendationIdAndUser_Id(
                 "recommendation-1",
                 10L
         )).thenReturn(Optional.of(execution));
@@ -79,7 +79,7 @@ class EffectVerificationRetryServiceTests {
     void rejectsRetryAfterMaximumAttempts() {
         EffectVerificationRetryService service = service();
         EffectVerificationExecution execution = failedExecution(3);
-        when(executionRepository.findByAiRecommendationIdAndUserId(
+        when(executionRepository.findByAiRecommendationIdAndUser_Id(
                 "recommendation-1",
                 10L
         )).thenReturn(Optional.of(execution));

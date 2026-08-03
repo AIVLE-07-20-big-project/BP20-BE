@@ -1,6 +1,8 @@
 package com.bp20.backend.api.effectverification.domain;
 
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,11 +24,17 @@ public class EffectVerificationResult {
     @Column(name = "AIRecommendationID", nullable = false, unique = true, length = 64)
     private String aiRecommendationId;
 
-    @Column(name = "UserID")
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "EffectVerificationExecutionID", unique = true)
+    private EffectVerificationExecution execution;
 
-    @Column(name = "StoreID", nullable = false)
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "UserID")
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "StoreID", nullable = false)
+    private Store store;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "RecommendationType", nullable = false, length = 20)
@@ -49,7 +57,7 @@ public class EffectVerificationResult {
     private LocalDateTime verifiedDate;
 
     public void update(
-            Long storeId,
+            Store store,
             RecommendationType recommendationType,
             Double effectScore,
             String verdict,
@@ -57,12 +65,16 @@ public class EffectVerificationResult {
             String summary,
             LocalDateTime verifiedDate
     ) {
-        this.storeId = storeId;
+        this.store = store;
         this.recommendationType = recommendationType;
         this.effectScore = effectScore;
         this.verdict = verdict;
         this.metricResults = metricResults;
         this.summary = summary;
         this.verifiedDate = verifiedDate;
+    }
+
+    public void linkExecution(EffectVerificationExecution execution) {
+        this.execution = execution;
     }
 }
