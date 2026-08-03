@@ -51,7 +51,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
+      - .env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
@@ -80,7 +80,7 @@ services:
     restart: always
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     env_file:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
+      - .env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
@@ -107,7 +107,7 @@ services:
     restart: always
     command: celery -A app.celery_app beat --loglevel=info
     env_file:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
+      - .env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
