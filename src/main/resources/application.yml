@@ -21,6 +21,15 @@ spring:
       max-file-size: 20MB
       max-request-size: 50MB
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      repositories:
+        enabled: false
+
 server:
   port: 8080
   forward-headers-strategy: framework
@@ -71,11 +80,18 @@ kakao:
 
 # 발주량 예측 및 효과검증 AI 서비스
 ai:
-  server-url: ${AI_SERVER_URL:http://localhost:8000}
+  server-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   effect-verification:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   review-sentiment:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+
+effect-verification:
+  scheduler:
+    enabled: ${EFFECT_VERIFICATION_SCHEDULER_ENABLED:true}
+    cron: ${EFFECT_VERIFICATION_SCHEDULER_CRON:0 0 2 * * *}
+    zone: ${EFFECT_VERIFICATION_SCHEDULER_ZONE:Asia/Seoul}
+    max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}
 
 # 영수증 OCR 및 원가 분석 서비스
 ocr-service:
@@ -90,6 +106,14 @@ app:
     secret: ${JWT_SECRET}
     expiration-seconds: ${JWT_EXPIRATION_SECONDS}
     admin-expiration-seconds: ${JWT_ADMIN_EXPIRATION_SECONDS}
+  auth:
+    refresh-token:
+      store: ${REFRESH_TOKEN_STORE:redis}
+      expiration-seconds: ${REFRESH_TOKEN_EXPIRATION_SECONDS:604800}
+      remember-me-expiration-seconds: ${REFRESH_TOKEN_REMEMBER_ME_EXPIRATION_SECONDS:2592000}
+      cookie-name: ${REFRESH_TOKEN_COOKIE_NAME:bp20_refresh_token}
+      cookie-secure: ${REFRESH_TOKEN_COOKIE_SECURE:false}
+      cookie-same-site: ${REFRESH_TOKEN_COOKIE_SAME_SITE:Lax}
   iam:
     invitation-expiration-hours: ${INVITATION_EXPIRATION_HOURS}
   cors:

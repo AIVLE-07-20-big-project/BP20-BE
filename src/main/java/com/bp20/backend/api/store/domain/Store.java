@@ -19,6 +19,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import static com.bp20.backend.global.util.PhoneNumberUtils.normalize;
+
 @Getter
 @Entity
 @Table(
@@ -73,7 +75,7 @@ public class Store extends BaseTimeEntity {
         this.businessNumber = businessNumber;
         this.category = category;
         this.address = address;
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = normalize(phoneNumber);
         this.onlineSalesStatus = OnlineSalesStatus.CLOSED;
     }
 
@@ -92,7 +94,7 @@ public class Store extends BaseTimeEntity {
         this.name = name;
         this.category = category;
         this.address = address;
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = normalize(phoneNumber);
     }
 
     public void changeOnlineSalesStatus(OnlineSalesStatus onlineSalesStatus) {

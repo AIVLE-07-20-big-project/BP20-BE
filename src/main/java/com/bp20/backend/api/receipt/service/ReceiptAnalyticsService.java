@@ -28,19 +28,22 @@ public class ReceiptAnalyticsService {
     private final OcrServiceClient ocrServiceClient;
 
     public List<ExpenseAnomalyResponse> getExpenseAnomalies(Long storeId, double zThreshold) {
-        List<Receipt> receipts = receiptRepository.findByStoreIdOrderByTransactionDateDesc(storeId);
+        List<Receipt> receipts =
+                receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId);
         return ocrServiceClient.getExpenseAnomalies(receipts, zThreshold);
     }
 
     public List<BudgetOverageResponse> getBudgetOverage(Long storeId) {
-        List<Receipt> receipts = receiptRepository.findByStoreIdOrderByTransactionDateDesc(storeId);
-        List<Budget> budgets = budgetRepository.findByStoreId(storeId);
+        List<Receipt> receipts =
+                receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId);
+        List<Budget> budgets = budgetRepository.findByStore_Id(storeId);
         return ocrServiceClient.getBudgetOverage(receipts, budgets);
     }
 
     public String getReport(Long storeId, String storeName, String reportType, Integer year, Integer month) {
-        List<Receipt> receipts = receiptRepository.findByStoreIdOrderByTransactionDateDesc(storeId);
-        List<Budget> budgets = budgetRepository.findByStoreId(storeId);
+        List<Receipt> receipts =
+                receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId);
+        List<Budget> budgets = budgetRepository.findByStore_Id(storeId);
         List<ReceiptItem> items = receipts.stream()
                 .flatMap(receipt -> receipt.getItems().stream())
                 .toList();

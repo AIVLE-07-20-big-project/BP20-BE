@@ -14,7 +14,6 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 형식이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_ROLE(HttpStatus.BAD_REQUEST, "사용자 역할이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "CSV 파일만 업로드할 수 있습니다."),
-    BAD_REQUEST_INVALID_STORE_STATUS(HttpStatus.BAD_REQUEST, "온라인 판매 상태 변경 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "상품 상태 변경 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "온라인 상품 등록 또는 해제 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_DISCOUNT(HttpStatus.BAD_REQUEST, "할인 설정이 올바르지 않습니다."),
@@ -26,6 +25,10 @@ public enum ErrorCode {
     UNAUTHORIZED_EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     UNAUTHORIZED_TOKEN_EMPTY(HttpStatus.UNAUTHORIZED, "토큰이 비어 있습니다."),
     UNAUTHORIZED_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 올바르지 않습니다."),
+    UNAUTHORIZED_REFRESH_TOKEN_REQUIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 필요합니다."),
+    UNAUTHORIZED_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 올바르지 않습니다."),
+    UNAUTHORIZED_EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
+    UNAUTHORIZED_REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "이미 사용된 Refresh Token이 감지되어 로그인 세션을 종료했습니다."),
 
     FORBIDDEN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     FORBIDDEN_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "관리자 권한이 필요합니다."),
@@ -43,6 +46,7 @@ public enum ErrorCode {
     NOT_FOUND_COUPON(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
     NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
+    NOT_FOUND_NOTICE(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
 
     CONFLICT_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     CONFLICT_DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다."),

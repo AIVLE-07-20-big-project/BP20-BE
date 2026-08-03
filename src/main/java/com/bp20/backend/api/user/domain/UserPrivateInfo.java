@@ -11,6 +11,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import static com.bp20.backend.global.util.PhoneNumberUtils.normalize;
+
 @Getter
 @Entity
 @Table(
@@ -41,7 +43,7 @@ public class UserPrivateInfo {
         this.email = email;
         this.passwordHash = passwordHash;
         this.name = name;
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = normalize(phoneNumber);
     }
 
     public static UserPrivateInfo of(String email, String passwordHash, String name, String phoneNumber) {
@@ -59,7 +61,7 @@ public class UserPrivateInfo {
     public void attachUserAccount(String passwordHash, String name, String phoneNumber) {
         this.passwordHash = passwordHash;
         this.name = name;
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = normalize(phoneNumber);
     }
 
     public void updateName(String name) {
@@ -67,6 +69,6 @@ public class UserPrivateInfo {
     }
 
     public void updatePhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber.isBlank() ? null : phoneNumber;
+        this.phoneNumber = normalize(phoneNumber);
     }
 }

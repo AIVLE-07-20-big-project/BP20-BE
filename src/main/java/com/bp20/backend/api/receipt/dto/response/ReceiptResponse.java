@@ -32,7 +32,7 @@ public record ReceiptResponse(
 
         return new ReceiptResponse(
                 receipt.getId(),
-                receipt.getStoreId(),
+                receipt.getStore() == null ? null : receipt.getStore().getId(),
                 receipt.getDocumentType(),
                 receipt.getVendorName(),
                 receipt.getBusinessNumber(),

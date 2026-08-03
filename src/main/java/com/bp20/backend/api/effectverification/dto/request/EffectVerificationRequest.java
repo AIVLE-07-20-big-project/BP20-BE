@@ -16,7 +16,7 @@ public class EffectVerificationRequest {
     private Long storeId;
 
     @JsonProperty("recommendation_id")
-    private Long recommendationId;
+    private String recommendationId;
 
     @JsonProperty("recommendation_type")
     private RecommendationType recommendationType;

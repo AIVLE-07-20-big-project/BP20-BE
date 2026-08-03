@@ -87,7 +87,7 @@ class FastApiClientTest {
 
         Map<String, Object> response = client.resumeAgentRun(
                 "thread-id",
-                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행"),
+                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행", null),
                 7L
         );
 

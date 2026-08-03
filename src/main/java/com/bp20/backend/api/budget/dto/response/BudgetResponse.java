@@ -11,7 +11,7 @@ public record BudgetResponse(
 ) {
     public static BudgetResponse from(Budget budget) {
         return new BudgetResponse(
-                budget.getId(), budget.getStoreId(), budget.getYearMonth(),
+                budget.getId(), budget.getStore().getId(), budget.getYearMonth(),
                 budget.getCategory(), budget.getBudgetAmount()
         );
     }

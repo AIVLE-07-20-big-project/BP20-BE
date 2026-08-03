@@ -55,7 +55,8 @@ public class ReviewAnalysisService {
 
     @Transactional
     public void analyzeUnanalyzedReviews(Long storeId) {
-        List<Review> unanalyzedReviews = reviewRepository.findTop30ByStoreIdAndIsAnalyzedFalse(storeId);
+        List<Review> unanalyzedReviews =
+                reviewRepository.findTop30ByStore_IdAndIsAnalyzedFalse(storeId);
 
         if (unanalyzedReviews.isEmpty())
             return;
@@ -91,7 +92,7 @@ public class ReviewAnalysisService {
 
                         for (AspectSentimentDto result : res.results()) {
                             ReviewAnalysis entity = ReviewAnalysis.builder()
-                                    .reviewId(review.getId())
+                                    .review(review)
                                     .aspect(result.aspect())
                                     .sentiment(result.sentiment())
                                     .confidence(result.confidence())

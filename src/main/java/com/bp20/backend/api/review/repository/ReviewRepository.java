@@ -8,12 +8,12 @@ import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    List<Review> findByStoreId(Long storeId);
+    List<Review> findByStore_Id(Long storeId);
 
-    List<Review> findTop30ByStoreIdAndIsAnalyzedFalse(Long storeId);
+    List<Review> findTop30ByStore_IdAndIsAnalyzedFalse(Long storeId);
 
-    @Query("SELECT DISTINCT r.storeId FROM Review r WHERE r.isAnalyzed = false")
+    @Query("SELECT DISTINCT r.store.id FROM Review r WHERE r.isAnalyzed = false")
     List<Long> findStoreIdWithUnanalyzedReviews();
 
-    List<Review> findAllByStoreIdAndIsAnalyzedFalse(Long storeId);
+    long countByStore_IdAndIsAnalyzedFalse(Long storeId);
 }
