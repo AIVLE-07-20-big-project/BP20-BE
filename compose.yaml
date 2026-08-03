@@ -24,6 +24,7 @@ services:
       retries: 5
 
   # Redis — Celery 브로커/결과 백엔드. 추후 Spring 캐시/세션도 공용 예정.
+  # 인증 세션 및 일회성 토큰 저장
   # noeviction 고정(안 하면 메모리 압박 시 큐 키가 증발할 수 있음)
   redis:
     image: redis:7-alpine
@@ -42,24 +43,44 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis Insight - 로컬 Redis 데이터를 브라우저에서 조회하는 개발용 GUI
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight_bp20
+    restart: always
+    ports:
+      - "127.0.0.1:5540:5540"
+    environment:
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: 6379
+      RI_REDIS_ALIAS: BP20 Local
+      RI_REDIS_DB: 0
+      RI_REDIS_TLS: "false"
+      RI_ACCEPT_TERMS_AND_CONDITIONS: "true"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
+
   # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
   fastapi:
     build:
-      context: ${BP20_AI_PATH:-../../20BGAI/BP20-AI}
+      context: ${BP20_AI_PATH:-../BP20-AI}
     container_name: fastapi_bp20
     restart: always
     ports:
       - "8000:8000"
     env_file:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
+      - ${BP20_AI_PATH:-../BP20-AI}/.env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
-      MODEL_PATH: ${MODEL_PATH}
-      HF_TOKEN: ${HF_TOKEN}
     volumes:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
+      - ${BP20_AI_PATH:-../BP20-AI}/data:/app/data
+      - ${BP20_AI_PATH:-../BP20-AI}/model:/app/model
       - paddlex_models:/root/.paddlex  # PaddleOCR 모델 캐시(없으면 재생성마다 재다운로드)
     depends_on:
       redis:
@@ -77,20 +98,20 @@ services:
   # Celery 워커 — 무거운 매출 분석 오프로드. 동시성 2(워커당 RSS 약 531MB 기준)
   celery-worker:
     build:
-      context: ${BP20_AI_PATH:-../../20BGAI/BP20-AI}
+      context: ${BP20_AI_PATH:-../BP20-AI}
     container_name: celery_worker_bp20
     restart: always
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     env_file:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
+      - ${BP20_AI_PATH:-../BP20-AI}/.env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       MODEL_PATH: ${MODEL_PATH}
       HF_TOKEN: ${HF_TOKEN}
     volumes:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
+      - ${BP20_AI_PATH:-../BP20-AI}/data:/app/data
+      - ${BP20_AI_PATH:-../BP20-AI}/model:/app/model
     depends_on:
       redis:
         condition: service_healthy
@@ -106,12 +127,12 @@ services:
   # Celery beat — 정체된 queued/running 잡 청소 스케줄러
   celery-beat:
     build:
-      context: ${BP20_AI_PATH:-../../20BGAI/BP20-AI}
+      context: ${BP20_AI_PATH:-../BP20-AI}
     container_name: celery_beat_bp20
     restart: always
     command: celery -A app.celery_app beat --loglevel=info
     env_file:
-      - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/.env
+      - ${BP20_AI_PATH:-../BP20-AI}/.env
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
@@ -142,8 +163,12 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       FASTAPI_BASE_URL: http://fastapi:8000
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       fastapi:
         condition: service_healthy
@@ -157,4 +182,5 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  redisinsight_data:
   paddlex_models:
