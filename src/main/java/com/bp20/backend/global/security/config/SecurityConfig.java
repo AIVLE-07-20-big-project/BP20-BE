@@ -1,5 +1,6 @@
 package com.bp20.backend.global.security.config;
 
+import com.bp20.backend.api.auth.session.RefreshTokenProperties;
 import com.bp20.backend.global.security.authorization.Permission;
 import com.bp20.backend.global.security.filter.JwtAuthenticationFilter;
 import com.bp20.backend.global.security.handler.JsonAccessDeniedHandler;
@@ -27,7 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, RefreshTokenProperties.class})
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -60,6 +61,8 @@ public class SecurityConfig {
                     auth.requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/signup",
+                                "/api/auth/token/refresh",
+                                "/api/auth/logout",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/swagger-ui.html",

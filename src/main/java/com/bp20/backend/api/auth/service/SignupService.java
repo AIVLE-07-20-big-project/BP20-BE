@@ -2,6 +2,8 @@ package com.bp20.backend.api.auth.service;
 
 import com.bp20.backend.api.auth.dto.request.SignupRequest;
 import com.bp20.backend.api.auth.dto.response.SignupResponse;
+import com.bp20.backend.api.auth.session.AuthenticatedSession;
+import com.bp20.backend.api.auth.session.RefreshTokenService;
 import com.bp20.backend.api.iam.invitation.domain.Invitation;
 import com.bp20.backend.api.iam.invitation.repository.InvitationRepository;
 import com.bp20.backend.api.iam.invitation.service.TemporaryPasswordService;
@@ -14,7 +16,6 @@ import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
-import com.bp20.backend.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,11 +33,11 @@ public class SignupService {
     private final InvitationRepository invitationRepository;
     private final PasswordEncoder passwordEncoder;
     private final TemporaryPasswordService temporaryPasswordService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
     private final IamLogService iamLogService;
 
     @Transactional
-    public SignupResponse signup(SignupRequest request, String sourceIp) {
+    public AuthenticatedSession<SignupResponse> signup(SignupRequest request, String sourceIp) {
         String email = normalizeEmail(request.email());
         Invitation invitation = invitationRepository
                 .findByEmailAndTemporaryPasswordHashAndAcceptedAtIsNullAndRevokedAtIsNull(
@@ -63,7 +64,11 @@ public class SignupService {
                 sourceIp
         );
 
-        return SignupResponse.of(jwtTokenProvider.createAccessToken(user), user);
+        RefreshTokenService.TokenPair tokenPair = refreshTokenService.issue(user, false);
+        return AuthenticatedSession.of(
+                SignupResponse.of(tokenPair.accessToken(), user),
+                tokenPair
+        );
     }
 
     private User createInvitedUser(UserRole targetRole, SignupRequest request, String email) {

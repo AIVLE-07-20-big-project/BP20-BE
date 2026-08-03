@@ -7,6 +7,8 @@ import com.bp20.backend.api.auth.dto.response.MeResponse;
 import com.bp20.backend.api.auth.dto.response.SignupResponse;
 import com.bp20.backend.api.auth.service.LoginService;
 import com.bp20.backend.api.auth.service.SignupService;
+import com.bp20.backend.api.auth.session.AuthenticatedSession;
+import com.bp20.backend.api.auth.session.RefreshTokenService;
 import com.bp20.backend.api.iam.invitation.dto.request.InvitationRequest;
 import com.bp20.backend.api.iam.invitation.dto.response.InvitationResponse;
 import com.bp20.backend.api.iam.invitation.service.InvitationService;
@@ -16,6 +18,7 @@ import com.bp20.backend.api.user.domain.UserRole;
 import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
+import com.bp20.backend.global.response.ErrorCode;
 import com.bp20.backend.global.security.jwt.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
@@ -56,19 +59,29 @@ class AuthIntegrationTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
     @Test
     void storeOwnerCanSignupAndLoginWithInvitation() {
         signupStoreOwner("auth.owner@example.com");
 
-        LoginResponse loginResponse = loginService.login(new LoginRequest(
+        AuthenticatedSession<LoginResponse> loginSession = loginService.login(new LoginRequest(
                 "Auth.Owner@Example.com",
                 PASSWORD
         ));
+        LoginResponse loginResponse = loginSession.response();
         MeResponse me = loginService.getMe(
                 jwtTokenProvider.extractUserId(loginResponse.accessToken())
         );
 
         assertThat(loginResponse.accessToken()).isNotBlank();
+        assertThat(loginSession.refreshToken()).isNotBlank();
+        assertThatThrownBy(() -> jwtTokenProvider.extractUserId(loginSession.refreshToken()))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.UNAUTHORIZED_INVALID_TOKEN)
+                );
         String payload = new String(
                 Base64.getUrlDecoder().decode(loginResponse.accessToken().split("\\.")[1]),
                 StandardCharsets.UTF_8
@@ -101,7 +114,7 @@ class AuthIntegrationTest {
                         null
                 ),
                 "127.0.0.1"
-        );
+        ).response();
 
         assertThat(signupResponse.role()).isEqualTo(UserRole.ADMIN);
         assertThat(signupResponse.accessToken()).isNotBlank();
@@ -115,6 +128,48 @@ class AuthIntegrationTest {
                 "wrong-password@example.com",
                 "wrong-password"
         ))).isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void refreshTokenIsRotatedAndReuseRevokesSession() {
+        signupStoreOwner("refresh-rotation@example.com");
+        AuthenticatedSession<LoginResponse> loginSession = loginService.login(new LoginRequest(
+                "refresh-rotation@example.com",
+                PASSWORD,
+                true
+        ));
+
+        RefreshTokenService.TokenPair rotated =
+                refreshTokenService.rotate(loginSession.refreshToken());
+
+        assertThat(rotated.accessToken()).isNotBlank();
+        assertThat(rotated.refreshToken()).isNotEqualTo(loginSession.refreshToken());
+        assertThat(rotated.rememberMe()).isTrue();
+
+        assertThatThrownBy(() -> refreshTokenService.rotate(loginSession.refreshToken()))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.UNAUTHORIZED_REFRESH_TOKEN_REUSED)
+                );
+        assertThatThrownBy(() -> refreshTokenService.rotate(rotated.refreshToken()))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.UNAUTHORIZED_INVALID_REFRESH_TOKEN)
+                );
+    }
+
+    @Test
+    void logoutRevokesRefreshTokenSession() {
+        signupStoreOwner("refresh-logout@example.com");
+        AuthenticatedSession<LoginResponse> loginSession = loginService.login(new LoginRequest(
+                "refresh-logout@example.com",
+                PASSWORD
+        ));
+
+        refreshTokenService.logout(loginSession.refreshToken());
+
+        assertThatThrownBy(() -> refreshTokenService.rotate(loginSession.refreshToken()))
+                .isInstanceOf(ApiException.class);
     }
 
     @Test

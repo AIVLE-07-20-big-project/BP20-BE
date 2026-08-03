@@ -24,6 +24,7 @@ services:
       retries: 5
 
   # Redis — Celery 브로커/결과 백엔드. 추후 Spring 캐시/세션도 공용 예정.
+  # 인증 세션 및 일회성 토큰 저장
   # noeviction 고정(안 하면 메모리 압박 시 큐 키가 증발할 수 있음)
   redis:
     image: redis:7-alpine
@@ -41,6 +42,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Redis Insight - 로컬 Redis 데이터를 브라우저에서 조회하는 개발용 GUI
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight_bp20
+    restart: always
+    ports:
+      - "127.0.0.1:5540:5540"
+    environment:
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: 6379
+      RI_REDIS_ALIAS: BP20 Local
+      RI_REDIS_DB: 0
+      RI_REDIS_TLS: "false"
+      RI_ACCEPT_TERMS_AND_CONDITIONS: "true"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - network_bp20
 
   # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
   fastapi:
@@ -138,8 +161,12 @@ services:
       SPRING_PROFILES_ACTIVE: docker,mock
       FASTAPI_BASE_URL: http://fastapi:8000
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       fastapi:
         condition: service_healthy
@@ -153,4 +180,5 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  redisinsight_data:
   paddlex_models:
