@@ -5,6 +5,7 @@ import com.bp20.backend.api.auth.dto.request.SignupRequest;
 import com.bp20.backend.api.auth.dto.response.LoginResponse;
 import com.bp20.backend.api.auth.dto.response.MeResponse;
 import com.bp20.backend.api.auth.dto.response.SignupResponse;
+import com.bp20.backend.api.auth.dto.response.TokenRefreshResponse;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 
 @Tag(
@@ -64,12 +66,13 @@ public interface AuthApiDocs {
     )
     ResponseEntity<ApiResponse<SignupResponse>> signup(
             SignupRequest request,
-            @Parameter(hidden = true) HttpServletRequest servletRequest
+            @Parameter(hidden = true) HttpServletRequest servletRequest,
+            @Parameter(hidden = true) HttpServletResponse servletResponse
     );
 
     @Operation(
             summary = "로그인",
-            description = "이메일과 비밀번호를 검증하고 액세스 토큰을 발급합니다.",
+            description = "이메일과 비밀번호를 검증하고 액세스 토큰을 응답하며, Refresh Token은 HttpOnly 쿠키로 발급합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -82,7 +85,8 @@ public interface AuthApiDocs {
                                             value = """
                                                     {
                                                       "email": "super-admin@bp20.com",
-                                                      "password": "bp20superadmin"
+                                                      "password": "bp20superadmin",
+                                                      "rememberMe": false
                                                     }
                                                     """
                                     ),
@@ -92,7 +96,8 @@ public interface AuthApiDocs {
                                             value = """
                                                     {
                                                       "email": "admin@bp20.com",
-                                                      "password": "bp20admin001"
+                                                      "password": "bp20admin001",
+                                                      "rememberMe": false
                                                     }
                                                     """
                                     ),
@@ -102,7 +107,8 @@ public interface AuthApiDocs {
                                             value = """
                                                     {
                                                       "email": "store-owner@bp20.com",
-                                                      "password": "bp20storeowner"
+                                                      "password": "bp20storeowner",
+                                                      "rememberMe": true
                                                     }
                                                     """
                                     )
@@ -110,7 +116,28 @@ public interface AuthApiDocs {
                     )
             )
     )
-    ResponseEntity<ApiResponse<LoginResponse>> login(LoginRequest request);
+    ResponseEntity<ApiResponse<LoginResponse>> login(
+            LoginRequest request,
+            @Parameter(hidden = true) HttpServletResponse servletResponse
+    );
+
+    @Operation(
+            summary = "액세스 토큰 재발급",
+            description = "HttpOnly 쿠키의 Refresh Token을 검증하고 Rotation을 적용해 새 액세스 토큰과 Refresh Token을 발급합니다."
+    )
+    ResponseEntity<ApiResponse<TokenRefreshResponse>> refresh(
+            @Parameter(hidden = true) HttpServletRequest servletRequest,
+            @Parameter(hidden = true) HttpServletResponse servletResponse
+    );
+
+    @Operation(
+            summary = "로그아웃",
+            description = "Redis의 Refresh Token 세션을 폐기하고 브라우저 쿠키를 제거합니다."
+    )
+    ResponseEntity<ApiResponse<Void>> logout(
+            @Parameter(hidden = true) HttpServletRequest servletRequest,
+            @Parameter(hidden = true) HttpServletResponse servletResponse
+    );
 
     @Operation(
             summary = "현재 사용자 조회",
