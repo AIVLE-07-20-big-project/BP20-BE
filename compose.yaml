@@ -78,6 +78,17 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      HF_TOKEN: ${HF_TOKEN:-${ROBERTA_HF_TOKEN:-}}
+      AI_DATABASE_URL: ${AI_DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      MODEL_S3_PREFIX: ${MODEL_S3_PREFIX:-models/v1}
+      RAG_S3_PREFIX: ${RAG_S3_PREFIX:-rag/v1}
+      DATA_S3_PREFIX: ${DATA_S3_PREFIX:-data}
+      UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
+      FEEDBACK_S3_PREFIX: ${FEEDBACK_S3_PREFIX:-feedback/v1}
+      BANDIT_S3_PREFIX: ${BANDIT_S3_PREFIX:-bandit/v1}
+      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs/v2}
     volumes:
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
@@ -107,6 +118,17 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      HF_TOKEN: ${HF_TOKEN:-${ROBERTA_HF_TOKEN:-}}
+      AI_DATABASE_URL: ${AI_DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      MODEL_S3_PREFIX: ${MODEL_S3_PREFIX:-models/v1}
+      RAG_S3_PREFIX: ${RAG_S3_PREFIX:-rag/v1}
+      DATA_S3_PREFIX: ${DATA_S3_PREFIX:-data}
+      UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
+      FEEDBACK_S3_PREFIX: ${FEEDBACK_S3_PREFIX:-feedback/v1}
+      BANDIT_S3_PREFIX: ${BANDIT_S3_PREFIX:-bandit/v1}
+      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs/v2}
     volumes:
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/data:/app/data
       - ${BP20_AI_PATH:-../../20BGAI/BP20-AI}/model:/app/model
@@ -134,6 +156,17 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      HF_TOKEN: ${HF_TOKEN:-${ROBERTA_HF_TOKEN:-}}
+      AI_DATABASE_URL: ${AI_DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      MODEL_S3_PREFIX: ${MODEL_S3_PREFIX:-models/v1}
+      RAG_S3_PREFIX: ${RAG_S3_PREFIX:-rag/v1}
+      DATA_S3_PREFIX: ${DATA_S3_PREFIX:-data}
+      UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
+      FEEDBACK_S3_PREFIX: ${FEEDBACK_S3_PREFIX:-feedback/v1}
+      BANDIT_S3_PREFIX: ${BANDIT_S3_PREFIX:-bandit/v1}
+      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs/v2}
     depends_on:
       redis:
         condition: service_healthy
@@ -161,6 +194,9 @@ services:
       SPRING_PROFILES_ACTIVE: docker,mock
       FASTAPI_BASE_URL: http://fastapi:8000
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:

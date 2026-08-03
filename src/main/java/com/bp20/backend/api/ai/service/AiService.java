@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.bp20.backend.global.storage.S3ObjectStorageService;
+import java.util.UUID;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +41,7 @@ public class AiService {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final ObjectMapper objectMapper;
+    private final S3ObjectStorageService s3ObjectStorageService;
 
     // AI 서비스는 202 + job_id를 즉시 반환한다(비동기 분석). 완료 여부는
     // getAnalysisJobStatus로 폴링해서 확인한다.
@@ -47,10 +50,19 @@ public class AiService {
                                                String trdarCd, String svcIndutyCd, Integer yyquCd) {
         Store resolvedStore = resolveStore(userId, storeId);
         String[] resolvedCodes = resolveCodes(userId, trdarCd, svcIndutyCd);
-        Map<String, Object> result = fastApiClient.createAnalysis(
-                file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId,
-                resolvedStore.getId().toString()
-        );
+        String jobId = UUID.randomUUID().toString();
+        S3ObjectStorageService.StoredObject stored = s3ObjectStorageService.uploadCsv(file, jobId);
+        Map<String, Object> result;
+        try {
+            result = stored == null
+                    ? fastApiClient.createAnalysis(file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId,
+                    resolvedStore.getId().toString())
+                    : fastApiClient.createAnalysisFromS3(jobId, stored.key(), resolvedCodes[0], resolvedCodes[1],
+                    yyquCd, userId, resolvedStore.getId().toString());
+        } catch (RuntimeException exception) {
+            s3ObjectStorageService.delete(stored);
+            throw exception;
+        }
         requiredString(result, "job_id");
         return result;
     }

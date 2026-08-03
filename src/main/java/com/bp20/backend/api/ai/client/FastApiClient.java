@@ -99,6 +99,21 @@ public class FastApiClient {
         return createRecommendation(analysisId, userId, null);
     }
 
+    public Map<String, Object> createAnalysisFromS3(
+            String jobId, String objectKey, String trdarCd, String svcIndutyCd,
+            Integer yyquCd, Long userId, String storeId
+    ) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("job_id", jobId);
+        body.add("object_key", objectKey);
+        body.add("trdar_cd", trdarCd);
+        body.add("svc_induty_cd", svcIndutyCd);
+        if (yyquCd != null) body.add("yyqu_cd", yyquCd.toString());
+        if (userId != null) body.add("user_id", userId.toString());
+        if (storeId != null && !storeId.isBlank()) body.add("store_id", storeId);
+        return postMultipart("/api/v1/analyses/from-s3", body);
+    }
+
     public Map<String, Object> createRecommendation(String analysisId, Long userId, String storeId) {
         return exchange(() -> restClient.post()
                 .uri(uriBuilder -> {
