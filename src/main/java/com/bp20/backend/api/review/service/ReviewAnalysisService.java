@@ -131,7 +131,8 @@ public class ReviewAnalysisService {
                                 item.trendSummary(),
                                 item.problemCause(),
                                 item.actionPlan(),
-                                item.expectedOutcome()
+                                item.expectedOutcome(),
+                                null
                         ))
                         .toList();
 
