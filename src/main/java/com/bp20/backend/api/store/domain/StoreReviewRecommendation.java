@@ -21,8 +21,9 @@ public class StoreReviewRecommendation {
     @Column(name = "review_recommendation_id")
     private Long id;
 
-    @Column(name = "store_id", nullable = false)
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     @Column(name = "executive_summary", nullable = false, columnDefinition = "TEXT")
     private String executiveSummary;
@@ -35,8 +36,8 @@ public class StoreReviewRecommendation {
     private LocalDateTime createdAt;
 
     @Builder
-    public StoreReviewRecommendation(Long storeId, String executiveSummary, List<ActionItem> actionItems) {
-        this.storeId = storeId;
+    public StoreReviewRecommendation(Store store, String executiveSummary, List<ActionItem> actionItems) {
+        this.store = store;
         this.executiveSummary = executiveSummary;
         this.actionItems = actionItems;
         this.createdAt = LocalDateTime.now();

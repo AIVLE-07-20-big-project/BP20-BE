@@ -53,6 +53,10 @@ public class EffectVerificationResult {
     @Column(name = "Summary", columnDefinition = "TEXT")
     private String summary;
 
+    @Lob
+    @Column(name = "StrategyReportJson", columnDefinition = "JSON")
+    private String strategyReportJson;
+
     @Column(name = "VerifiedDate", nullable = false)
     private LocalDateTime verifiedDate;
 
@@ -63,6 +67,7 @@ public class EffectVerificationResult {
             String verdict,
             String metricResults,
             String summary,
+            String strategyReportJson,
             LocalDateTime verifiedDate
     ) {
         this.store = store;
@@ -71,6 +76,7 @@ public class EffectVerificationResult {
         this.verdict = verdict;
         this.metricResults = metricResults;
         this.summary = summary;
+        this.strategyReportJson = strategyReportJson;
         this.verifiedDate = verifiedDate;
     }
 

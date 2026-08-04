@@ -13,8 +13,10 @@ import java.util.ArrayList;
 
 import com.bp20.backend.api.review.repository.ReviewAnalysisRepository;
 import com.bp20.backend.api.review.repository.ReviewRepository;
+import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.domain.StoreReviewKeyword;
 import com.bp20.backend.api.store.domain.StoreReviewRecommendation;
+import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.api.store.repository.StoreReviewKeywordRepository;
 import com.bp20.backend.api.store.repository.StoreReviewRecommendationRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class ReviewAnalysisService {
     private final ReviewRepository reviewRepository;
     private final StoreReviewKeywordRepository storeReviewKeywordRepository;
     private final StoreReviewRecommendationRepository storeReviewRecommendationRepository;
+    private final StoreRepository storeRepository;
     private final WebClient webClient;
 
     public ReviewAnalysisService(
@@ -44,12 +47,14 @@ public class ReviewAnalysisService {
             ReviewRepository reviewRepository,
             StoreReviewKeywordRepository storeReviewKeywordRepository,
             StoreReviewRecommendationRepository storeReviewRecommendationRepository,
+            StoreRepository storeRepository,
             @Value("${app.fastapi.base-url}") String baseUrl
     ) {
         this.reviewAnalysisRepository = reviewAnalysisRepository;
         this.reviewRepository = reviewRepository;
         this.storeReviewKeywordRepository = storeReviewKeywordRepository;
         this.storeReviewRecommendationRepository = storeReviewRecommendationRepository;
+        this.storeRepository = storeRepository;
         this.webClient = WebClient.builder().baseUrl(baseUrl).build();
     }
 
@@ -71,6 +76,8 @@ public class ReviewAnalysisService {
     public void analyzeAndSaveReviews(Long storeId, List<ReviewItemDto> requestDtos) {
         try {
             BatchReviewRequestDto requestDto = new BatchReviewRequestDto(storeId, requestDtos);
+
+            Store store = storeRepository.getReferenceById(storeId);
 
             ABSAAgentResponseDto response = webClient.post()
                     .uri("/api/v1/review/analyze-graph")
@@ -107,7 +114,7 @@ public class ReviewAnalysisService {
             if (response.clusters() != null) {
                 for (KeywordClusterItemDto cluster : response.clusters()) {
                     StoreReviewKeyword keywordEntity = StoreReviewKeyword.builder()
-                            .storeId(storeId)
+                            .store(store)
                             .aspect(cluster.aspect())
                             .sentiment(cluster.sentiment())
                             .keyword(cluster.representativeKeyword())
@@ -138,7 +145,7 @@ public class ReviewAnalysisService {
                         .toList();
 
                 StoreReviewRecommendation recommendation = StoreReviewRecommendation.builder()
-                        .storeId(storeId)
+                        .store(store)
                         .executiveSummary(report.executiveSummary())
                         .actionItems(actionItems)
                         .build();

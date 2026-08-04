@@ -20,10 +20,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.bp20.backend.global.storage.S3ObjectStorageService;
+import java.util.UUID;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -38,21 +41,38 @@ public class AiService {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final ObjectMapper objectMapper;
+    private final S3ObjectStorageService s3ObjectStorageService;
 
     // AI 서비스는 202 + job_id를 즉시 반환한다(비동기 분석). 완료 여부는
     // getAnalysisJobStatus로 폴링해서 확인한다.
     @Transactional
     public Map<String, Object> createAnalysis(Long userId, String storeId, MultipartFile file,
                                                String trdarCd, String svcIndutyCd, Integer yyquCd) {
-        if (storeId != null && !storeId.isBlank()) {
-            findOwnedStore(userId, storeId);
-        }
+        Store resolvedStore = resolveStore(userId, storeId);
         String[] resolvedCodes = resolveCodes(userId, trdarCd, svcIndutyCd);
-        Map<String, Object> result = fastApiClient.createAnalysis(
-                file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId, storeId
-        );
+        String jobId = UUID.randomUUID().toString();
+        S3ObjectStorageService.StoredObject stored = s3ObjectStorageService.uploadCsv(file, jobId);
+        Map<String, Object> result;
+        try {
+            result = stored == null
+                    ? fastApiClient.createAnalysis(file, resolvedCodes[0], resolvedCodes[1], yyquCd, userId,
+                    resolvedStore.getId().toString())
+                    : fastApiClient.createAnalysisFromS3(jobId, stored.key(), resolvedCodes[0], resolvedCodes[1],
+                    yyquCd, userId, resolvedStore.getId().toString());
+        } catch (RuntimeException exception) {
+            s3ObjectStorageService.delete(stored);
+            throw exception;
+        }
         requiredString(result, "job_id");
         return result;
+    }
+
+    public Map<String, Object> getLocations() {
+        return fastApiClient.getLocations();
+    }
+
+    public Map<String, Object> getIndustries() {
+        return fastApiClient.getIndustries();
     }
 
     // 잡 상태를 조회하고, 완료된 시점에만 AI 서비스에서 결과를 가져와 로컬에 저장한다
@@ -76,6 +96,7 @@ public class AiService {
                         write(analysis)
                 ));
             }
+            // 새 분석 CSV가 저장된 매출 기간을 포함하면 승인 방안의 사후 피드백을 확정한다.
         }
         return job;
     }
@@ -109,7 +130,16 @@ public class AiService {
     @Transactional
     public Map<String, Object> createRecommendation(Long userId, String analysisId) {
         AiAnalysis analysis = findAnalysis(userId, analysisId);
-        Map<String, Object> result = fastApiClient.createRecommendation(analysisId, userId);
+        Store store = analysis.getStore() != null
+                ? analysis.getStore()
+                : resolveStore(userId, null);
+        if (analysis.getStore() == null) {
+            analysis.attachStore(store);
+            analysisRepository.save(analysis);
+        }
+        Map<String, Object> result = fastApiClient.createRecommendation(
+                analysisId, userId, store.getId().toString()
+        );
         String threadId = requiredString(result, "thread_id");
         runRepository.save(AiRecommendationRun.create(
                 threadId,
@@ -120,7 +150,7 @@ public class AiService {
         return result;
     }
 
-    public List<Map<String, Object>> getRecommendations(Long userId, String storeId) {
+    public List<Map<String, Object>> getRecommendations(Long userId) {
         List<AiRecommendationRun> runs =
                 runRepository.findAllByUser_IdOrderByCreatedAtDesc(userId);
         return runs.stream()
@@ -130,6 +160,12 @@ public class AiService {
                     result.putIfAbsent("analysis_id", run.getAnalysis().getAnalysisId());
                     result.put("created_at", run.getCreatedAt());
                     result.put("updated_at", run.getUpdatedAt());
+                    if (run.getExecutionStartedAt() != null) {
+                        result.put("execution_started_at", run.getExecutionStartedAt());
+                    }
+                    if (run.getExecutionEndedAt() != null) {
+                        result.put("execution_ended_at", run.getExecutionEndedAt());
+                    }
                     return result;
                 })
                 .toList();
@@ -141,6 +177,10 @@ public class AiService {
         Map<String, Object> result = fastApiClient.getAgentRun(threadId, userId);
         run.updateResult(write(result));
         runRepository.save(run);
+        if (run.getExecutionStartedAt() != null) {
+            result.put("execution_started_at", run.getExecutionStartedAt());
+            result.put("execution_ended_at", run.getExecutionEndedAt());
+        }
         return result;
     }
 
@@ -150,6 +190,20 @@ public class AiService {
     ) {
         AiRecommendationRun run = findRun(userId, threadId);
         Map<String, Object> result = fastApiClient.resumeAgentRun(threadId, request, userId);
+        if (request.decision() == AgentRunResumeRequest.Decision.approve
+                && request.executionStartedAt() == null && request.executionEndedAt() == null) {
+            LocalDateTime startedAt = LocalDateTime.now();
+            run.updateExecutionPlan(startedAt, startedAt.plusDays(30),
+                    request.selectedAction() != null ? request.selectedAction()
+                            : request.modificationPlan() != null ? request.modificationPlan()
+                            : run.getSelectedAction());
+        } else if (request.decision() == AgentRunResumeRequest.Decision.approve
+                && request.executionStartedAt() != null && request.executionEndedAt() != null) {
+            run.updateExecutionPlan(
+                    request.executionStartedAt(), request.executionEndedAt(),
+                    request.selectedAction() != null ? request.selectedAction() : request.modificationPlan()
+            );
+        }
         run.updateResult(write(result));
         runRepository.save(run);
         return result;
@@ -184,6 +238,14 @@ public class AiService {
         } catch (NumberFormatException exception) {
             throw new ApiException(ErrorCode.NOT_FOUND_STORE, exception);
         }
+    }
+
+    private Store resolveStore(Long userId, String storeId) {
+        if (storeId != null && !storeId.isBlank()) {
+            return findOwnedStore(userId, storeId);
+        }
+        return storeRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
     }
 
     private String requiredString(Map<String, Object> value, String key) {

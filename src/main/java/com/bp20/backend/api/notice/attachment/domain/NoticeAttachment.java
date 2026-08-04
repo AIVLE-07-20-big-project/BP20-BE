@@ -17,7 +17,8 @@ public class NoticeAttachment {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "notice_id", nullable = false, unique = true)
+    @JoinColumn(name = "notice_id", nullable = false, unique = true,
+            foreignKey = @ForeignKey(name = "fk_notice_attachments_notice"))
     private Notice notice;
 
     @Column(nullable = false, length = 255)

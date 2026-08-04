@@ -21,8 +21,9 @@ public class StoreReviewKeyword {
     @Column(name = "review_keyword_id")
     private Long id;
 
-    @Column(nullable = false)
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     @Column(nullable = false, length = 50)
     private String aspect;
