@@ -4,7 +4,7 @@
 -- 실행 전 기간: 2026-04-01 ~ 2026-05-01
 -- 실행 후 기간: 2026-05-01 ~ 2026-05-31
 
-SET NAMES utf8mb4;
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 SET @owner_email = 'effect-owner@bp20.com';
 SET @business_number = '9999900001';
@@ -29,7 +29,7 @@ DELETE FROM effect_verification_execution
 WHERE airecommendationid IN ('final-sales-20260501', 'final-review-20260501');
 DELETE ra
 FROM review_analysis ra
-JOIN reviews r ON r.id = ra.review_id
+JOIN reviews r ON r.review_id = ra.review_id
 WHERE r.store_id = @old_store_id;
 DELETE FROM reviews WHERE store_id = @old_store_id;
 DELETE FROM coupons WHERE store_id = @old_store_id;
