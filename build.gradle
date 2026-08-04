@@ -23,10 +23,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-aspectj'
     implementation 'org.springframework.boot:spring-boot-restclient'
+
+    // AWS S3 (ECS Task Role/로컬 AWS Profile 기반 인증)
+    implementation 'software.amazon.awssdk:s3:2.31.63'
 
     // CSV 기반 상품·매출·재고 입력
     implementation 'org.apache.commons:commons-csv:1.14.1'

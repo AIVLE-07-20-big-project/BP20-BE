@@ -15,6 +15,14 @@ app:
     secret: bp20-test-secret-key-with-at-least-32-characters
     expiration-seconds: 7200
     admin-expiration-seconds: 900
+  auth:
+    refresh-token:
+      store: memory
+      expiration-seconds: 604800
+      remember-me-expiration-seconds: 2592000
+      cookie-name: bp20_refresh_token
+      cookie-secure: false
+      cookie-same-site: Lax
   iam:
     invitation-expiration-hours: 24
   cors:

@@ -10,6 +10,11 @@ import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
 import com.bp20.backend.api.receipt.dto.response.ReceiptItemData;
 import com.bp20.backend.api.receipt.dto.response.ReceiptResponse;
 import com.bp20.backend.api.receipt.repository.ReceiptRepository;
+import com.bp20.backend.api.product.repository.ProductRepository;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
 import com.bp20.backend.global.response.PageResponse;
@@ -34,12 +39,21 @@ public class ReceiptService {
 
     private final ReceiptRepository receiptRepository;
     private final OcrServiceClient ocrServiceClient;
+    private final StoreRepository storeRepository;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
     /**
      * 영수증 이미지를 OCR 처리한다. (DB 저장은 하지 않음 - 프론트에서 검토/수정 후 createReceipt 호출)
      */
-    public OcrParseResponse parse(MultipartFile file) {
-        return ocrServiceClient.parseReceipt(file);
+    public OcrParseResponse parse(Long ownerId, MultipartFile file) {
+        List<OcrServiceClient.ProductCatalogPayload> catalog = storeRepository.findByOwnerId(ownerId)
+                .map(store -> productRepository.findByStoreIdOrderByIdDesc(store.getId()).stream()
+                        .map(product -> new OcrServiceClient.ProductCatalogPayload(
+                                product.getName(), product.getPrice()))
+                        .toList())
+                .orElseGet(List::of);
+        return ocrServiceClient.parseReceipt(file, catalog);
     }
 
     @Transactional
@@ -49,6 +63,14 @@ public class ReceiptService {
 
         ReceiptStatus status = ReceiptStatus.CONFIRMED;
         String finalDedupeKey = dedupeKey;
+        Store store = request.storeId() == null
+                ? null
+                : storeRepository.findById(request.storeId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+        User uploadedBy = request.uploadedByUserId() == null
+                ? null
+                : userRepository.findById(request.uploadedByUserId())
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_USER));
 
         boolean duplicate = receiptRepository.existsByDedupeKey(dedupeKey);
         if (duplicate) {
@@ -60,8 +82,8 @@ public class ReceiptService {
         }
 
         Receipt receipt = Receipt.create(
-                request.storeId(),
-                request.uploadedByUserId(),
+                store,
+                uploadedBy,
                 request.documentType(),
                 request.storeName(),
                 request.businessNumber(),
@@ -97,8 +119,36 @@ public class ReceiptService {
         return ReceiptResponse.from(receipt);
     }
 
+    @Transactional
+    public ReceiptResponse updateReceipt(Long receiptId, ReceiptUpdateRequest request) {
+        Receipt receipt = receiptRepository.findById(receiptId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_RECEIPT));
+        String dedupeKey = buildDedupeKey(
+                request.storeName(), request.transactionDate(), request.transactionTime(), request.totalAmount());
+        receiptRepository.findByDedupeKey(dedupeKey)
+                .filter(existing -> !existing.getId().equals(receiptId))
+                .ifPresent(existing -> {
+                    throw new ApiException(ErrorCode.CONFLICT_DUPLICATE_RECEIPT);
+                });
+
+        receipt.update(request.documentType(), request.storeName(), request.businessNumber(),
+                parseDate(request.transactionDate()), parseTime(request.transactionTime()),
+                request.paymentMethod(), request.category(), request.supplyAmount(), request.vat(),
+                request.taxFreeAmount(), request.totalAmount(), dedupeKey);
+
+        List<ReceiptItemData> itemData = request.items() != null ? request.items() : List.of();
+        List<ReceiptItem> items = new java.util.ArrayList<>();
+        int lineNumber = 1;
+        for (ReceiptItemData item : itemData) {
+            items.add(ReceiptItem.create(lineNumber++, item.itemName(), item.quantity(), item.unit(),
+                    item.unitPrice(), item.totalPrice()));
+        }
+        receipt.replaceItems(items);
+        return ReceiptResponse.from(receipt);
+    }
+
     public List<ReceiptResponse> listReceipts(Long storeId) {
-        return receiptRepository.findByStoreIdOrderByTransactionDateDesc(storeId).stream()
+        return receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId).stream()
                 .map(ReceiptResponse::from)
                 .toList();
     }

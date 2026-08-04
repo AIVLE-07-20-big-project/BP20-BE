@@ -1,5 +1,7 @@
 package com.bp20.backend.api.receipt.domain;
 
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.global.domain.BaseTimeEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -10,6 +12,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
@@ -43,11 +48,13 @@ public class Receipt extends BaseTimeEntity {
     @Column(name = "receipt_id")
     private Long id;
 
-    @Column(name = "store_id")
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id")
+    private Store store;
 
-    @Column(name = "uploaded_by_user_id")
-    private Long uploadedByUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploaded_by_user_id")
+    private User uploadedBy;
 
     @Column(nullable = false, length = 30)
     private String documentType;
@@ -93,13 +100,13 @@ public class Receipt extends BaseTimeEntity {
     @OrderBy("lineNumber ASC")
     private final List<ReceiptItem> items = new ArrayList<>();
 
-    private Receipt(Long storeId, Long uploadedByUserId, String documentType, String vendorName,
+    private Receipt(Store store, User uploadedBy, String documentType, String vendorName,
                      String businessNumber, LocalDate transactionDate, LocalTime transactionTime,
                      String paymentMethod, String category, Integer supplyAmount, Integer vat,
                      Integer taxFreeAmount, Integer totalAmount, String dedupeKey, String rawImagePath,
                      ReceiptStatus status) {
-        this.storeId = storeId;
-        this.uploadedByUserId = uploadedByUserId;
+        this.store = store;
+        this.uploadedBy = uploadedBy;
         this.documentType = documentType;
         this.vendorName = vendorName;
         this.businessNumber = businessNumber;
@@ -116,12 +123,12 @@ public class Receipt extends BaseTimeEntity {
         this.status = status;
     }
 
-    public static Receipt create(Long storeId, Long uploadedByUserId, String documentType, String vendorName,
+    public static Receipt create(Store store, User uploadedBy, String documentType, String vendorName,
                                   String businessNumber, LocalDate transactionDate, LocalTime transactionTime,
                                   String paymentMethod, String category, Integer supplyAmount, Integer vat,
                                   Integer taxFreeAmount, Integer totalAmount, String dedupeKey,
                                   String rawImagePath, ReceiptStatus status) {
-        return new Receipt(storeId, uploadedByUserId, documentType, vendorName, businessNumber,
+        return new Receipt(store, uploadedBy, documentType, vendorName, businessNumber,
                 transactionDate, transactionTime, paymentMethod, category, supplyAmount, vat,
                 taxFreeAmount, totalAmount, dedupeKey, rawImagePath, status);
     }
@@ -129,6 +136,29 @@ public class Receipt extends BaseTimeEntity {
     public void addItem(ReceiptItem item) {
         this.items.add(item);
         item.assignReceipt(this);
+    }
+
+    public void update(String documentType, String vendorName, String businessNumber,
+                       LocalDate transactionDate, LocalTime transactionTime, String paymentMethod,
+                       String category, Integer supplyAmount, Integer vat, Integer taxFreeAmount,
+                       Integer totalAmount, String dedupeKey) {
+        this.documentType = documentType;
+        this.vendorName = vendorName;
+        this.businessNumber = businessNumber;
+        this.transactionDate = transactionDate;
+        this.transactionTime = transactionTime;
+        this.paymentMethod = paymentMethod;
+        this.category = category;
+        this.supplyAmount = supplyAmount;
+        this.vat = vat;
+        this.taxFreeAmount = taxFreeAmount == null ? 0 : taxFreeAmount;
+        this.totalAmount = totalAmount;
+        this.dedupeKey = dedupeKey;
+    }
+
+    public void replaceItems(List<ReceiptItem> newItems) {
+        this.items.clear();
+        newItems.forEach(this::addItem);
     }
 
     public void markDuplicateSuspected(String newDedupeKey) {

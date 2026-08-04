@@ -118,7 +118,10 @@ public class MockAutomaticExecutionService {
         );
 
         ExecutionRegistrationRequest request = new ExecutionRegistrationRequest();
-        request.setThreadId(threadId);
+        // Mock thread identifiers do not belong to AiRecommendationRun.
+        // Keep them as the external recommendation identifier so the mock flow
+        // remains queryable without creating a dangling foreign-key relation.
+        request.setRecommendationId(threadId);
         request.setStoreId(input.getStoreId());
         request.setRecommendationType(input.getRecommendationType());
         request.setCondition(condition);

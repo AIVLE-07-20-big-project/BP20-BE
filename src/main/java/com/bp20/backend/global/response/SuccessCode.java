@@ -11,6 +11,8 @@ public enum SuccessCode {
 
     SUCCESS_AUTH_LOGIN(HttpStatus.OK, "로그인이 완료되었습니다."),
     SUCCESS_AUTH_SIGNUP(HttpStatus.CREATED, "회원가입이 완료되었습니다."),
+    SUCCESS_AUTH_TOKEN_REFRESH(HttpStatus.OK, "액세스 토큰을 재발급했습니다."),
+    SUCCESS_AUTH_LOGOUT(HttpStatus.OK, "로그아웃이 완료되었습니다."),
     SUCCESS_AUTH_ME(HttpStatus.OK, "현재 사용자 정보를 조회했습니다."),
 
     SUCCESS_ADMIN_CREATE(HttpStatus.CREATED, "관리자를 생성했습니다."),
@@ -20,6 +22,12 @@ public enum SuccessCode {
     SUCCESS_INVITATION_GET(HttpStatus.OK, "초대 목록을 조회했습니다."),
     SUCCESS_INVITATION_REVOKE(HttpStatus.OK, "초대를 취소했습니다."),
     SUCCESS_IAM_LOG_GET(HttpStatus.OK, "IAM 로그를 조회했습니다."),
+    SUCCESS_NOTICE_CREATE(HttpStatus.CREATED, "공지를 작성했습니다."),
+    SUCCESS_NOTICE_GET(HttpStatus.OK, "공지 목록을 조회했습니다."),
+    SUCCESS_NOTICE_UPDATE(HttpStatus.OK, "공지를 수정했습니다."),
+    SUCCESS_NOTICE_END(HttpStatus.OK, "공지 게시를 종료했습니다."),
+    SUCCESS_NOTICE_DELETE(HttpStatus.OK, "공지를 삭제했습니다."),
+    SUCCESS_NOTICE_ATTACHMENT_UPLOAD(HttpStatus.CREATED, "공지 첨부 파일을 업로드했습니다."),
 
     SUCCESS_STORE_OWNER_GET(HttpStatus.OK, "점주 정보를 조회했습니다."),
     SUCCESS_STORE_OWNER_INVITATION_CREATE(HttpStatus.CREATED, "점주 초대를 생성했습니다."),
@@ -42,7 +50,10 @@ public enum SuccessCode {
     SUCCESS_SALES_TARGET_EXCLUDED_ADDRESSES(HttpStatus.OK, "제외 처리된 영업 타겟 주소 목록을 조회했습니다."),
     SUCCESS_SALES_TARGET_DELETE_ALL(HttpStatus.OK, "영업 타겟 후보를 전체 삭제했습니다."),
 
-    SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석이 완료되었습니다."),
+    SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석을 완료했습니다."),
+    SUCCESS_AI_ANALYSIS_JOB_ACCEPTED(HttpStatus.ACCEPTED, "매출 분석 요청을 접수했습니다."),
+    SUCCESS_AI_ANALYSIS_JOB_GET(HttpStatus.OK, "매출 분석 작업 상태를 조회했습니다."),
+    SUCCESS_AI_ANALYSIS_COMPLETE(HttpStatus.OK, "매출 분석이 완료되었습니다."),
     SUCCESS_AI_ANALYSIS_GET(HttpStatus.OK, "매출 분석 결과를 조회했습니다."),
     SUCCESS_AI_RECOMMENDATION_CREATE(HttpStatus.OK, "고객 대응방안 추천과 검증을 시작했습니다."),
     SUCCESS_AI_RECOMMENDATION_GET(HttpStatus.OK, "AI 전략 추천 이력을 조회했습니다."),

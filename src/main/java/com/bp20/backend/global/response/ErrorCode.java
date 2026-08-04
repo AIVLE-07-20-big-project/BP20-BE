@@ -26,6 +26,10 @@ public enum ErrorCode {
     UNAUTHORIZED_TOKEN_EMPTY(HttpStatus.UNAUTHORIZED, "토큰이 비어 있습니다."),
     UNAUTHORIZED_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 올바르지 않습니다."),
     UNAUTHORIZED_INVALID_INTERNAL_API_KEY(HttpStatus.UNAUTHORIZED, "내부 서비스 인증키가 올바르지 않습니다."),
+    UNAUTHORIZED_REFRESH_TOKEN_REQUIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 필요합니다."),
+    UNAUTHORIZED_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 올바르지 않습니다."),
+    UNAUTHORIZED_EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
+    UNAUTHORIZED_REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "이미 사용된 Refresh Token이 감지되어 로그인 세션을 종료했습니다."),
 
     FORBIDDEN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     FORBIDDEN_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "관리자 권한이 필요합니다."),
@@ -45,6 +49,7 @@ public enum ErrorCode {
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
     NOT_FOUND_SALES_TARGET(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟입니다."),
     NOT_FOUND_SALES_TARGET_BATCH_RUN(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟 배치 실행입니다."),
+    NOT_FOUND_NOTICE(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
 
     CONFLICT_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     CONFLICT_DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "이미 등록된 사업자등록번호입니다."),

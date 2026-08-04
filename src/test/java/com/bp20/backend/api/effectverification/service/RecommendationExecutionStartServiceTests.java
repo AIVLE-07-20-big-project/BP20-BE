@@ -66,7 +66,7 @@ class RecommendationExecutionStartServiceTests {
         PeriodMetrics before = new PeriodMetrics();
         VerificationExecutionResponse expected =
                 VerificationExecutionResponse.builder().build();
-        when(executionRepository.existsByThreadId("thread-uuid"))
+        when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
         when(campaignExecutionClient.recordExecution(
@@ -76,7 +76,7 @@ class RecommendationExecutionStartServiceTests {
         )).thenReturn(Map.of(
                 "decision_id", "decision-uuid",
                 "store_id", "1",
-                "action_id", "쿠폰발행"
+                "executed_action", "쿠폰발행"
         ));
         when(collector.collect(
                 eq(1L),
@@ -131,7 +131,7 @@ class RecommendationExecutionStartServiceTests {
         input.setRecommendationType(RecommendationType.REVIEW);
         input.setTargetAspect("convenience");
         PeriodMetrics before = new PeriodMetrics();
-        when(executionRepository.existsByThreadId("thread-uuid"))
+        when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
         when(campaignExecutionClient.recordExecution(
@@ -141,7 +141,7 @@ class RecommendationExecutionStartServiceTests {
         )).thenReturn(Map.of(
                 "decision_id", "decision-uuid",
                 "store_id", 3,
-                "action_id", "대기시간 개선"
+                "executed_action", "대기시간 개선"
         ));
         when(collector.collect(
                 eq(3L),
@@ -167,7 +167,7 @@ class RecommendationExecutionStartServiceTests {
         RecommendationExecutionStartService service = service();
         RecommendationExecutionStartRequest input = request();
         input.setRecommendationType(RecommendationType.REVIEW);
-        when(executionRepository.existsByThreadId("thread-uuid"))
+        when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
 
@@ -186,7 +186,7 @@ class RecommendationExecutionStartServiceTests {
         RecommendationExecutionStartService service = service();
         VerificationExecutionResponse expected =
                 VerificationExecutionResponse.builder().build();
-        when(executionRepository.existsByThreadId("thread-uuid"))
+        when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(true);
         when(lifecycleService.getExecution(10L, "thread-uuid"))
                 .thenReturn(expected);
@@ -202,7 +202,7 @@ class RecommendationExecutionStartServiceTests {
     @Test
     void returnsServiceUnavailableBeforeCampaignWhenCollectorIsMissing() {
         RecommendationExecutionStartService service = service();
-        when(executionRepository.existsByThreadId("thread-uuid"))
+        when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(null);
 

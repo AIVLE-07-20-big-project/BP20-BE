@@ -1,11 +1,17 @@
 package com.bp20.backend.api.effectverification.service;
 
+import com.bp20.backend.api.ai.domain.AiRecommendationRun;
+import com.bp20.backend.api.ai.repository.AiRecommendationRunRepository;
 import com.bp20.backend.api.effectverification.dto.request.*;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.VerificationExecutionResponse;
 import com.bp20.backend.api.effectverification.domain.EffectVerificationExecution;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationExecutionRepository;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,14 +43,45 @@ class EffectVerificationLifecycleServiceTests {
     @Mock
     private EffectVerificationService verificationService;
 
+    @Mock
+    private AiRecommendationRunRepository recommendationRunRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private StoreRepository storeRepository;
+
+    @Mock
+    private User user;
+
+    @Mock
+    private Store store;
+
+    @Mock
+    private AiRecommendationRun recommendationRun;
+
     private EffectVerificationLifecycleService lifecycleService;
 
     @BeforeEach
     void setUp() {
         lifecycleService = new EffectVerificationLifecycleService(
                 executionRepository,
-                verificationService
+                verificationService,
+                recommendationRunRepository,
+                userRepository,
+                storeRepository
         );
+        lenient().when(user.getId()).thenReturn(USER_ID);
+        lenient().when(store.getId()).thenReturn(1L);
+        lenient().when(recommendationRun.getThreadId())
+                .thenReturn("11111111-1111-1111-1111-111111111111");
+        lenient().when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        lenient().when(storeRepository.findById(1L)).thenReturn(Optional.of(store));
+        lenient().when(recommendationRunRepository.findByThreadIdAndUser_Id(
+                "11111111-1111-1111-1111-111111111111",
+                USER_ID
+        )).thenReturn(Optional.of(recommendationRun));
     }
 
     @Test
@@ -53,7 +91,7 @@ class EffectVerificationLifecycleServiceTests {
         request.setThreadId("11111111-1111-1111-1111-111111111111");
         request.setDecisionId("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         when(executionRepository.existsByAiRecommendationId("100")).thenReturn(false);
-        when(executionRepository.existsByThreadId(request.getThreadId())).thenReturn(false);
+        when(executionRepository.existsByRecommendationRun_ThreadId(request.getThreadId())).thenReturn(false);
         when(executionRepository.existsByDecisionId(request.getDecisionId())).thenReturn(false);
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -68,8 +106,9 @@ class EffectVerificationLifecycleServiceTests {
         ArgumentCaptor<EffectVerificationExecution> captor =
                 ArgumentCaptor.forClass(EffectVerificationExecution.class);
         verify(executionRepository).save(captor.capture());
-        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
-        assertThat(captor.getValue().getThreadId()).isEqualTo(request.getThreadId());
+        assertThat(captor.getValue().getUser().getId()).isEqualTo(USER_ID);
+        assertThat(captor.getValue().getRecommendationRun().getThreadId())
+                .isEqualTo(request.getThreadId());
         assertThat(captor.getValue().getDecisionId()).isEqualTo(request.getDecisionId());
         assertThat(captor.getValue().getBeforeMetricsJson()).contains("target_sales");
     }
@@ -82,7 +121,7 @@ class EffectVerificationLifecycleServiceTests {
         request.setRecommendationId(null);
         request.setThreadId(threadId);
         when(executionRepository.existsByAiRecommendationId(threadId)).thenReturn(false);
-        when(executionRepository.existsByThreadId(threadId)).thenReturn(false);
+        when(executionRepository.existsByRecommendationRun_ThreadId(threadId)).thenReturn(false);
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -99,9 +138,9 @@ class EffectVerificationLifecycleServiceTests {
         String decisionId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
         EffectVerificationExecution execution = EffectVerificationExecution.builder()
                 .aiRecommendationId(threadId)
-                .threadId(threadId)
-                .userId(USER_ID)
-                .storeId(1L)
+                .recommendationRun(recommendationRun)
+                .user(user)
+                .store(store)
                 .recommendationType(RecommendationType.SALES)
                 .status(VerificationStatus.COLLECTING)
                 .conditionJson("{}")
@@ -109,7 +148,7 @@ class EffectVerificationLifecycleServiceTests {
                 .executedAt(LocalDateTime.now())
                 .verificationDueAt(LocalDateTime.now().plusDays(14))
                 .build();
-        when(executionRepository.findByThreadIdAndUserId(threadId, USER_ID))
+        when(executionRepository.findByRecommendationRun_ThreadIdAndUser_Id(threadId, USER_ID))
                 .thenReturn(Optional.of(execution));
         when(executionRepository.existsByDecisionId(decisionId)).thenReturn(false);
         when(executionRepository.save(execution)).thenReturn(execution);
@@ -130,10 +169,10 @@ class EffectVerificationLifecycleServiceTests {
         String decisionId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
         EffectVerificationExecution execution = EffectVerificationExecution.builder()
                 .aiRecommendationId(threadId)
-                .threadId(threadId)
+                .recommendationRun(recommendationRun)
                 .decisionId(decisionId)
-                .userId(USER_ID)
-                .storeId(1L)
+                .user(user)
+                .store(store)
                 .recommendationType(RecommendationType.SALES)
                 .status(VerificationStatus.COLLECTING)
                 .conditionJson("{}")
@@ -141,7 +180,7 @@ class EffectVerificationLifecycleServiceTests {
                 .executedAt(LocalDateTime.now())
                 .verificationDueAt(LocalDateTime.now().plusDays(14))
                 .build();
-        when(executionRepository.findByThreadIdAndUserId(threadId, USER_ID))
+        when(executionRepository.findByRecommendationRun_ThreadIdAndUser_Id(threadId, USER_ID))
                 .thenReturn(Optional.of(execution));
 
         VerificationExecutionResponse response = lifecycleService.linkCampaignDecision(
@@ -158,7 +197,7 @@ class EffectVerificationLifecycleServiceTests {
     void completeVerificationRejectsCollectionBeforeDueDate() {
         LocalDateTime executedAt = LocalDateTime.of(2026, 7, 20, 10, 0);
         EffectVerificationExecution execution = savedExecution(executedAt);
-        when(executionRepository.findByAiRecommendationIdAndUserId("100", USER_ID))
+        when(executionRepository.findByAiRecommendationIdAndUser_Id("100", USER_ID))
                 .thenReturn(Optional.of(execution));
         VerificationCompletionRequest request = new VerificationCompletionRequest();
         request.setAfter(salesPeriod(1_300_000.0));
@@ -174,7 +213,7 @@ class EffectVerificationLifecycleServiceTests {
     void completeVerificationBuildsAiRequestFromStoredBaseline() {
         LocalDateTime executedAt = LocalDateTime.of(2026, 7, 1, 10, 0);
         EffectVerificationExecution execution = savedExecution(executedAt);
-        when(executionRepository.findByAiRecommendationIdAndUserId("100", USER_ID))
+        when(executionRepository.findByAiRecommendationIdAndUser_Id("100", USER_ID))
                 .thenReturn(Optional.of(execution));
         when(executionRepository.save(any(EffectVerificationExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -213,7 +252,7 @@ class EffectVerificationLifecycleServiceTests {
         LocalDateTime executedAt = LocalDateTime.now().minusDays(15);
         EffectVerificationExecution execution = savedExecution(executedAt);
         when(executionRepository
-                .findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                .findByUser_IdAndStore_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
                         any(Long.class),
                         any(Long.class),
                         any(VerificationStatus.class),
@@ -228,7 +267,7 @@ class EffectVerificationLifecycleServiceTests {
         assertThat(responses.getFirst().getRecommendationId()).isEqualTo("100");
         assertThat(responses.getFirst().getStatus()).isEqualTo(VerificationStatus.COLLECTING);
         verify(executionRepository)
-                .findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                .findByUser_IdAndStore_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
                         any(Long.class),
                         any(Long.class),
                         any(VerificationStatus.class),
@@ -241,7 +280,7 @@ class EffectVerificationLifecycleServiceTests {
         EffectVerificationExecution execution = savedExecution(
                 LocalDateTime.of(2026, 7, 1, 10, 0)
         );
-        when(executionRepository.findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+        when(executionRepository.findByUser_IdAndStore_IdAndStatusOrderByExecutedAtDesc(
                 USER_ID,
                 1L,
                 VerificationStatus.COLLECTING
@@ -257,13 +296,13 @@ class EffectVerificationLifecycleServiceTests {
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().getStoreId()).isEqualTo(1L);
         assertThat(responses.getFirst().getStatus()).isEqualTo(VerificationStatus.COLLECTING);
-        verify(executionRepository).findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+        verify(executionRepository).findByUser_IdAndStore_IdAndStatusOrderByExecutedAtDesc(
                 USER_ID,
                 1L,
                 VerificationStatus.COLLECTING
         );
         verify(executionRepository, never())
-                .findByUserIdAndStoreIdOrderByExecutedAtDesc(USER_ID, 1L);
+                .findByUser_IdAndStore_IdOrderByExecutedAtDesc(USER_ID, 1L);
     }
 
     @Test
@@ -293,7 +332,7 @@ class EffectVerificationLifecycleServiceTests {
                 ArgumentCaptor.forClass(EffectVerificationExecution.class);
         verify(executionRepository).save(executionCaptor.capture());
         EffectVerificationExecution saved = executionCaptor.getValue();
-        when(executionRepository.findByAiRecommendationIdAndUserId("200", USER_ID))
+        when(executionRepository.findByAiRecommendationIdAndUser_Id("200", USER_ID))
                 .thenReturn(Optional.of(saved));
 
         EffectVerificationResponse aiResponse = new EffectVerificationResponse();
@@ -352,8 +391,8 @@ class EffectVerificationLifecycleServiceTests {
     private EffectVerificationExecution savedExecution(LocalDateTime executedAt) {
         return EffectVerificationExecution.builder()
                 .aiRecommendationId("100")
-                .userId(USER_ID)
-                .storeId(1L)
+                .user(user)
+                .store(store)
                 .recommendationType(RecommendationType.SALES)
                 .status(VerificationStatus.COLLECTING)
                 .conditionJson("{\"period_days\":14,\"start_hour\":14,\"end_hour\":17,\"compare_same_weekday\":true}")

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 import java.time.LocalDateTime;
 
 @Getter
@@ -35,4 +36,9 @@ public class EffectVerificationResponse {
 
     @JsonProperty("verified_date")
     private LocalDateTime verifiedDate;
+
+    // AI가 지표를 사람이 읽는 문장으로 요약한 보고서(headline/summary/sections) — analysis_id 비교
+    // 경로(verify-from-analyses)에서만 채워지고, 그 외에는 null일 수 있다.
+    @JsonProperty("strategy_report")
+    private Map<String, Object> strategyReport;
 }

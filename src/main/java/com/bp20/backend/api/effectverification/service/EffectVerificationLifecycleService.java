@@ -1,11 +1,17 @@
 package com.bp20.backend.api.effectverification.service;
 
+import com.bp20.backend.api.ai.domain.AiRecommendationRun;
+import com.bp20.backend.api.ai.repository.AiRecommendationRunRepository;
 import com.bp20.backend.api.effectverification.dto.request.*;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.VerificationExecutionResponse;
 import com.bp20.backend.api.effectverification.domain.EffectVerificationExecution;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationExecutionRepository;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.api.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +33,9 @@ public class EffectVerificationLifecycleService {
 
     private final EffectVerificationExecutionRepository executionRepository;
     private final EffectVerificationService verificationService;
+    private final AiRecommendationRunRepository recommendationRunRepository;
+    private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
@@ -42,7 +51,9 @@ public class EffectVerificationLifecycleService {
             );
         }
         if (StringUtils.hasText(request.getThreadId())
-                && executionRepository.existsByThreadId(request.getThreadId())) {
+                && executionRepository.existsByRecommendationRun_ThreadId(
+                        request.getThreadId()
+                )) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Verification execution already exists for this thread"
@@ -62,13 +73,17 @@ public class EffectVerificationLifecycleService {
         LocalDateTime executedAt = request.getExecutedAt() != null
                 ? request.getExecutedAt()
                 : LocalDateTime.now();
+        User user = findOptionalUser(userId);
+        Store store = findStore(request.getStoreId());
+        AiRecommendationRun recommendationRun =
+                findRecommendationRun(userId, request.getThreadId());
 
         EffectVerificationExecution execution = EffectVerificationExecution.builder()
                 .aiRecommendationId(recommendationId)
-                .threadId(request.getThreadId())
+                .recommendationRun(recommendationRun)
                 .decisionId(request.getDecisionId())
-                .userId(userId)
-                .storeId(request.getStoreId())
+                .user(user)
+                .store(store)
                 .recommendationType(request.getRecommendationType())
                 .status(VerificationStatus.COLLECTING)
                 .conditionJson(writeJson(request.getCondition()))
@@ -96,6 +111,7 @@ public class EffectVerificationLifecycleService {
         );
     }
 
+    @Transactional
     public EffectVerificationResponse completeVerification(
             Long userId,
             String recommendationId,
@@ -125,7 +141,7 @@ public class EffectVerificationLifecycleService {
         executionRepository.save(execution);
 
         EffectVerificationRequest verificationRequest = new EffectVerificationRequest();
-        verificationRequest.setStoreId(execution.getStoreId());
+        verificationRequest.setStoreId(execution.getStore().getId());
         verificationRequest.setRecommendationId(execution.getAiRecommendationId());
         verificationRequest.setRecommendationType(execution.getRecommendationType());
         verificationRequest.setCondition(readJson(
@@ -140,7 +156,7 @@ public class EffectVerificationLifecycleService {
 
         try {
             EffectVerificationResponse response = verificationService.verifyEffect(
-                    execution.getUserId(),
+                    execution.getUser() == null ? null : execution.getUser().getId(),
                     verificationRequest
             );
             execution.markVerified(response.getVerifiedDate());
@@ -151,6 +167,76 @@ public class EffectVerificationLifecycleService {
             executionRepository.save(execution);
             throw exception;
         }
+    }
+
+    /**
+     * 승인된 추천(thread)의 적용전 분석(analysis_id)과, 사용자가 고른 적용후 분석을
+     * AI의 verify-from-analyses에 그대로 넘겨 8개 매출 지표 전체를 실제값으로 검증한다.
+     * 스케줄러의 14일 대기와 무관하게 즉시 완료할 수 있다.
+     */
+    @Transactional
+    public EffectVerificationResponse completeVerificationFromAnalyses(
+            Long userId, String threadId, String afterAnalysisId
+    ) {
+        EffectVerificationExecution execution = findExecution(userId, threadId);
+        if (execution.getStatus() == VerificationStatus.VERIFIED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Verification has already been completed"
+            );
+        }
+        AiRecommendationRun run = recommendationRunRepository
+                .findByThreadIdAndUser_Id(threadId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "AI recommendation run not found for thread"
+                ));
+        VerificationCondition condition = readJson(
+                execution.getConditionJson(), VerificationCondition.class
+        );
+
+        EffectVerificationResponse response = verificationService.verifyEffectFromAnalyses(
+                userId,
+                run.getAnalysis().getAnalysisId(),
+                afterAnalysisId,
+                execution.getStore().getId(),
+                execution.getEffectVerificationExecutionId(),
+                execution.getAiRecommendationId(),
+                condition.getStartHour(),
+                condition.getEndHour()
+        );
+
+        execution.beginAttempt(LocalDateTime.now());
+        execution.markVerified(response.getVerifiedDate());
+        executionRepository.save(execution);
+        return response;
+    }
+
+    /** AI 매출 CSV 실측값을 매출형 전략 검증 결과로 확정한다. */
+    @Transactional
+    public EffectVerificationResponse completeSalesVerificationFromCsv(
+            Long userId, String threadId, double afterSales, LocalDateTime collectedAt
+    ) {
+        EffectVerificationExecution execution = executionRepository
+                .findByRecommendationRun_ThreadIdAndUser_Id(threadId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Verification execution not found for thread"
+                ));
+        PeriodMetrics before = readJson(execution.getBeforeMetricsJson(), PeriodMetrics.class);
+        SalesMetrics beforeSales = before.getSales();
+        if (beforeSales == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sales before metrics are missing");
+        }
+        SalesMetrics after = new SalesMetrics(
+                beforeSales.getTargetSales(), beforeSales.getVisitCount(),
+                beforeSales.getAverageOrderValue(), beforeSales.getRevisitRate(),
+                beforeSales.getCouponUsageRate(), beforeSales.getNewCustomerCount(),
+                beforeSales.getDormantCustomerReturnCount(), afterSales
+        );
+        VerificationCompletionRequest request = new VerificationCompletionRequest();
+        request.setAfter(new PeriodMetrics(after, null));
+        request.setCollectedAt(collectedAt);
+        return completeVerification(userId, execution.getAiRecommendationId(), request);
     }
 
     @Transactional(readOnly = true)
@@ -167,7 +253,7 @@ public class EffectVerificationLifecycleService {
     ) {
         EffectVerificationExecution execution = findExecution(null, recommendationId);
         return new AutomaticCollectionContext(
-                execution.getStoreId(),
+                execution.getStore().getId(),
                 execution.getRecommendationType(),
                 readJson(execution.getConditionJson(), VerificationCondition.class),
                 execution.getExecutedAt(),
@@ -182,8 +268,11 @@ public class EffectVerificationLifecycleService {
             String decisionId
     ) {
         EffectVerificationExecution execution = (userId == null
-                ? executionRepository.findByThreadId(threadId)
-                : executionRepository.findByThreadIdAndUserId(threadId, userId))
+                ? executionRepository.findByRecommendationRun_ThreadId(threadId)
+                : executionRepository.findByRecommendationRun_ThreadIdAndUser_Id(
+                        threadId,
+                        userId
+                ))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Verification execution not found for thread"
@@ -224,7 +313,7 @@ public class EffectVerificationLifecycleService {
                             now
                     )
                     : executionRepository
-                    .findByStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                    .findByStore_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
                             storeId,
                             VerificationStatus.COLLECTING,
                             now
@@ -232,13 +321,13 @@ public class EffectVerificationLifecycleService {
         } else {
             executions = storeId == null
                     ? executionRepository
-                    .findByUserIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                    .findByUser_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
                             userId,
                             VerificationStatus.COLLECTING,
                             now
                     )
                     : executionRepository
-                    .findByUserIdAndStoreIdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
+                    .findByUser_IdAndStore_IdAndStatusAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
                             userId,
                             storeId,
                             VerificationStatus.COLLECTING,
@@ -260,18 +349,18 @@ public class EffectVerificationLifecycleService {
         List<EffectVerificationExecution> executions;
         if (userId == null) {
             executions = status == null
-                    ? executionRepository.findByStoreIdOrderByExecutedAtDesc(storeId)
-                    : executionRepository.findByStoreIdAndStatusOrderByExecutedAtDesc(
+                    ? executionRepository.findByStore_IdOrderByExecutedAtDesc(storeId)
+                    : executionRepository.findByStore_IdAndStatusOrderByExecutedAtDesc(
                             storeId,
                             status
                     );
         } else {
             executions = status == null
-                    ? executionRepository.findByUserIdAndStoreIdOrderByExecutedAtDesc(
+                    ? executionRepository.findByUser_IdAndStore_IdOrderByExecutedAtDesc(
                             userId,
                             storeId
                     )
-                    : executionRepository.findByUserIdAndStoreIdAndStatusOrderByExecutedAtDesc(
+                    : executionRepository.findByUser_IdAndStore_IdAndStatusOrderByExecutedAtDesc(
                             userId,
                             storeId,
                             status
@@ -289,7 +378,7 @@ public class EffectVerificationLifecycleService {
     ) {
         return (userId == null
                 ? executionRepository.findByAiRecommendationId(recommendationId)
-                : executionRepository.findByAiRecommendationIdAndUserId(
+                : executionRepository.findByAiRecommendationIdAndUser_Id(
                         recommendationId,
                         userId
                 ))
@@ -376,9 +465,11 @@ public class EffectVerificationLifecycleService {
 
     private VerificationExecutionResponse toResponse(EffectVerificationExecution execution) {
         return VerificationExecutionResponse.builder()
-                .storeId(execution.getStoreId())
+                .storeId(execution.getStore().getId())
                 .recommendationId(execution.getAiRecommendationId())
-                .threadId(execution.getThreadId())
+                .threadId(execution.getRecommendationRun() == null
+                        ? null
+                        : execution.getRecommendationRun().getThreadId())
                 .decisionId(execution.getDecisionId())
                 .recommendationType(execution.getRecommendationType())
                 .selectedAction(execution.getSelectedActionJson() == null
@@ -395,6 +486,41 @@ public class EffectVerificationLifecycleService {
                 .attemptCount(execution.getAttemptCount())
                 .lastAttemptAt(execution.getLastAttemptAt())
                 .build();
+    }
+
+    private User findOptionalUser(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+    }
+
+    private Store findStore(Long storeId) {
+        return storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Store not found"
+                ));
+    }
+
+    private AiRecommendationRun findRecommendationRun(
+            Long userId,
+            String threadId
+    ) {
+        if (!StringUtils.hasText(threadId)) {
+            return null;
+        }
+        return (userId == null
+                ? recommendationRunRepository.findById(threadId)
+                : recommendationRunRepository.findByThreadIdAndUser_Id(threadId, userId))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "AI recommendation run not found"
+                ));
     }
 
     public record AutomaticCollectionContext(

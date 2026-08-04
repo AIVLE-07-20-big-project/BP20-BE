@@ -50,7 +50,7 @@ class FastApiClientTest {
     }
 
     @Test
-    void createAnalysisSendsUserAndStoreOwnership() {
+    void createAnalysisSendsUserOwnership() {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "sample.csv", "text/csv", "a,b\n1,2".getBytes(StandardCharsets.UTF_8)
         );
@@ -62,13 +62,13 @@ class FastApiClientTest {
                                     .getBodyAsBytes(), StandardCharsets.UTF_8
                     );
                     assertThat(body).contains("name=\"user_id\"").contains("7");
-                    assertThat(body).contains("name=\"store_id\"").contains("store-1");
+                    assertThat(body).doesNotContain("store_id");
                 })
                 .andRespond(withSuccess("""
                         {"analysis_id":"analysis-id","report":{},"diagnosis":{},"warnings":[]}
                         """, MediaType.APPLICATION_JSON));
 
-        client.createAnalysis(file, "3110003", "CS100008", 20261, 7L, "store-1");
+        client.createAnalysis(file, "3110003", "CS100008", 20261, 7L);
         server.verify();
     }
 
@@ -87,7 +87,7 @@ class FastApiClientTest {
 
         Map<String, Object> response = client.resumeAgentRun(
                 "thread-id",
-                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행"),
+                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.edit, "쿠폰발행", null),
                 7L
         );
 
