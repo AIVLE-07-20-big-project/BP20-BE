@@ -21,12 +21,6 @@ spring:
       max-file-size: 20MB
       max-request-size: 50MB
 
-storage:
-  s3:
-    bucket: ${S3_BUCKET_NAME:}
-    region: ${AWS_REGION:ap-southeast-2}
-    upload-prefix: ${UPLOAD_S3_PREFIX:uploads/v1}
-
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -35,6 +29,12 @@ storage:
       timeout: 2s
       repositories:
         enabled: false
+
+storage:
+  s3:
+    bucket: ${S3_BUCKET_NAME:}
+    region: ${AWS_REGION:ap-southeast-2}
+    upload-prefix: ${UPLOAD_S3_PREFIX:uploads/v1}
 
 server:
   port: 8080
@@ -120,8 +120,10 @@ product-image-service:
 internal-api:
   key: ${INTERNAL_API_KEY}
 
-# 생성된 상품 이미지 저장소. storage.s3.bucket이 설정되어 있으면 S3, 없으면 로컬 디스크에 저장한다.
-storage:
+# 생성된 상품 이미지 저장소. product-image-storage.s3.bucket이 설정되어 있으면 S3,
+# 없으면 로컬 디스크에 저장한다. (storage.s3.*는 main이 추가한 범용 오브젝트 스토리지 전용이라
+# 이름 충돌을 피하려고 별도 네임스페이스를 쓴다.)
+product-image-storage:
   local:
     dir: ${STORAGE_LOCAL_DIR:uploads/product-images}
     base-url: ${STORAGE_LOCAL_BASE_URL:http://localhost:8080/product-images}

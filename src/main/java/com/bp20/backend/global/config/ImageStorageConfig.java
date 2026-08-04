@@ -10,7 +10,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * storage.s3.bucket 설정 여부로 상품 이미지 저장소를 고른다.
+ * product-image-storage.s3.bucket 설정 여부로 상품 이미지 저장소를 고른다.
  * 로컬 디스크를 쓰는 경우를 위해 /product-images/** 정적 서빙도 함께 등록한다
  * (S3를 쓰면 이 핸들러는 그냥 쓰이지 않는다).
  */

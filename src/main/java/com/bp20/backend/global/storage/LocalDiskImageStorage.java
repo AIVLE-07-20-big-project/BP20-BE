@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * storage.s3.bucket이 설정되어 있지 않을 때 사용하는 기본 저장소.
+ * product-image-storage.s3.bucket이 설정되어 있지 않을 때 사용하는 기본 저장소.
  * ImageStorageConfig가 등록해두는 정적 리소스 핸들러(/product-images/**)를 통해 그대로 서빙된다.
  */
 public class LocalDiskImageStorage implements ImageStorage {

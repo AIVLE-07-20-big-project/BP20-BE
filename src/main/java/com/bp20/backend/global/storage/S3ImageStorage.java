@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
- * storage.s3.bucket이 설정되어 있을 때 사용하는 저장소.
+ * product-image-storage.s3.bucket이 설정되어 있을 때 사용하는 저장소.
  *
  * accessKey/secretKey를 명시적으로 받는 이유: 이 프로젝트는 .env 파일을
  * spring.config.import(application-local.yml)로만 불러오는데, 이건 Spring의
