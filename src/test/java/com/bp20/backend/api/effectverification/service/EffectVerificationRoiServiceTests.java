@@ -21,6 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class EffectVerificationRoiServiceTests {
@@ -42,7 +43,7 @@ class EffectVerificationRoiServiceTests {
 
     @BeforeEach
     void setUp() {
-        when(storeRepository.count()).thenReturn(0L);
+        lenient().when(storeRepository.count()).thenReturn(0L);
         when(analysisRepository.findAll()).thenReturn(List.of());
         when(recommendationRunRepository.findAll()).thenReturn(List.of());
     }
