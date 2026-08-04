@@ -119,34 +119,6 @@ public class ReceiptService {
         return ReceiptResponse.from(receipt);
     }
 
-    @Transactional
-    public ReceiptResponse updateReceipt(Long receiptId, ReceiptUpdateRequest request) {
-        Receipt receipt = receiptRepository.findById(receiptId)
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_RECEIPT));
-        String dedupeKey = buildDedupeKey(
-                request.storeName(), request.transactionDate(), request.transactionTime(), request.totalAmount());
-        receiptRepository.findByDedupeKey(dedupeKey)
-                .filter(existing -> !existing.getId().equals(receiptId))
-                .ifPresent(existing -> {
-                    throw new ApiException(ErrorCode.CONFLICT_DUPLICATE_RECEIPT);
-                });
-
-        receipt.update(request.documentType(), request.storeName(), request.businessNumber(),
-                parseDate(request.transactionDate()), parseTime(request.transactionTime()),
-                request.paymentMethod(), request.category(), request.supplyAmount(), request.vat(),
-                request.taxFreeAmount(), request.totalAmount(), dedupeKey);
-
-        List<ReceiptItemData> itemData = request.items() != null ? request.items() : List.of();
-        List<ReceiptItem> items = new java.util.ArrayList<>();
-        int lineNumber = 1;
-        for (ReceiptItemData item : itemData) {
-            items.add(ReceiptItem.create(lineNumber++, item.itemName(), item.quantity(), item.unit(),
-                    item.unitPrice(), item.totalPrice()));
-        }
-        receipt.replaceItems(items);
-        return ReceiptResponse.from(receipt);
-    }
-
     public List<ReceiptResponse> listReceipts(Long storeId) {
         return receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId).stream()
                 .map(ReceiptResponse::from)
