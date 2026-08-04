@@ -1,7 +1,9 @@
 package com.bp20.backend.api.iam.log.domain;
 
 import com.bp20.backend.api.user.domain.User;
+import com.bp20.backend.global.security.crypto.EncryptedStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -47,10 +49,12 @@ public class IamLog {
     @JoinColumn(name = "target_user_id")
     private User targetUser;
 
-    @Column(length = 100)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = 512)
     private String targetEmail;
 
-    @Column(nullable = false, length = 45)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, length = 512)
     private String sourceIp;
 
     @Column(nullable = false, updatable = false)
