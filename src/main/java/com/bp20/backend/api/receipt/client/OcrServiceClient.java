@@ -9,6 +9,7 @@ import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.config.OcrServiceProperties;
 import com.bp20.backend.global.response.ErrorCode;
+import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -39,20 +40,26 @@ import java.util.List;
 public class OcrServiceClient {
 
     private final RestClient ocrServiceRestClient;
+    private final ObjectMapper objectMapper;
 
     public OcrServiceClient(
             RestClient.Builder externalRestClientBuilder,
-            OcrServiceProperties properties
+            OcrServiceProperties properties,
+            ObjectMapper objectMapper
     ) {
         this.ocrServiceRestClient = externalRestClientBuilder.clone()
                 .baseUrl(properties.baseUrl())
                 .build();
+        this.objectMapper = objectMapper;
     }
 
     /**
      * 영수증 이미지를 Python 서비스로 보내 OCR 결과를 받는다. (DB 저장은 하지 않음 - 미리보기 용도)
      */
-    public OcrParseResponse parseReceipt(MultipartFile file) {
+    public OcrParseResponse parseReceipt(
+            MultipartFile file,
+            List<ProductCatalogPayload> productCatalog
+    ) {
         try {
             ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
                 @Override
@@ -72,6 +79,7 @@ public class OcrServiceClient {
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", filePart);
+            body.add("productCatalog", objectMapper.writeValueAsString(productCatalog));
 
             return ocrServiceRestClient.post()
                     .uri("/api/v1/receipts/parse")
@@ -92,6 +100,9 @@ public class OcrServiceClient {
             log.error("[OcrServiceClient] 영수증 파싱 요청 실패 (연결 불가)", e);
             throw new ApiException(ErrorCode.OCR_SERVICE_UNAVAILABLE, e);
         }
+    }
+
+    public record ProductCatalogPayload(String name, long price) {
     }
 
 

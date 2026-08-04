@@ -138,6 +138,29 @@ public class Receipt extends BaseTimeEntity {
         item.assignReceipt(this);
     }
 
+    public void update(String documentType, String vendorName, String businessNumber,
+                       LocalDate transactionDate, LocalTime transactionTime, String paymentMethod,
+                       String category, Integer supplyAmount, Integer vat, Integer taxFreeAmount,
+                       Integer totalAmount, String dedupeKey) {
+        this.documentType = documentType;
+        this.vendorName = vendorName;
+        this.businessNumber = businessNumber;
+        this.transactionDate = transactionDate;
+        this.transactionTime = transactionTime;
+        this.paymentMethod = paymentMethod;
+        this.category = category;
+        this.supplyAmount = supplyAmount;
+        this.vat = vat;
+        this.taxFreeAmount = taxFreeAmount == null ? 0 : taxFreeAmount;
+        this.totalAmount = totalAmount;
+        this.dedupeKey = dedupeKey;
+    }
+
+    public void replaceItems(List<ReceiptItem> newItems) {
+        this.items.clear();
+        newItems.forEach(this::addItem);
+    }
+
     public void markDuplicateSuspected(String newDedupeKey) {
         this.status = ReceiptStatus.DUPLICATE_SUSPECTED;
         this.dedupeKey = newDedupeKey;
