@@ -28,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EffectVerificationLifecycleService {
 
-    private static final int DEFAULT_PERIOD_DAYS = 14;
+    private static final int DEFAULT_PERIOD_DAYS = 30;
     private static final int MAX_PERIOD_DAYS = 90;
 
     private final EffectVerificationExecutionRepository executionRepository;

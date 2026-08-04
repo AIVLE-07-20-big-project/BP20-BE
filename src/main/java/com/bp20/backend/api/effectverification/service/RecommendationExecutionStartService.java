@@ -25,7 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RecommendationExecutionStartService {
 
-    private static final int DEFAULT_PERIOD_DAYS = 14;
+    private static final int DEFAULT_PERIOD_DAYS = 30;
 
     private final ObjectProvider<VerificationMetricCollector> metricCollectorProvider;
     private final CampaignExecutionClient campaignExecutionClient;
@@ -78,14 +78,20 @@ public class RecommendationExecutionStartService {
         Map<String, Object> campaign = campaignExecutionClient.recordExecution(
                 input.getThreadId(),
                 userId,
-                treatmentYyquCd(executedAt)
+                treatmentYyquCd(executedAt),
+                executedAt
         );
         Long storeId = requiredLong(campaign, "store_id");
         storeAccessService.validateOwner(userId, storeId);
-        String decisionId = requiredString(campaign, "decision_id");
+        String decisionId = optionalString(campaign, "decision_id");
+        String actionId = firstRequiredString(
+                campaign,
+                "action_id",
+                "executed_action",
+                "approved_action"
+        );
         // AI campaign-logs 응답은 "action_id"가 아니라 "executed_action"(executed=true로 보냈을 때
         // 채워지는 필드)을 쓴다 — approved_action은 승인만 됐을 뿐 실행 여부와 무관해 값이 다를 수 있다.
-        String actionId = requiredString(campaign, "executed_action");
 
         VerificationCondition condition = new VerificationCondition(
                 periodDays,
@@ -129,6 +135,26 @@ public class RecommendationExecutionStartService {
             throw invalidCampaignResponse(key);
         }
         return field.toString();
+    }
+
+    private String optionalString(Map<String, Object> value, String key) {
+        Object field = value.get(key);
+        return field == null || field.toString().isBlank()
+                ? null
+                : field.toString();
+    }
+
+    private String firstRequiredString(
+            Map<String, Object> value,
+            String... keys
+    ) {
+        for (String key : keys) {
+            Object field = value.get(key);
+            if (field != null && !field.toString().isBlank()) {
+                return field.toString();
+            }
+        }
+        throw invalidCampaignResponse(String.join(" or ", keys));
     }
 
     private Long requiredLong(Map<String, Object> value, String key) {

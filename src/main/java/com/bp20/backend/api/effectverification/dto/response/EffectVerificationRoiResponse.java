@@ -37,6 +37,7 @@ public record EffectVerificationRoiResponse(
 
     public record RecentResult(
             @JsonProperty("recommendation_id") String recommendationId,
+            @JsonProperty("action_name") String actionName,
             @JsonProperty("store_id") Long storeId,
             @JsonProperty("recommendation_type") RecommendationType recommendationType,
             @JsonProperty("effect_score") double effectScore,

@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Map;
+import java.time.LocalDateTime;
 
 @Component
 public class CampaignExecutionClient {
@@ -24,7 +25,8 @@ public class CampaignExecutionClient {
     public Map<String, Object> recordExecution(
             String threadId,
             Long userId,
-            int treatmentYyquCd
+            int treatmentYyquCd,
+            LocalDateTime executedAt
     ) {
         try {
             return restClient.post()
@@ -34,7 +36,8 @@ public class CampaignExecutionClient {
                     .body(Map.of(
                             "thread_id", threadId,
                             "executed", true,
-                            "treatment_yyqu_cd", treatmentYyquCd
+                            "treatment_yyqu_cd", treatmentYyquCd,
+                            "execution_started_at", executedAt.toString()
                     ))
                     .retrieve()
                     .body(MAP_TYPE);
