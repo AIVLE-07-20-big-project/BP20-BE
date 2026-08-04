@@ -23,7 +23,7 @@ public class EffectVerificationRoiService {
     private static final int RECENT_RESULT_LIMIT = 5;
 
     private final EffectVerificationResultRepository resultRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional(readOnly = true)
     public EffectVerificationRoiResponse getSummary(Long storeId) {
