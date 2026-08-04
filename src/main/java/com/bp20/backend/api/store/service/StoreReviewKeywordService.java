@@ -27,10 +27,10 @@ public class StoreReviewKeywordService {
         LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
 
         List<StoreReviewKeyword> thisMonthKeywords =
-                storeReviewKeywordRepository.findByStoreIdAndAnalyzedAtGreaterThanEqualOrderByCountDesc(storeId, startOfThisMonth);
+                storeReviewKeywordRepository.findByStore_IdAndAnalyzedAtGreaterThanEqualOrderByCountDesc(storeId, startOfThisMonth);
 
         List<StoreReviewKeyword> lastMonthKeywords =
-                storeReviewKeywordRepository.findByStoreIdAndAnalyzedAtBetween(storeId, startOfLastMonth, startOfThisMonth);
+                storeReviewKeywordRepository.findByStore_IdAndAnalyzedAtBetween(storeId, startOfLastMonth, startOfThisMonth);
 
         Map<String, Integer> lastMonthMap = new HashMap<>();
         if (lastMonthKeywords != null) {
