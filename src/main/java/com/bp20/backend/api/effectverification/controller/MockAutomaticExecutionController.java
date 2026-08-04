@@ -72,7 +72,7 @@ public class MockAutomaticExecutionController {
 
             candidates.add(new MockVerificationCandidateResponse(
                     MOCK_APPROVED_REVIEW_THREAD,
-                    3L,
+                    1L,
                     RecommendationType.REVIEW,
                     "convenience",
                     "approved",
