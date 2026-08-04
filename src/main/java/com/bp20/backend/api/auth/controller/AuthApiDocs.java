@@ -41,9 +41,11 @@ public interface AuthApiDocs {
                                                     {
                                                       "email": "admin@bp20.com",
                                                       "temporaryPassword": "",
-                                                      "password": "bp20admin001",
+                                                      "password": "Bp20Admin!001",
                                                       "name": "BP20 관리자",
-                                                      "phoneNumber": "010-1111-1111"
+                                                      "phoneNumber": "010-1111-1111",
+                                                      "privacyConsent": true,
+                                                      "privacyPolicyVersion": "2026-08-03"
                                                     }
                                                     """
                                     ),
@@ -54,9 +56,11 @@ public interface AuthApiDocs {
                                                     {
                                                       "email": "store-owner@bp20.com",
                                                       "temporaryPassword": "",
-                                                      "password": "bp20storeowner",
+                                                      "password": "Bp20Owner!001",
                                                       "name": "김점주",
-                                                      "phoneNumber": "010-2222-2222"
+                                                      "phoneNumber": "010-2222-2222",
+                                                      "privacyConsent": true,
+                                                      "privacyPolicyVersion": "2026-08-03"
                                                     }
                                                     """
                                     )
@@ -118,6 +122,7 @@ public interface AuthApiDocs {
     )
     ResponseEntity<ApiResponse<LoginResponse>> login(
             LoginRequest request,
+            @Parameter(hidden = true) HttpServletRequest servletRequest,
             @Parameter(hidden = true) HttpServletResponse servletResponse
     );
 

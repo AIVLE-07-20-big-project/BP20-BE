@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.bp20.backend.global.security.password.PasswordPolicy;
 
 import java.util.Locale;
 
@@ -22,15 +23,14 @@ public class SuperAdminProvisioningService {
     private final UserPrivateInfoRepository userPrivateInfoRepository;
     private final PasswordEncoder passwordEncoder;
     private final IamLogService iamLogService;
+    private final PasswordPolicy passwordPolicy;
 
     @Transactional
     public User provision(String email, String password, String name, String phoneNumber) {
         if (userRepository.existsByRole(UserRole.SUPER_ADMIN)) {
             throw new IllegalStateException("A super administrator already exists.");
         }
-        if (password == null || password.length() < 12 || password.length() > 72) {
-            throw new IllegalArgumentException("The super administrator password must be 12 to 72 characters.");
-        }
+        passwordPolicy.validate(password);
 
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         if (userRepository.existsByEmail(normalizedEmail)) {

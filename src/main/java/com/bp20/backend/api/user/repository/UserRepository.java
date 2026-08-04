@@ -4,6 +4,9 @@ import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.domain.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Collection;
@@ -16,6 +19,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u join fetch u.privateInfo where u.privateInfo.email = :email")
     Optional<User> findByEmail(String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u join fetch u.privateInfo where u.privateInfo.email = :email")
+    Optional<User> findByEmailForAuthentication(String email);
 
     List<User> findByRoleOrderByIdDesc(UserRole role);
 
