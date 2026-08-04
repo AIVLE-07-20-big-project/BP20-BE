@@ -13,6 +13,7 @@ import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
+import com.bp20.backend.global.storage.S3ObjectStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -36,6 +37,7 @@ class AiServiceTest {
     private AiStoreProfileRepository storeProfileRepository;
     private UserRepository userRepository;
     private StoreRepository storeRepository;
+    private S3ObjectStorageService s3ObjectStorageService;
     private User user;
     private Store store;
     private AiService service;
@@ -48,6 +50,7 @@ class AiServiceTest {
         storeProfileRepository = mock(AiStoreProfileRepository.class);
         userRepository = mock(UserRepository.class);
         storeRepository = mock(StoreRepository.class);
+        s3ObjectStorageService = mock(S3ObjectStorageService.class);
         user = mock(User.class);
         store = mock(Store.class);
         when(user.getId()).thenReturn(7L);
@@ -61,7 +64,8 @@ class AiServiceTest {
                 storeProfileRepository,
                 userRepository,
                 storeRepository,
-                JsonMapper.builder().build()
+                JsonMapper.builder().build(),
+                s3ObjectStorageService
         );
     }
 
