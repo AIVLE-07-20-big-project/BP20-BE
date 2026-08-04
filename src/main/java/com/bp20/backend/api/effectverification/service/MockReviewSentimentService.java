@@ -31,7 +31,10 @@ public class MockReviewSentimentService {
     @Transactional
     public ReviewAnalysisStorageResponse analyzeAndStore(Long reviewId) {
         String reviewText = findReviewText(reviewId);
-        ReviewSentimentResponse analysis = sentimentApiClient.analyze(reviewText);
+        ReviewSentimentResponse analysis = sentimentApiClient.analyze(
+                reviewId,
+                reviewText
+        );
         List<StoredAspectSentimentResponse> storedResults = analysis.results()
                 .stream()
                 .map(this::normalize)

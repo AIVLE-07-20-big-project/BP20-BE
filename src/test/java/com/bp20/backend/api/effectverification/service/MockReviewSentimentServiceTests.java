@@ -15,6 +15,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,7 +42,7 @@ class MockReviewSentimentServiceTests {
     void analyzeAndStorePreservesConfidenceAndNormalizesThreeSentiments() {
         when(jdbcTemplate.queryForObject(anyString(), eq(String.class), eq(1L)))
                 .thenReturn("맛은 좋고 가격은 보통이지만 서비스는 불친절해요.");
-        when(sentimentApiClient.analyze(anyString())).thenReturn(
+        when(sentimentApiClient.analyze(anyLong(), anyString())).thenReturn(
                 new ReviewSentimentResponse(
                         "맛은 좋고 가격은 보통이지만 서비스는 불친절해요.",
                         List.of(
@@ -78,7 +79,7 @@ class MockReviewSentimentServiceTests {
         )).thenReturn(List.of(15L));
         when(jdbcTemplate.queryForObject(anyString(), eq(String.class), eq(15L)))
                 .thenReturn("서비스는 보통이었어요");
-        when(sentimentApiClient.analyze(anyString())).thenReturn(
+        when(sentimentApiClient.analyze(anyLong(), anyString())).thenReturn(
                 new ReviewSentimentResponse(
                         "서비스는 보통이었어요",
                         List.of(new AspectSentimentResponse(
