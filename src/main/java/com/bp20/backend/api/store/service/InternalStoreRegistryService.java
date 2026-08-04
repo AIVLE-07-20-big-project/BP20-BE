@@ -90,7 +90,7 @@ public class InternalStoreRegistryService {
      * 매장당 많지 않을 것으로 예상되는 초기 단계라 자바에서 계산해도 성능 문제는 없다.
      */
     private ReviewStats computeReviewStats(Long storeId) {
-        List<Review> reviews = reviewRepository.findByStoreId(storeId);
+        List<Review> reviews = reviewRepository.findByStore_Id(storeId);
         if (reviews.isEmpty()) {
             return new ReviewStats(0, null, null);
         }

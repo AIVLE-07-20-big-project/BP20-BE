@@ -63,7 +63,7 @@ class InternalStoreRegistryServiceTest {
         Store store = mockStore(1L, 10L);
         when(storeRepository.findAll()).thenReturn(List.of(store));
         when(csvDailySalesRepository.sumSalesAmountBetween(eq(10L), any(), any())).thenReturn(0L);
-        when(reviewRepository.findByStoreId(1L)).thenReturn(List.of());
+        when(reviewRepository.findByStore_Id(1L)).thenReturn(List.of());
 
         List<StoreRegistryEntryResponse> result = service.getAllForRegistry();
 
@@ -84,7 +84,7 @@ class InternalStoreRegistryServiceTest {
         LocalDate previousStart = today.minusMonths(6);
         when(csvDailySalesRepository.sumSalesAmountBetween(10L, previousStart, recentStart)).thenReturn(1_000_000L);
         when(csvDailySalesRepository.sumSalesAmountBetween(10L, recentStart, today)).thenReturn(1_500_000L);
-        when(reviewRepository.findByStoreId(1L)).thenReturn(List.of());
+        when(reviewRepository.findByStore_Id(1L)).thenReturn(List.of());
 
         List<StoreRegistryEntryResponse> result = service.getAllForRegistry();
 
@@ -96,7 +96,7 @@ class InternalStoreRegistryServiceTest {
         Store store = mockStore(1L, 10L);
         when(storeRepository.findAll()).thenReturn(List.of(store));
         when(csvDailySalesRepository.sumSalesAmountBetween(any(), any(), any())).thenReturn(0L);
-        when(reviewRepository.findByStoreId(1L)).thenReturn(List.of());
+        when(reviewRepository.findByStore_Id(1L)).thenReturn(List.of());
 
         List<StoreRegistryEntryResponse> result = service.getAllForRegistry();
 
@@ -108,7 +108,7 @@ class InternalStoreRegistryServiceTest {
         Store store = mockStore(1L, 10L);
         when(storeRepository.findAll()).thenReturn(List.of(store));
         when(csvDailySalesRepository.sumSalesAmountBetween(any(), any(), any())).thenReturn(0L);
-        when(reviewRepository.findByStoreId(1L)).thenReturn(List.of());
+        when(reviewRepository.findByStore_Id(1L)).thenReturn(List.of());
 
         StoreRegistryEntryResponse response = service.getAllForRegistry().get(0);
 
@@ -124,7 +124,7 @@ class InternalStoreRegistryServiceTest {
         when(csvDailySalesRepository.sumSalesAmountBetween(any(), any(), any())).thenReturn(0L);
 
         List<Review> reviews = List.of(reviewWithRating(5.0), reviewWithRating(4.0));
-        when(reviewRepository.findByStoreId(1L)).thenReturn(reviews);
+        when(reviewRepository.findByStore_Id(1L)).thenReturn(reviews);
 
         StoreRegistryEntryResponse response = service.getAllForRegistry().get(0);
 
@@ -143,7 +143,7 @@ class InternalStoreRegistryServiceTest {
         List<Review> reviews = List.of(
                 reviewWithRating(4.0), reviewWithRating(4.0), reviewWithRating(4.0), reviewWithRating(4.0)
         );
-        when(reviewRepository.findByStoreId(1L)).thenReturn(reviews);
+        when(reviewRepository.findByStore_Id(1L)).thenReturn(reviews);
 
         StoreRegistryEntryResponse response = service.getAllForRegistry().get(0);
 

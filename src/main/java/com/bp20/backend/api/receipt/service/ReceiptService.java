@@ -126,7 +126,7 @@ public class ReceiptService {
     }
 
     public PageResponse<ReceiptResponse> listReceipts(Long storeId, int page, int size) {
-        Page<Receipt> result = receiptRepository.findByStoreIdOrderByTransactionDateDesc(
+        Page<Receipt> result = receiptRepository.findByStore_IdOrderByTransactionDateDesc(
                 storeId, PageRequest.of(page, size));
         return PageResponse.from(result.map(ReceiptResponse::from));
     }
