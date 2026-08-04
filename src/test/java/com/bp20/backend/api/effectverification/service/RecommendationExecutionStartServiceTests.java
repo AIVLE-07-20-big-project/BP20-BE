@@ -76,7 +76,7 @@ class RecommendationExecutionStartServiceTests {
         )).thenReturn(Map.of(
                 "decision_id", "decision-uuid",
                 "store_id", "1",
-                "action_id", "쿠폰발행"
+                "executed_action", "쿠폰발행"
         ));
         when(collector.collect(
                 eq(1L),
@@ -141,7 +141,7 @@ class RecommendationExecutionStartServiceTests {
         )).thenReturn(Map.of(
                 "decision_id", "decision-uuid",
                 "store_id", 3,
-                "action_id", "대기시간 개선"
+                "executed_action", "대기시간 개선"
         ));
         when(collector.collect(
                 eq(3L),

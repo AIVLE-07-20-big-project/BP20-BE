@@ -11,8 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name = "ai_analyses", indexes = {
-        @Index(name = "idx_ai_analyses_user_created", columnList = "user_id, created_at"),
-        @Index(name = "idx_ai_analyses_store", columnList = "store_id")
+        @Index(name = "idx_ai_analyses_user_created", columnList = "user_id, created_at")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiAnalysis extends BaseTimeEntity {
@@ -50,5 +49,9 @@ public class AiAnalysis extends BaseTimeEntity {
     public static AiAnalysis create(String analysisId, User user, Store store, String trdarCd,
                                     String svcIndutyCd, Integer yyquCd, String resultJson) {
         return new AiAnalysis(analysisId, user, store, trdarCd, svcIndutyCd, yyquCd, resultJson);
+    }
+
+    public void attachStore(Store store) {
+        this.store = store;
     }
 }

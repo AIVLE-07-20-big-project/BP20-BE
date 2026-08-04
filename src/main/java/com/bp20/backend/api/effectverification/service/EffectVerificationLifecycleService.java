@@ -169,6 +169,76 @@ public class EffectVerificationLifecycleService {
         }
     }
 
+    /**
+     * 승인된 추천(thread)의 적용전 분석(analysis_id)과, 사용자가 고른 적용후 분석을
+     * AI의 verify-from-analyses에 그대로 넘겨 8개 매출 지표 전체를 실제값으로 검증한다.
+     * 스케줄러의 14일 대기와 무관하게 즉시 완료할 수 있다.
+     */
+    @Transactional
+    public EffectVerificationResponse completeVerificationFromAnalyses(
+            Long userId, String threadId, String afterAnalysisId
+    ) {
+        EffectVerificationExecution execution = findExecution(userId, threadId);
+        if (execution.getStatus() == VerificationStatus.VERIFIED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Verification has already been completed"
+            );
+        }
+        AiRecommendationRun run = recommendationRunRepository
+                .findByThreadIdAndUser_Id(threadId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "AI recommendation run not found for thread"
+                ));
+        VerificationCondition condition = readJson(
+                execution.getConditionJson(), VerificationCondition.class
+        );
+
+        EffectVerificationResponse response = verificationService.verifyEffectFromAnalyses(
+                userId,
+                run.getAnalysis().getAnalysisId(),
+                afterAnalysisId,
+                execution.getStore().getId(),
+                execution.getEffectVerificationExecutionId(),
+                execution.getAiRecommendationId(),
+                condition.getStartHour(),
+                condition.getEndHour()
+        );
+
+        execution.beginAttempt(LocalDateTime.now());
+        execution.markVerified(response.getVerifiedDate());
+        executionRepository.save(execution);
+        return response;
+    }
+
+    /** AI 매출 CSV 실측값을 매출형 전략 검증 결과로 확정한다. */
+    @Transactional
+    public EffectVerificationResponse completeSalesVerificationFromCsv(
+            Long userId, String threadId, double afterSales, LocalDateTime collectedAt
+    ) {
+        EffectVerificationExecution execution = executionRepository
+                .findByRecommendationRun_ThreadIdAndUser_Id(threadId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Verification execution not found for thread"
+                ));
+        PeriodMetrics before = readJson(execution.getBeforeMetricsJson(), PeriodMetrics.class);
+        SalesMetrics beforeSales = before.getSales();
+        if (beforeSales == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sales before metrics are missing");
+        }
+        SalesMetrics after = new SalesMetrics(
+                beforeSales.getTargetSales(), beforeSales.getVisitCount(),
+                beforeSales.getAverageOrderValue(), beforeSales.getRevisitRate(),
+                beforeSales.getCouponUsageRate(), beforeSales.getNewCustomerCount(),
+                beforeSales.getDormantCustomerReturnCount(), afterSales
+        );
+        VerificationCompletionRequest request = new VerificationCompletionRequest();
+        request.setAfter(new PeriodMetrics(after, null));
+        request.setCollectedAt(collectedAt);
+        return completeVerification(userId, execution.getAiRecommendationId(), request);
+    }
+
     @Transactional(readOnly = true)
     public VerificationExecutionResponse getExecution(
             Long userId,

@@ -13,6 +13,7 @@ import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
+import com.bp20.backend.global.storage.S3ObjectStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -36,6 +37,7 @@ class AiServiceTest {
     private AiStoreProfileRepository storeProfileRepository;
     private UserRepository userRepository;
     private StoreRepository storeRepository;
+    private S3ObjectStorageService s3ObjectStorageService;
     private User user;
     private Store store;
     private AiService service;
@@ -48,6 +50,7 @@ class AiServiceTest {
         storeProfileRepository = mock(AiStoreProfileRepository.class);
         userRepository = mock(UserRepository.class);
         storeRepository = mock(StoreRepository.class);
+        s3ObjectStorageService = mock(S3ObjectStorageService.class);
         user = mock(User.class);
         store = mock(Store.class);
         when(user.getId()).thenReturn(7L);
@@ -61,7 +64,8 @@ class AiServiceTest {
                 storeProfileRepository,
                 userRepository,
                 storeRepository,
-                JsonMapper.builder().build()
+                JsonMapper.builder().build(),
+                s3ObjectStorageService
         );
     }
 
@@ -157,13 +161,13 @@ class AiServiceTest {
         );
         when(analysisRepository.findByAnalysisIdAndUser_Id("analysis-1", 7L))
                 .thenReturn(Optional.of(analysis));
-        when(client.createRecommendation("analysis-1", 7L))
+        when(client.createRecommendation("analysis-1", 7L, "1"))
                 .thenReturn(Map.of("thread_id", "thread-1", "상태", "승인 대기"));
 
         Map<String, Object> result = service.createRecommendation(7L, "analysis-1");
 
         assertThat(result.get("thread_id")).isEqualTo("thread-1");
-        verify(client).createRecommendation("analysis-1", 7L);
+        verify(client).createRecommendation("analysis-1", 7L, "1");
         verify(runRepository).save(argThat((AiRecommendationRun run) ->
                 run.getThreadId().equals("thread-1")
                         && run.getUser().getId().equals(7L)
@@ -181,13 +185,13 @@ class AiServiceTest {
         when(runRepository.findAllByUser_IdOrderByCreatedAtDesc(7L))
                 .thenReturn(java.util.List.of(run));
 
-        java.util.List<Map<String, Object>> result = service.getRecommendations(7L, null);
+        java.util.List<Map<String, Object>> result = service.getRecommendations(7L);
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    void getRecommendationsIgnoresStoreIdFilter() {
+    void getRecommendationsReturnsOwnedRuns() {
         AiRecommendationRun run = AiRecommendationRun.create(
                 "thread-2",
                 AiAnalysis.create("analysis-2", user, store, "1", "A", 20261, "{}"),
@@ -197,7 +201,7 @@ class AiServiceTest {
         when(runRepository.findAllByUser_IdOrderByCreatedAtDesc(7L))
                 .thenReturn(java.util.List.of(run));
 
-        java.util.List<Map<String, Object>> result = service.getRecommendations(7L, "store-2");
+        java.util.List<Map<String, Object>> result = service.getRecommendations(7L);
 
         assertThat(result).hasSize(1);
         verify(runRepository).findAllByUser_IdOrderByCreatedAtDesc(7L);
