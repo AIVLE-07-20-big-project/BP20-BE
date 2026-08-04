@@ -4,6 +4,11 @@ import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationRoiResponse;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationResultRepository;
+import com.bp20.backend.api.ai.domain.AiAnalysis;
+import com.bp20.backend.api.ai.domain.AiRecommendationRun;
+import com.bp20.backend.api.ai.repository.AiAnalysisRepository;
+import com.bp20.backend.api.ai.repository.AiRecommendationRunRepository;
+import com.bp20.backend.api.store.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +25,9 @@ public class EffectVerificationRoiService {
     private static final int RECENT_RESULT_LIMIT = 5;
 
     private final EffectVerificationResultRepository resultRepository;
+    private final StoreRepository storeRepository;
+    private final AiAnalysisRepository analysisRepository;
+    private final AiRecommendationRunRepository recommendationRunRepository;
 
     @Transactional(readOnly = true)
     public EffectVerificationRoiResponse getSummary(Long storeId) {
@@ -27,6 +35,21 @@ public class EffectVerificationRoiService {
                 .filter(result -> storeId == null
                         || storeId.equals(result.getStore().getId()))
                 .toList();
+
+        List<AiAnalysis> analyses = analysisRepository.findAll();
+        List<AiRecommendationRun> recommendationRuns = recommendationRunRepository.findAll();
+        long aiActiveStores = analyses.stream()
+                .map(AiAnalysis::getStore)
+                .filter(java.util.Objects::nonNull)
+                .map(store -> store.getId())
+                .distinct()
+                .count();
+        long executedRecommendations = recommendationRuns.stream()
+                .filter(run -> run.getExecutionStartedAt() != null || run.getExecutionEndedAt() != null)
+                .count();
+        double executionRate = recommendationRuns.isEmpty()
+                ? 0.0
+                : rounded(executedRecommendations * 100.0 / recommendationRuns.size());
 
         long effectiveCount = results.stream()
                 .filter(result -> "EFFECTIVE".equals(result.getVerdict()))
@@ -80,6 +103,11 @@ public class EffectVerificationRoiService {
                         .toList();
 
         return new EffectVerificationRoiResponse(
+                storeId == null ? storeRepository.count() : 1,
+                aiActiveStores,
+                recommendationRuns.size(),
+                executedRecommendations,
+                executionRate,
                 results.size(),
                 averageScore(results),
                 effectiveCount,
