@@ -2,8 +2,11 @@ package com.bp20.backend.api.effectverification.service;
 
 import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
+import com.bp20.backend.api.effectverification.dto.request.SelectedActionRequest;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationRoiResponse;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationResultRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,7 @@ public class EffectVerificationRoiService {
     private static final int RECENT_RESULT_LIMIT = 5;
 
     private final EffectVerificationResultRepository resultRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public EffectVerificationRoiResponse getSummary(Long storeId) {
@@ -71,6 +75,7 @@ public class EffectVerificationRoiService {
                         .limit(RECENT_RESULT_LIMIT)
                         .map(result -> new EffectVerificationRoiResponse.RecentResult(
                                 result.getAiRecommendationId(),
+                                actionName(result),
                                 result.getStore().getId(),
                                 result.getRecommendationType(),
                                 rounded(result.getEffectScore()),
@@ -89,6 +94,29 @@ public class EffectVerificationRoiService {
                 typeSummaries,
                 recentResults
         );
+    }
+
+    private String actionName(EffectVerificationResult result) {
+        if (result.getExecution() == null
+                || result.getExecution().getSelectedActionJson() == null
+                || result.getExecution().getSelectedActionJson().isBlank()) {
+            return fallbackActionName(result.getRecommendationType());
+        }
+        try {
+            SelectedActionRequest selectedAction = objectMapper.readValue(
+                    result.getExecution().getSelectedActionJson(),
+                    SelectedActionRequest.class
+            );
+            return selectedAction.getAction() == null || selectedAction.getAction().isBlank()
+                    ? fallbackActionName(result.getRecommendationType())
+                    : selectedAction.getAction();
+        } catch (JsonProcessingException ignored) {
+            return fallbackActionName(result.getRecommendationType());
+        }
+    }
+
+    private String fallbackActionName(RecommendationType type) {
+        return type == RecommendationType.SALES ? "매출 개선 전략" : "리뷰 개선 전략";
     }
 
     private double averageScore(List<EffectVerificationResult> results) {
