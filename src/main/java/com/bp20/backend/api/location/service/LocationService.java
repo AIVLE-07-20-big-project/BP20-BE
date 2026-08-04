@@ -45,7 +45,7 @@ public class LocationService {
                         location.latitude(),
                         location.longitude()
                 ))
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new IllegalArgumentException(
                         "등록된 매장 주소의 위치를 찾지 못했습니다. 도로명 주소를 확인해 주세요."
                 ));
     }

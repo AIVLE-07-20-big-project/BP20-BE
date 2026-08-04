@@ -41,7 +41,8 @@ public class Notice extends BaseTimeEntity {
     private boolean urgent;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "author_id", nullable = false)
+    @JoinColumn(name = "author_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_notices_author"))
     private User author;
 
     private Notice(String title, String body, String category, String audience,

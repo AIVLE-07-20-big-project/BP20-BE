@@ -34,6 +34,16 @@ public class AiController {
 
     private final AiService aiService;
 
+    @GetMapping("/locations")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getLocations() {
+        return ApiResponse.success(SuccessCode.SUCCESS_AI_ANALYSIS_GET, aiService.getLocations());
+    }
+
+    @GetMapping("/industries")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getIndustries() {
+        return ApiResponse.success(SuccessCode.SUCCESS_AI_ANALYSIS_GET, aiService.getIndustries());
+    }
+
     @PostMapping(value = "/analyses", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createAnalysis(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
@@ -85,12 +95,11 @@ public class AiController {
 
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getRecommendations(
-            @AuthenticationPrincipal SecurityPrincipal currentUser,
-            @RequestParam(value = "store_id", required = false) String storeId
+            @AuthenticationPrincipal SecurityPrincipal currentUser
     ) {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_AI_RECOMMENDATION_GET,
-                aiService.getRecommendations(currentUser.id(), storeId)
+                aiService.getRecommendations(currentUser.id())
         );
     }
 

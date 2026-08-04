@@ -2,9 +2,11 @@ package com.bp20.backend.api.effectverification.controller;
 
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
 import com.bp20.backend.api.effectverification.dto.request.CampaignDecisionLinkRequest;
+import com.bp20.backend.api.effectverification.dto.request.CompleteFromAnalysisRequest;
 import com.bp20.backend.api.effectverification.dto.request.ExecutionRegistrationRequest;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationExecutionStartRequest;
 import com.bp20.backend.api.effectverification.dto.request.VerificationCompletionRequest;
+import com.bp20.backend.api.ai.service.AiSalesFeedbackService;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
 import com.bp20.backend.api.effectverification.dto.response.VerificationExecutionResponse;
 import com.bp20.backend.api.effectverification.domain.VerificationStatus;
@@ -41,6 +43,7 @@ public class EffectVerificationController {
     private final RecommendationExecutionStartService executionStartService;
     private final EffectVerificationRetryService retryService;
     private final EffectVerificationStoreAccessService storeAccessService;
+    private final AiSalesFeedbackService aiSalesFeedbackService;
 
     @PostMapping("/executions/start")
     public ResponseEntity<VerificationExecutionResponse> startExecution(
@@ -74,6 +77,21 @@ public class EffectVerificationController {
                         userId(currentUser),
                         recommendationId,
                         request
+                )
+        );
+    }
+
+    @PostMapping("/executions/by-thread/{threadId}/complete-from-analysis")
+    public ResponseEntity<EffectVerificationResponse> completeFromAnalysis(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable String threadId,
+            @Valid @RequestBody CompleteFromAnalysisRequest request
+    ) {
+        return ResponseEntity.ok(
+                aiSalesFeedbackService.completeVerificationFromAnalysisAndLearn(
+                        userId(currentUser),
+                        threadId,
+                        request.getAfterAnalysisId()
                 )
         );
     }

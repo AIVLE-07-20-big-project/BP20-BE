@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -30,6 +31,12 @@ public class AiRecommendationRun extends BaseTimeEntity {
 
     @Lob @Column(name = "result_json", nullable = false, columnDefinition = "LONGTEXT")
     private String resultJson;
+    @Column(name = "execution_started_at")
+    private LocalDateTime executionStartedAt;
+    @Column(name = "execution_ended_at")
+    private LocalDateTime executionEndedAt;
+    @Column(name = "selected_action", length = 100)
+    private String selectedAction;
 
     private AiRecommendationRun(
             String threadId,
@@ -54,5 +61,13 @@ public class AiRecommendationRun extends BaseTimeEntity {
 
     public void updateResult(String resultJson) {
         this.resultJson = resultJson;
+    }
+
+    public void updateExecutionPlan(
+            LocalDateTime startedAt, LocalDateTime endedAt, String action
+    ) {
+        this.executionStartedAt = startedAt;
+        this.executionEndedAt = endedAt;
+        this.selectedAction = action;
     }
 }

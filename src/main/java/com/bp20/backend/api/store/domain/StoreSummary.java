@@ -18,8 +18,9 @@ public class StoreSummary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long storeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String summary;
@@ -29,8 +30,8 @@ public class StoreSummary {
     private LocalDateTime analyzedAt;
 
     @Builder
-    public StoreSummary(Long storeId, String summary, Integer totalReviewsAnalyzed, LocalDateTime analyzedAt) {
-        this.storeId = storeId;
+    public StoreSummary(Store store, String summary, Integer totalReviewsAnalyzed, LocalDateTime analyzedAt) {
+        this.store = store;
         this.summary = summary;
         this.totalReviewsAnalyzed = totalReviewsAnalyzed;
         this.analyzedAt = analyzedAt != null ? analyzedAt : LocalDateTime.now();

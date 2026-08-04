@@ -62,7 +62,19 @@ public class RecommendationExecutionStartService {
                     "REVIEW recommendation requires target_aspect"
             );
         }
-        LocalDateTime executedAt = LocalDateTime.now(clock);
+        // 사용자가 추천 승인 화면에서 고른 적용 기간을 그대로 쓴다 — 없으면 지금부터 14일 기본값.
+        LocalDateTime executedAt = input.getExecutionStartedAt() != null
+                ? input.getExecutionStartedAt()
+                : LocalDateTime.now(clock);
+        int periodDays = (input.getExecutionStartedAt() != null && input.getExecutionEndedAt() != null)
+                ? (int) Math.max(
+                        1,
+                        java.time.Duration.between(
+                                input.getExecutionStartedAt(), input.getExecutionEndedAt()
+                        ).toDays()
+                )
+                : DEFAULT_PERIOD_DAYS;
+
         Map<String, Object> campaign = campaignExecutionClient.recordExecution(
                 input.getThreadId(),
                 userId,
@@ -78,9 +90,11 @@ public class RecommendationExecutionStartService {
                 "executed_action",
                 "approved_action"
         );
+        // AI campaign-logs 응답은 "action_id"가 아니라 "executed_action"(executed=true로 보냈을 때
+        // 채워지는 필드)을 쓴다 — approved_action은 승인만 됐을 뿐 실행 여부와 무관해 값이 다를 수 있다.
 
         VerificationCondition condition = new VerificationCondition(
-                DEFAULT_PERIOD_DAYS,
+                periodDays,
                 null,
                 null,
                 false,
@@ -90,7 +104,7 @@ public class RecommendationExecutionStartService {
         PeriodMetrics before = metricCollector.collect(
                 storeId,
                 recommendationType,
-                executedAt.minusDays(DEFAULT_PERIOD_DAYS),
+                executedAt.minusDays(periodDays),
                 executedAt,
                 condition
         );
