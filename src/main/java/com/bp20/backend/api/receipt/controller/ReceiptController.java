@@ -1,6 +1,7 @@
 package com.bp20.backend.api.receipt.controller;
 
 import com.bp20.backend.api.receipt.dto.request.ReceiptCreateRequest;
+import com.bp20.backend.api.receipt.dto.request.ReceiptUpdateRequest;
 import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
 import com.bp20.backend.api.receipt.dto.response.ReceiptResponse;
 import com.bp20.backend.api.receipt.service.ReceiptService;
@@ -11,15 +12,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import com.bp20.backend.global.security.principal.SecurityPrincipal;
 
 import java.util.List;
 
@@ -38,9 +42,10 @@ public class ReceiptController {
      */
     @PostMapping(value = "/parse", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<OcrParseResponse>> parse(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestPart("file") MultipartFile file
     ) {
-        OcrParseResponse result = receiptService.parse(file);
+        OcrParseResponse result = receiptService.parse(currentUser.id(), file);
         return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_PARSE, result);
     }
 
@@ -59,6 +64,15 @@ public class ReceiptController {
     @GetMapping("/{receiptId}")
     public ResponseEntity<ApiResponse<ReceiptResponse>> get(@PathVariable Long receiptId) {
         ReceiptResponse result = receiptService.getReceipt(receiptId);
+        return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_GET, result);
+    }
+
+    @PutMapping("/{receiptId}")
+    public ResponseEntity<ApiResponse<ReceiptResponse>> update(
+            @PathVariable Long receiptId,
+            @Valid @RequestBody ReceiptUpdateRequest request
+    ) {
+        ReceiptResponse result = receiptService.updateReceipt(receiptId, request);
         return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_GET, result);
     }
 
