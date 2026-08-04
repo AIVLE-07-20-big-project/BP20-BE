@@ -108,6 +108,7 @@ public class SalesTargetCandidate {
             Double trafficScore,
             Double reviewScore,
             Double similarityScore,
+            String salesPitch,
             String sourceBatchId
     ) {
         this.industry = industry;
@@ -116,6 +117,7 @@ public class SalesTargetCandidate {
         this.trafficScore = trafficScore;
         this.reviewScore = reviewScore;
         this.similarityScore = similarityScore;
+        this.salesPitch = salesPitch;
         this.sourceBatchId = sourceBatchId;
     }
 }

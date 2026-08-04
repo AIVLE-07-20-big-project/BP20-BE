@@ -48,11 +48,35 @@ public class SalesTargetService {
         return SalesTargetCandidateResponse.from(findOrThrow(id));
     }
 
+    /**
+     * 5단계(피드백 루프): 영업팀이 EXCLUDED 처리한 후보의 주소 목록(내부용).
+     * AI 파이프라인이 다음 배치 생성 시 이 주소들을 후보에서 제외하는 데 쓴다.
+     */
+    @Transactional(readOnly = true)
+    public List<String> getExcludedAddresses() {
+        return salesTargetCandidateRepository.findAllByPipelineStatusOrderByTotalScoreDesc(PipelineStatus.EXCLUDED)
+                .stream()
+                .map(SalesTargetCandidate::getAddress)
+                .toList();
+    }
+
     @Transactional
     public SalesTargetCandidateResponse updatePipelineStatus(Long id, PipelineStatus newStatus) {
         SalesTargetCandidate candidate = findOrThrow(id);
         candidate.updatePipelineStatus(newStatus);
         return SalesTargetCandidateResponse.from(candidate);
+    }
+
+    /**
+     * 테스트/디버깅 중 쌓인 후보를 SQL 없이 한 번에 정리하기 위한 관리자용 전체 삭제.
+     * pipelineStatus·sourceBatchId 관계없이 전부 지운다. 배치 이력(SalesTargetBatchRun)은
+     * 건드리지 않는다 — 승인/반려 자체가 실패했었는지 등을 나중에 확인할 근거가 남아 있어야 해서다.
+     */
+    @Transactional
+    public long deleteAll() {
+        long count = salesTargetCandidateRepository.count();
+        salesTargetCandidateRepository.deleteAllInBatch();
+        return count;
     }
 
     @Transactional
@@ -72,6 +96,7 @@ public class SalesTargetService {
                         item.trafficScore(),
                         item.reviewScore(),
                         item.similarityScore(),
+                        item.salesPitch(),
                         request.sourceBatchId()
                 );
                 updated++;
@@ -85,6 +110,7 @@ public class SalesTargetService {
                         .trafficScore(item.trafficScore())
                         .reviewScore(item.reviewScore())
                         .similarityScore(item.similarityScore())
+                        .salesPitch(item.salesPitch())
                         .pipelineStatus(PipelineStatus.CANDIDATE)
                         .sourceBatchId(request.sourceBatchId())
                         .build();

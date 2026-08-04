@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -57,6 +58,16 @@ public class SalesTargetController {
                 SuccessCode.SUCCESS_SALES_TARGET_STATUS_UPDATE,
                 salesTargetService.updatePipelineStatus(id, request.pipelineStatus())
         );
+    }
+
+    @DeleteMapping
+    @Operation(
+            summary = "영업 타겟 후보 전체 삭제",
+            description = "테스트/디버깅 중 쌓인 후보를 SQL 없이 한 번에 정리할 때 쓴다. pipelineStatus·sourceBatchId 관계없이 전부 삭제한다. "
+                    + "배치 이력(승인/반려 기록)은 삭제하지 않는다."
+    )
+    public ResponseEntity<ApiResponse<Long>> deleteAllSalesTargets() {
+        return ApiResponse.success(SuccessCode.SUCCESS_SALES_TARGET_DELETE_ALL, salesTargetService.deleteAll());
     }
 
     @ExceptionHandler(NoSuchElementException.class)

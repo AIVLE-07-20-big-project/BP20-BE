@@ -10,10 +10,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,6 +39,19 @@ public class InternalSalesTargetIngestController {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_SALES_TARGET_BULK_UPSERT,
                 new BulkUpsertResponse(result.created(), result.updated())
+        );
+    }
+
+    @GetMapping("/excluded")
+    @Operation(
+            summary = "제외 처리된 영업 타겟 주소 목록 조회(내부용)",
+            description = "영업팀이 EXCLUDED 처리한 후보의 주소 목록을 반환한다. AI 파이프라인이 다음 배치 생성 시 " +
+                    "이 주소들을 후보에서 제외하는 데 쓴다. X-Internal-Api-Key 헤더 필요."
+    )
+    public ResponseEntity<ApiResponse<List<String>>> getExcludedAddresses() {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_SALES_TARGET_EXCLUDED_ADDRESSES,
+                salesTargetService.getExcludedAddresses()
         );
     }
 }

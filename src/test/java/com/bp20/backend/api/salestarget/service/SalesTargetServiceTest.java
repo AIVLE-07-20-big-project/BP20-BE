@@ -99,7 +99,7 @@ class SalesTargetServiceTest {
                 .thenReturn(Optional.empty());
 
         SalesTargetItemRequest item = new SalesTargetItemRequest(
-                "신규카페", "카페", "서울 강남구 1", 76.1, 100.0, 94.4, 50.0, 50.0
+                "신규카페", "카페", "서울 강남구 1", 76.1, 100.0, 94.4, 50.0, 50.0, "전환 가능성이 76%로 높습니다."
         );
         BulkUpsertSalesTargetsRequest request = new BulkUpsertSalesTargetsRequest("batch-1", List.of(item));
 
@@ -120,7 +120,7 @@ class SalesTargetServiceTest {
                 .thenReturn(Optional.of(existing));
 
         SalesTargetItemRequest item = new SalesTargetItemRequest(
-                "기존카페", "카페", "서울 강남구 2", 80.0, 100.0, 90.0, 60.0, 70.0
+                "기존카페", "카페", "서울 강남구 2", 80.0, 100.0, 90.0, 60.0, 70.0, "전환 가능성이 80%로 매우 높습니다."
         );
         BulkUpsertSalesTargetsRequest request = new BulkUpsertSalesTargetsRequest("batch-2", List.of(item));
 
@@ -129,10 +129,27 @@ class SalesTargetServiceTest {
         assertThat(result.created()).isEqualTo(0);
         assertThat(result.updated()).isEqualTo(1);
 
-        verify(existing).refreshScores("카페", 80.0, 100.0, 90.0, 60.0, 70.0, "batch-2");
+        verify(existing).refreshScores(
+                "카페", 80.0, 100.0, 90.0, 60.0, 70.0, "전환 가능성이 80%로 매우 높습니다.", "batch-2"
+        );
         // pipelineStatus 변경 메서드는 절대 호출되면 안 된다 — 벌크 업서트가 상태를 건드리지 않는다는 핵심 보장.
         verify(existing, never()).updatePipelineStatus(any());
         verify(salesTargetCandidateRepository, never()).save(any());
+    }
+
+    @Test
+    void EXCLUDED_상태_후보의_주소_목록만_반환한다() {
+        // getAddress()만 실제로 호출되므로(getExcludedAddresses()는 응답 DTO로 변환하지 않음)
+        // candidate() 헬퍼(id/businessName/pipelineStatus까지 스텁) 대신 필요한 것만 스텁한다 —
+        // 안 쓰는 스텁이 있으면 Mockito strict-stubs가 UnnecessaryStubbingException을 던진다.
+        SalesTargetCandidate excluded = bareMock();
+        when(excluded.getAddress()).thenReturn("서울 마포구 3");
+        when(salesTargetCandidateRepository.findAllByPipelineStatusOrderByTotalScoreDesc(PipelineStatus.EXCLUDED))
+                .thenReturn(List.of(excluded));
+
+        List<String> result = service.getExcludedAddresses();
+
+        assertThat(result).containsExactly("서울 마포구 3");
     }
 
     @Test
@@ -144,8 +161,8 @@ class SalesTargetServiceTest {
                 .thenReturn(Optional.empty());
 
         List<SalesTargetItemRequest> items = List.of(
-                new SalesTargetItemRequest("기존", "카페", "주소1", 70.0, 80.0, 70.0, 50.0, 50.0),
-                new SalesTargetItemRequest("신규", "정육점", "주소2", 60.0, 60.0, 60.0, 50.0, 50.0)
+                new SalesTargetItemRequest("기존", "카페", "주소1", 70.0, 80.0, 70.0, 50.0, 50.0, null),
+                new SalesTargetItemRequest("신규", "정육점", "주소2", 60.0, 60.0, 60.0, 50.0, 50.0, null)
         );
         BulkUpsertSalesTargetsRequest request = new BulkUpsertSalesTargetsRequest("batch-3", items);
 

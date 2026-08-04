@@ -84,6 +84,15 @@ effect-verification:
     zone: ${EFFECT_VERIFICATION_SCHEDULER_ZONE:Asia/Seoul}
     max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}
 
+# 신규 가맹점 영업 타겟 배치 — AI_Agent_전환_가이드라인.md 4단계(운영 정리 정책).
+# stale-days일 이상 관리자가 승인/반려하지 않고 방치한 배치를 자동 반려한다.
+sales-target:
+  batch-cleanup:
+    enabled: ${SALES_TARGET_BATCH_CLEANUP_ENABLED:true}
+    cron: ${SALES_TARGET_BATCH_CLEANUP_CRON:0 0 3 * * *}
+    zone: ${SALES_TARGET_BATCH_CLEANUP_ZONE:Asia/Seoul}
+    stale-days: ${SALES_TARGET_BATCH_CLEANUP_STALE_DAYS:3}
+
 # 영수증 OCR 및 원가 분석 서비스
 ocr-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
