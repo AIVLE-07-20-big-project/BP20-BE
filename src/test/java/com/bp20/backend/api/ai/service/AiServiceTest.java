@@ -228,7 +228,8 @@ class AiServiceTest {
 
         Map<String, Object> result = service.getAgentRun(7L, "thread-1");
 
-        assertThat(result).doesNotContainKeys("scm_result", "ope_result", "대기중_승인");
+        assertThat(result).doesNotContainKeys("scm_result", "ope_result");
+        assertThat(result).containsKey("대기중_승인");
         assertThat(result.get("상태")).isEqualTo("완료");
         verify(runRepository).save(argThat((AiRecommendationRun saved) ->
                 saved.getResultJson().contains("scm_result")));

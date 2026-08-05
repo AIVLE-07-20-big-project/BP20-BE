@@ -36,8 +36,9 @@ public class AiService {
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     // 상세 화면에서만 필요한 무거운 필드. 기본 응답에서는 제외하고 DB(result_json)에는 그대로 보존한다.
+    // 대기중_승인은 프론트엔드 승인 화면이 기본 응답에서 직접 읽으므로 제외 대상에서 뺀다.
     private static final Set<String> DETAIL_ONLY_FIELDS = Set.of(
-            "scm_result", "ope_result", "candidate_safety", "shadow_report", "rag_evidence", "대기중_승인"
+            "scm_result", "ope_result", "candidate_safety", "shadow_report", "rag_evidence"
     );
 
     private final FastApiClient fastApiClient;
