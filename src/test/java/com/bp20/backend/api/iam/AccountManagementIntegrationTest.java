@@ -142,7 +142,7 @@ class AccountManagementIntegrationTest {
         assertThat(activated.status()).isEqualTo(UserStatus.ACTIVE);
         assertThat(storeOwnerAccountService.getStoreOwners())
                 .extracting(StoreOwnerAccountResponse::email)
-                .contains("status-owner@example.com");
+                .contains(com.bp20.backend.global.util.PersonalDataMasker.email("status-owner@example.com"));
     }
 
     private User saveSuperAdmin(String email) {

@@ -7,6 +7,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record EffectVerificationRoiResponse(
+        @JsonProperty("total_stores") long totalStores,
+        @JsonProperty("ai_active_stores") long aiActiveStores,
+        @JsonProperty("recommendation_runs") long recommendationRuns,
+        @JsonProperty("executed_recommendations") long executedRecommendations,
+        @JsonProperty("execution_rate") double executionRate,
         @JsonProperty("total_verified") long totalVerified,
         @JsonProperty("average_effect_score") double averageEffectScore,
         @JsonProperty("effective_count") long effectiveCount,
@@ -32,6 +37,7 @@ public record EffectVerificationRoiResponse(
 
     public record RecentResult(
             @JsonProperty("recommendation_id") String recommendationId,
+            @JsonProperty("action_name") String actionName,
             @JsonProperty("store_id") Long storeId,
             @JsonProperty("recommendation_type") RecommendationType recommendationType,
             @JsonProperty("effect_score") double effectScore,

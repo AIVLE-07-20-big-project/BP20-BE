@@ -18,6 +18,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Getter
 @Entity
 @Table(name = "users", indexes = {
@@ -48,16 +51,27 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
     private User(String email, String name, String phoneNumber, String passwordHash, UserRole role) {
         this.privateInfo = UserPrivateInfo.of(email, passwordHash, name, phoneNumber);
         this.role = role;
         this.status = UserStatus.ACTIVE;
+        initializeAccountSecurity(passwordHash);
     }
 
     private User(UserPrivateInfo privateInfo, UserRole role) {
         this.privateInfo = privateInfo;
         this.role = role;
         this.status = UserStatus.ACTIVE;
+        initializeAccountSecurity(privateInfo.getPasswordHash());
     }
 
     public static User createStoreOwner(String email, String name, String phoneNumber, String passwordHash) {
@@ -116,5 +130,38 @@ public class User extends BaseTimeEntity {
 
     public void deactivate() {
         this.status = UserStatus.INACTIVE;
+    }
+
+    public boolean isTemporarilyLocked(LocalDateTime now) {
+        return lockedUntil != null && lockedUntil.isAfter(now);
+    }
+
+    public boolean isPasswordExpired(LocalDateTime now, Duration maxAge) {
+        return passwordChangedAt != null && passwordChangedAt.plus(maxAge).isBefore(now);
+    }
+
+    public void registerFailedLogin(int maxAttempts, Duration lockDuration, LocalDateTime now) {
+        this.failedLoginAttempts++;
+        if (this.failedLoginAttempts >= maxAttempts) {
+            this.lockedUntil = now.plus(lockDuration);
+            this.failedLoginAttempts = 0;
+        }
+    }
+
+    public void loginSucceeded() {
+        this.failedLoginAttempts = 0;
+        this.lockedUntil = null;
+    }
+
+    public void changePassword(String passwordHash, LocalDateTime now) {
+        this.privateInfo.updatePassword(passwordHash);
+        this.passwordChangedAt = now;
+        loginSucceeded();
+    }
+
+    private void initializeAccountSecurity(String passwordHash) {
+        this.failedLoginAttempts = 0;
+        this.lockedUntil = null;
+        this.passwordChangedAt = passwordHash == null ? null : LocalDateTime.now();
     }
 }

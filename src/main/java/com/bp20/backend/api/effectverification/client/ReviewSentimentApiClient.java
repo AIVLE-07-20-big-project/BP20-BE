@@ -3,9 +3,12 @@ package com.bp20.backend.api.effectverification.client;
 import com.bp20.backend.api.effectverification.dto.request.ReviewSentimentRequest;
 import com.bp20.backend.api.effectverification.dto.response.ReviewSentimentResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import java.util.List;
 
 @Component
 public class ReviewSentimentApiClient {
@@ -21,20 +24,22 @@ public class ReviewSentimentApiClient {
                 .build();
     }
 
-    public ReviewSentimentResponse analyze(String reviewText) {
+    public ReviewSentimentResponse analyze(Long reviewId, String reviewText) {
         try {
-            ReviewSentimentResponse response = restClient.post()
-                    .uri("/api/v1/review/predict")
-                    .body(new ReviewSentimentRequest(reviewText))
+            List<ReviewSentimentResponse> responses = restClient.post()
+                    .uri("/api/v1/review/analyze")
+                    .body(List.of(new ReviewSentimentRequest(reviewId, reviewText)))
                     .retrieve()
-                    .body(ReviewSentimentResponse.class);
+                    .body(new ParameterizedTypeReference<>() {});
 
-            if (response == null || response.results() == null) {
+            if (responses == null
+                    || responses.isEmpty()
+                    || responses.getFirst().results() == null) {
                 throw new IllegalStateException(
                         "Review sentiment AI returned an empty response"
                 );
             }
-            return response;
+            return responses.getFirst();
         } catch (RestClientException exception) {
             throw new IllegalStateException(
                     "Failed to call review sentiment AI",

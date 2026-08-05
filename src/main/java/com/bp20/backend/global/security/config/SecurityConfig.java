@@ -7,6 +7,9 @@ import com.bp20.backend.global.security.filter.JwtAuthenticationFilter;
 import com.bp20.backend.global.security.handler.JsonAccessDeniedHandler;
 import com.bp20.backend.global.security.handler.JsonAuthenticationEntryPoint;
 import com.bp20.backend.global.security.jwt.JwtProperties;
+import com.bp20.backend.global.security.account.AccountSecurityProperties;
+import com.bp20.backend.global.security.captcha.CaptchaProperties;
+import com.bp20.backend.global.security.crypto.PersonalDataEncryptionProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,7 +32,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties({JwtProperties.class, RefreshTokenProperties.class})
+@EnableConfigurationProperties({
+        JwtProperties.class,
+        RefreshTokenProperties.class,
+        AccountSecurityProperties.class,
+        CaptchaProperties.class,
+        PersonalDataEncryptionProperties.class
+})
 @RequiredArgsConstructor
 public class SecurityConfig {
 
