@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.time.LocalDateTime;
 
 @Service
@@ -33,6 +34,11 @@ import java.time.LocalDateTime;
 @Transactional(readOnly = true)
 public class AiService {
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+
+    // 상세 화면에서만 필요한 무거운 필드. 기본 응답에서는 제외하고 DB(result_json)에는 그대로 보존한다.
+    private static final Set<String> DETAIL_ONLY_FIELDS = Set.of(
+            "scm_result", "ope_result", "candidate_safety", "shadow_report", "rag_evidence", "대기중_승인"
+    );
 
     private final FastApiClient fastApiClient;
     private final AiAnalysisRepository analysisRepository;
@@ -147,7 +153,7 @@ public class AiService {
                 analysis.getUser(),
                 write(result)
         ));
-        return result;
+        return summarize(result);
     }
 
     public List<Map<String, Object>> getRecommendations(Long userId) {
@@ -155,7 +161,7 @@ public class AiService {
                 runRepository.findAllByUser_IdOrderByCreatedAtDesc(userId);
         return runs.stream()
                 .map(run -> {
-                    Map<String, Object> result = new LinkedHashMap<>(read(run.getResultJson()));
+                    Map<String, Object> result = summarize(read(run.getResultJson()));
                     result.putIfAbsent("thread_id", run.getThreadId());
                     result.putIfAbsent("analysis_id", run.getAnalysis().getAnalysisId());
                     result.put("created_at", run.getCreatedAt());
@@ -177,11 +183,18 @@ public class AiService {
         Map<String, Object> result = fastApiClient.getAgentRun(threadId, userId);
         run.updateResult(write(result));
         runRepository.save(run);
+        Map<String, Object> summary = summarize(result);
         if (run.getExecutionStartedAt() != null) {
-            result.put("execution_started_at", run.getExecutionStartedAt());
-            result.put("execution_ended_at", run.getExecutionEndedAt());
+            summary.put("execution_started_at", run.getExecutionStartedAt());
+            summary.put("execution_ended_at", run.getExecutionEndedAt());
         }
-        return result;
+        return summary;
+    }
+
+    // 상세 화면 전용: scm_result/ope_result 등 무거운 필드를 포함한 원본 전체를 반환한다.
+    // 새 조회 없이 이미 DB(result_json)에 저장된 최신 결과를 그대로 읽는다.
+    public Map<String, Object> getAgentRunDetail(Long userId, String threadId) {
+        return read(findRun(userId, threadId).getResultJson());
     }
 
     @Transactional
@@ -206,7 +219,15 @@ public class AiService {
         }
         run.updateResult(write(result));
         runRepository.save(run);
-        return result;
+        return summarize(result);
+    }
+
+    // 무거운 필드를 제외한 요약 Map을 새로 만든다. 원본(result)은 그대로 두고 복사본만 걸러낸다
+    // — DB에는 항상 원본 전체가 저장돼야 재현·감사가 가능하기 때문이다.
+    private Map<String, Object> summarize(Map<String, Object> full) {
+        Map<String, Object> summary = new LinkedHashMap<>(full);
+        summary.keySet().removeAll(DETAIL_ONLY_FIELDS);
+        return summary;
     }
 
     private AiAnalysis findAnalysis(Long userId, String analysisId) {
