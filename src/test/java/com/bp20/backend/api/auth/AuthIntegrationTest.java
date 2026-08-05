@@ -17,6 +17,7 @@ import com.bp20.backend.api.user.domain.UserPrivateInfo;
 import com.bp20.backend.api.user.domain.UserRole;
 import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
+import com.bp20.backend.api.user.privacy.PrivacyConsentRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
 import com.bp20.backend.global.security.jwt.JwtTokenProvider;
@@ -62,6 +63,9 @@ class AuthIntegrationTest {
     @Autowired
     private RefreshTokenService refreshTokenService;
 
+    @Autowired
+    private PrivacyConsentRepository privacyConsentRepository;
+
     @Test
     void storeOwnerCanSignupAndLoginWithInvitation() {
         signupStoreOwner("auth.owner@example.com");
@@ -89,6 +93,7 @@ class AuthIntegrationTest {
         assertThat(payload).doesNotContain("email", "role");
         assertThat(me.email()).isEqualTo("auth.owner@example.com");
         assertThat(me.role()).isEqualTo(UserRole.STORE_OWNER);
+        assertThat(privacyConsentRepository.count()).isPositive();
     }
 
     @Test

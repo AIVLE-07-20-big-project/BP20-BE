@@ -14,8 +14,13 @@ import com.bp20.backend.api.user.domain.UserPrivateInfo;
 import com.bp20.backend.api.user.domain.UserRole;
 import com.bp20.backend.api.user.repository.UserPrivateInfoRepository;
 import com.bp20.backend.api.user.repository.UserRepository;
+import com.bp20.backend.api.user.privacy.PrivacyConsent;
+import com.bp20.backend.api.user.privacy.PrivacyConsentRepository;
+import com.bp20.backend.api.user.privacy.PrivacyPolicy;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
+import com.bp20.backend.global.security.captcha.CaptchaVerificationService;
+import com.bp20.backend.global.security.password.PasswordPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,9 +40,15 @@ public class SignupService {
     private final TemporaryPasswordService temporaryPasswordService;
     private final RefreshTokenService refreshTokenService;
     private final IamLogService iamLogService;
+    private final PrivacyConsentRepository privacyConsentRepository;
+    private final PasswordPolicy passwordPolicy;
+    private final CaptchaVerificationService captchaVerificationService;
 
     @Transactional
     public AuthenticatedSession<SignupResponse> signup(SignupRequest request, String sourceIp) {
+        captchaVerificationService.verify(request.captchaToken(), sourceIp, "signup");
+        validatePrivacyConsent(request);
+        passwordPolicy.validate(request.password());
         String email = normalizeEmail(request.email());
         Invitation invitation = invitationRepository
                 .findByEmailAndTemporaryPasswordHashAndAcceptedAtIsNullAndRevokedAtIsNull(
@@ -55,6 +66,11 @@ public class SignupService {
         }
 
         User user = userRepository.save(createInvitedUser(invitation.getTargetRole(), request, email));
+        privacyConsentRepository.save(PrivacyConsent.agreed(
+                user,
+                request.privacyPolicyVersion(),
+                sourceIp
+        ));
         invitation.accept(now);
         iamLogService.record(
                 invitation.getInvitedBy().getId(),
@@ -108,5 +124,12 @@ public class SignupService {
 
     private String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void validatePrivacyConsent(SignupRequest request) {
+        if (!request.privacyConsent()
+                || !PrivacyPolicy.CURRENT_VERSION.equals(request.privacyPolicyVersion())) {
+            throw new ApiException(ErrorCode.BAD_REQUEST_PRIVACY_CONSENT_REQUIRED);
+        }
     }
 }

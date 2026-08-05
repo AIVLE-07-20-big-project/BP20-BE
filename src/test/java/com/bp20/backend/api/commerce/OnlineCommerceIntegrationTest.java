@@ -212,7 +212,9 @@ class OnlineCommerceIntegrationTest {
         assertThat(savedCustomer.getPrivateInfo().getPasswordHash()).isNull();
         assertThat(coupon.status()).isEqualTo(CouponStatus.ISSUED);
         assertThat(coupon.customerId()).isEqualTo(customer.id());
-        assertThat(coupon.customerEmail()).isEqualTo("customer@example.com");
+        assertThat(coupon.customerEmail()).isEqualTo(
+                com.bp20.backend.global.util.PersonalDataMasker.email("customer@example.com")
+        );
         assertThat(coupon.discountValue()).isEqualTo(3_000);
         assertThat(customerService.getMine(owner.getId())).singleElement()
                 .extracting(CustomerResponse::id)

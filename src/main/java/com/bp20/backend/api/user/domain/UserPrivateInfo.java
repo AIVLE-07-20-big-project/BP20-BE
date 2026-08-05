@@ -1,6 +1,9 @@
 package com.bp20.backend.api.user.domain;
 
+import com.bp20.backend.global.security.crypto.EncryptedStringConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -33,10 +36,12 @@ public class UserPrivateInfo {
     @Column(length = 255)
     private String passwordHash;
 
-    @Column(nullable = false, length = 50)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, length = 512)
     private String name;
 
-    @Column(length = 30)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(length = 512)
     private String phoneNumber;
 
     private UserPrivateInfo(String email, String passwordHash, String name, String phoneNumber) {
@@ -70,5 +75,9 @@ public class UserPrivateInfo {
 
     public void updatePhoneNumber(String phoneNumber) {
         this.phoneNumber = normalize(phoneNumber);
+    }
+
+    public void updatePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 }
