@@ -43,6 +43,16 @@ ai:
 ocr-service:
   base-url: http://localhost:8000
 
+# ImageStorageConfig가 StorageProperties(product-image-storage.*)를 필수로 주입받는데
+# 이 섹션이 없으면 properties.s3()가 null이 되어 컨텍스트 로딩 시 NPE 발생 (전 테스트 연쇄 실패 원인)
+product-image-storage:
+  local:
+    dir: build/test-uploads/product-images
+    base-url: http://localhost:8080/product-images
+  s3:
+    bucket:
+    region: ap-northeast-2
+
 llm:
   server-url: http://localhost:8001
 

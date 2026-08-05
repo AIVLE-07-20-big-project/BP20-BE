@@ -17,7 +17,10 @@ import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
+import com.bp20.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,7 +28,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -114,38 +119,71 @@ public class ReceiptService {
         return ReceiptResponse.from(receipt);
     }
 
-    @Transactional
-    public ReceiptResponse updateReceipt(Long receiptId, ReceiptUpdateRequest request) {
-        Receipt receipt = receiptRepository.findById(receiptId)
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_RECEIPT));
-        String dedupeKey = buildDedupeKey(
-                request.storeName(), request.transactionDate(), request.transactionTime(), request.totalAmount());
-        receiptRepository.findByDedupeKey(dedupeKey)
-                .filter(existing -> !existing.getId().equals(receiptId))
-                .ifPresent(existing -> {
-                    throw new ApiException(ErrorCode.CONFLICT_DUPLICATE_RECEIPT);
-                });
-
-        receipt.update(request.documentType(), request.storeName(), request.businessNumber(),
-                parseDate(request.transactionDate()), parseTime(request.transactionTime()),
-                request.paymentMethod(), request.category(), request.supplyAmount(), request.vat(),
-                request.taxFreeAmount(), request.totalAmount(), dedupeKey);
-
-        List<ReceiptItemData> itemData = request.items() != null ? request.items() : List.of();
-        List<ReceiptItem> items = new java.util.ArrayList<>();
-        int lineNumber = 1;
-        for (ReceiptItemData item : itemData) {
-            items.add(ReceiptItem.create(lineNumber++, item.itemName(), item.quantity(), item.unit(),
-                    item.unitPrice(), item.totalPrice()));
-        }
-        receipt.replaceItems(items);
-        return ReceiptResponse.from(receipt);
-    }
-
     public List<ReceiptResponse> listReceipts(Long storeId) {
         return receiptRepository.findByStore_IdOrderByTransactionDateDesc(storeId).stream()
                 .map(ReceiptResponse::from)
                 .toList();
+    }
+
+    public PageResponse<ReceiptResponse> listReceipts(Long storeId, int page, int size) {
+        Page<Receipt> result = receiptRepository.findByStore_IdOrderByTransactionDateDesc(
+                storeId, PageRequest.of(page, size));
+        return PageResponse.from(result.map(ReceiptResponse::from));
+    }
+
+    /**
+     * 업로드 내역에서 점주가 직접 수정한다. 날짜/상호명/총액이 바뀌면 dedupeKey도 다시 계산해서
+     * 다른 영수증과 중복되지 않는지 확인한다 (자기 자신과의 비교는 제외).
+     */
+    @Transactional
+    public ReceiptResponse updateReceipt(Long receiptId, ReceiptUpdateRequest request) {
+        Receipt receipt = receiptRepository.findById(receiptId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_RECEIPT));
+
+        String dedupeKey = buildDedupeKey(
+                request.storeName(), request.transactionDate(), request.transactionTime(), request.totalAmount());
+
+        if (!dedupeKey.equals(receipt.getDedupeKey())) {
+            Optional<Receipt> existing = receiptRepository.findByDedupeKey(dedupeKey);
+            if (existing.isPresent() && !existing.get().getId().equals(receiptId)) {
+                throw new ApiException(ErrorCode.CONFLICT_DUPLICATE_RECEIPT);
+            }
+        }
+
+        List<ReceiptItemData> itemData = request.items() != null ? request.items() : List.of();
+        List<ReceiptItem> newItems = new ArrayList<>();
+        int lineNumber = 1;
+        for (ReceiptItemData item : itemData) {
+            newItems.add(ReceiptItem.create(
+                    lineNumber++, item.itemName(), item.quantity(), item.unit(),
+                    item.unitPrice(), item.totalPrice()
+            ));
+        }
+
+        receipt.update(
+                request.documentType(),
+                request.storeName(),
+                request.businessNumber(),
+                parseDate(request.transactionDate()),
+                parseTime(request.transactionTime()),
+                request.paymentMethod(),
+                request.category(),
+                request.supplyAmount(),
+                request.vat(),
+                request.taxFreeAmount(),
+                request.totalAmount(),
+                dedupeKey,
+                newItems
+        );
+
+        return ReceiptResponse.from(receipt);
+    }
+
+    @Transactional
+    public void deleteReceipt(Long receiptId) {
+        Receipt receipt = receiptRepository.findById(receiptId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_RECEIPT));
+        receiptRepository.delete(receipt);
     }
 
     /**
