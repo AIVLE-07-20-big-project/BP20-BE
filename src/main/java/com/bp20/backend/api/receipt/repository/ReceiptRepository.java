@@ -1,6 +1,8 @@
 package com.bp20.backend.api.receipt.repository;
 
 import com.bp20.backend.api.receipt.domain.Receipt;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -17,4 +19,6 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
             Long storeId, LocalDate from, LocalDate to);
 
     List<Receipt> findByStore_IdOrderByTransactionDateDesc(Long storeId);
+
+    Page<Receipt> findByStore_IdOrderByTransactionDateDesc(Long storeId, Pageable pageable);
 }

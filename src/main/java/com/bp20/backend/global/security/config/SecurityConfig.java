@@ -2,6 +2,7 @@ package com.bp20.backend.global.security.config;
 
 import com.bp20.backend.api.auth.session.RefreshTokenProperties;
 import com.bp20.backend.global.security.authorization.Permission;
+import com.bp20.backend.global.security.filter.InternalApiKeyFilter;
 import com.bp20.backend.global.security.filter.JwtAuthenticationFilter;
 import com.bp20.backend.global.security.handler.JsonAccessDeniedHandler;
 import com.bp20.backend.global.security.handler.JsonAuthenticationEntryPoint;
@@ -42,6 +43,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final InternalApiKeyFilter internalApiKeyFilter;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
     private final JsonAccessDeniedHandler accessDeniedHandler;
 
@@ -72,11 +74,15 @@ public class SecurityConfig {
                                 "/api/auth/signup",
                                 "/api/auth/token/refresh",
                                 "/api/auth/logout",
+                                "/api/internal/**",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
+                                // 로컬 디스크에 저장된 상품 이미지 정적 서빙 - <img> 태그는 Authorization 헤더를
+                                // 못 보내므로 공개 접근을 허용한다 (S3를 쓰면 이 경로 자체가 안 쓰인다).
+                                "/product-images/**",
                                 "/api/notices/**"
                         ).permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/iam/invitation/store-owner")
@@ -94,6 +100,7 @@ public class SecurityConfig {
                             .anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(internalApiKeyFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 

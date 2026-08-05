@@ -138,10 +138,19 @@ public class Receipt extends BaseTimeEntity {
         item.assignReceipt(this);
     }
 
+    public void markDuplicateSuspected(String newDedupeKey) {
+        this.status = ReceiptStatus.DUPLICATE_SUSPECTED;
+        this.dedupeKey = newDedupeKey;
+    }
+
+    /**
+     * 점주가 업로드 내역에서 직접 수정할 때 사용한다. items는 orphanRemoval이 걸려있는
+     * 컬렉션이라, 비우고 다시 채우면 Hibernate가 알아서 기존 항목 삭제 + 신규 항목 저장을 처리한다.
+     */
     public void update(String documentType, String vendorName, String businessNumber,
-                       LocalDate transactionDate, LocalTime transactionTime, String paymentMethod,
-                       String category, Integer supplyAmount, Integer vat, Integer taxFreeAmount,
-                       Integer totalAmount, String dedupeKey) {
+                        LocalDate transactionDate, LocalTime transactionTime, String paymentMethod,
+                        String category, Integer supplyAmount, Integer vat, Integer taxFreeAmount,
+                        Integer totalAmount, String dedupeKey, List<ReceiptItem> newItems) {
         this.documentType = documentType;
         this.vendorName = vendorName;
         this.businessNumber = businessNumber;
@@ -154,15 +163,10 @@ public class Receipt extends BaseTimeEntity {
         this.taxFreeAmount = taxFreeAmount == null ? 0 : taxFreeAmount;
         this.totalAmount = totalAmount;
         this.dedupeKey = dedupeKey;
-    }
 
-    public void replaceItems(List<ReceiptItem> newItems) {
         this.items.clear();
-        newItems.forEach(this::addItem);
-    }
-
-    public void markDuplicateSuspected(String newDedupeKey) {
-        this.status = ReceiptStatus.DUPLICATE_SUSPECTED;
-        this.dedupeKey = newDedupeKey;
+        for (ReceiptItem item : newItems) {
+            addItem(item);
+        }
     }
 }

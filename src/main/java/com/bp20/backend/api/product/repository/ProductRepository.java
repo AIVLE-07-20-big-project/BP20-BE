@@ -13,6 +13,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByStoreIdOrderByIdDesc(Long storeId);
 
+    /**
+     * "내 상품"(온라인 판매 관리) 목록용 - CSV로 임포트된 메뉴 행(sourceProductId != null)은
+     * 판매 상품 목록에 섞이면 안 되므로 제외한다.
+     */
+    List<Product> findByStoreIdAndSourceProductIdIsNullOrderByIdDesc(Long storeId);
+
     List<Product> findByStoreIdAndOnlineSalesStatusNotOrderByIdDesc(
             Long storeId,
             OnlineSalesStatus onlineSalesStatus
@@ -23,5 +29,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("productId") Long productId,
             @Param("ownerId") Long ownerId
     );
+
+    Optional<Product> findByStoreIdAndSourceProductId(Long storeId, Long sourceProductId);
+
+    long countByStoreIdAndSourceProductIdIsNotNull(Long storeId);
 
 }

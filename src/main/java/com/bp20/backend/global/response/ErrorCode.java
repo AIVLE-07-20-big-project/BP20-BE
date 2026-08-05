@@ -28,6 +28,7 @@ public enum ErrorCode {
     UNAUTHORIZED_EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     UNAUTHORIZED_TOKEN_EMPTY(HttpStatus.UNAUTHORIZED, "토큰이 비어 있습니다."),
     UNAUTHORIZED_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 올바르지 않습니다."),
+    UNAUTHORIZED_INVALID_INTERNAL_API_KEY(HttpStatus.UNAUTHORIZED, "내부 서비스 인증키가 올바르지 않습니다."),
     UNAUTHORIZED_REFRESH_TOKEN_REQUIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 필요합니다."),
     UNAUTHORIZED_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 올바르지 않습니다."),
     UNAUTHORIZED_EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
@@ -52,6 +53,8 @@ public enum ErrorCode {
     NOT_FOUND_COUPON(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
     NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
+    NOT_FOUND_SALES_TARGET(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟입니다."),
+    NOT_FOUND_SALES_TARGET_BATCH_RUN(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟 배치 실행입니다."),
     NOT_FOUND_NOTICE(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
 
     CONFLICT_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
@@ -62,6 +65,7 @@ public enum ErrorCode {
     CONFLICT_EXPIRED_SIGNUP_INVITATION(HttpStatus.CONFLICT, "회원가입 초대가 만료되었거나 더 이상 유효하지 않습니다."),
     CONFLICT_INVITATION_NOT_REVOCABLE(HttpStatus.CONFLICT, "대기 중인 초대만 취소할 수 있습니다."),
     CONFLICT_DUPLICATE_RECEIPT(HttpStatus.CONFLICT, "동일한 거래로 보이는 영수증이 이미 등록되어 있습니다."),
+    CONFLICT_SALES_TARGET_BATCH_STILL_PENDING(HttpStatus.CONFLICT, "승인 대기 중인 배치는 삭제할 수 없습니다. 먼저 승인하거나 반려해 주세요."),
 
     OCR_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "OCR/분석 서비스와 통신할 수 없습니다."),
     PRODUCT_IMAGE_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "AI 상품 이미지 생성 서비스와 통신할 수 없습니다."),

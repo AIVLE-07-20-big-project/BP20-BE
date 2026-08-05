@@ -69,7 +69,7 @@ public class ProductImageServiceClient {
      * 상품 사진 + 메뉴명을 Python 서비스로 보내, 배경이 합성된 이미지를 바이트 배열로 받는다.
      * OpenAI API 응답 대기 시간(수 초~수십 초)이 포함되므로 타임아웃에 유의할 것.
      */
-    public byte[] generateProductImage(MultipartFile file, String category) {
+    public byte[] generateProductImage(MultipartFile file, String category, String prompt) {
         try {
             ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
                 @Override
@@ -78,8 +78,6 @@ public class ProductImageServiceClient {
                 }
             };
 
-            // 파일 파트에 Content-Type을 명시적으로 지정해야 FastAPI가 정상적인
-            // UploadFile 파트로 인식한다 (안 붙이면 파트 자체를 인식 못 해 422가 날 수 있음).
             HttpHeaders fileHeaders = new HttpHeaders();
             MediaType fileContentType = file.getContentType() != null
                     ? MediaType.parseMediaType(file.getContentType())
@@ -90,6 +88,9 @@ public class ProductImageServiceClient {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", filePart);
             body.add("category", category);
+            if (prompt != null && !prompt.isBlank()) {
+                body.add("prompt", prompt);
+            }
 
             return productImageRestClient.post()
                     .uri("/api/v1/product-images/generate")
@@ -101,12 +102,10 @@ public class ProductImageServiceClient {
         } catch (IOException e) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_INPUT, e);
         } catch (RestClientResponseException e) {
-            // Python 서비스가 4xx(잘못된 카테고리 등)/5xx(OpenAI 오류 등)를 응답한 경우
             log.error("[ProductImageServiceClient] 상품 이미지 생성 실패 - status={}, body={}",
                     e.getStatusCode(), e.getResponseBodyAsString());
             throw new ApiException(ErrorCode.PRODUCT_IMAGE_SERVICE_UNAVAILABLE, e);
         } catch (RestClientException e) {
-            // 연결 자체가 안 된 경우 (Python 서비스 다운 등)
             log.error("[ProductImageServiceClient] 상품 이미지 생성 요청 실패 (연결 불가)", e);
             throw new ApiException(ErrorCode.PRODUCT_IMAGE_SERVICE_UNAVAILABLE, e);
         }
