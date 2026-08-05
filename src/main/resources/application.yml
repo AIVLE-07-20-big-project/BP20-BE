@@ -113,6 +113,17 @@ app:
     expiration-seconds: ${JWT_EXPIRATION_SECONDS}
     admin-expiration-seconds: ${JWT_ADMIN_EXPIRATION_SECONDS}
   auth:
+    account-security:
+      password-max-age-days: ${PASSWORD_MAX_AGE_DAYS:90}
+      max-failed-login-attempts: ${MAX_FAILED_LOGIN_ATTEMPTS:5}
+      account-lock-minutes: ${ACCOUNT_LOCK_MINUTES:15}
+    captcha:
+      enabled: ${CAPTCHA_ENABLED:false}
+      secret-key: ${CAPTCHA_SECRET_KEY:}
+      verify-url: ${CAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+      minimum-score: ${CAPTCHA_MIN_SCORE:0.5}
+      expected-action: ${CAPTCHA_EXPECTED_ACTION:login}
+      allowed-hostnames: ${CAPTCHA_ALLOWED_HOSTNAMES:}
     refresh-token:
       store: ${REFRESH_TOKEN_STORE:redis}
       expiration-seconds: ${REFRESH_TOKEN_EXPIRATION_SECONDS:604800}
@@ -126,3 +137,6 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
   fastapi:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+  security:
+    personal-data:
+      encryption-key: ${PERSONAL_DATA_ENCRYPTION_KEY:${JWT_SECRET}}

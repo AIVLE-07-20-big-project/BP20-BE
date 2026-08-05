@@ -9,6 +9,8 @@ import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
+import com.bp20.backend.global.security.account.AccountSecurityProperties;
+import com.bp20.backend.global.security.captcha.CaptchaVerificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -25,18 +28,38 @@ public class LoginService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
+    private final AccountSecurityProperties accountSecurityProperties;
+    private final CaptchaVerificationService captchaVerificationService;
 
-    @Transactional(readOnly = true)
-    public AuthenticatedSession<LoginResponse> login(LoginRequest request) {
+    @Transactional(noRollbackFor = ApiException.class)
+    public AuthenticatedSession<LoginResponse> login(LoginRequest request, String sourceIp) {
+        captchaVerificationService.verify(request.captchaToken(), sourceIp);
         String email = normalizeEmail(request.email());
+        LocalDateTime now = LocalDateTime.now();
+        User user = userRepository.findByEmailForAuthentication(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED_INVALID_CREDENTIALS));
+
+        if (user.isTemporarilyLocked(now)) {
+            throw new ApiException(ErrorCode.LOCKED_LOGIN_ACCOUNT);
+        }
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
         } catch (AuthenticationException e) {
+            user.registerFailedLogin(
+                    accountSecurityProperties.maxFailedLoginAttempts(),
+                    accountSecurityProperties.accountLockDuration(),
+                    now
+            );
+            if (user.isTemporarilyLocked(now)) {
+                throw new ApiException(ErrorCode.LOCKED_LOGIN_ACCOUNT);
+            }
             throw new ApiException(ErrorCode.UNAUTHORIZED_INVALID_CREDENTIALS);
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED_INVALID_CREDENTIALS));
+        user.loginSucceeded();
+        if (user.isPasswordExpired(now, accountSecurityProperties.passwordMaxAge())) {
+            throw new ApiException(ErrorCode.FORBIDDEN_PASSWORD_EXPIRED);
+        }
 
         RefreshTokenService.TokenPair tokenPair =
                 refreshTokenService.issue(user, request.rememberMe());
@@ -44,6 +67,10 @@ public class LoginService {
                 LoginResponse.of(tokenPair.accessToken(), user),
                 tokenPair
         );
+    }
+
+    public AuthenticatedSession<LoginResponse> login(LoginRequest request) {
+        return login(request, null);
     }
 
     @Transactional(readOnly = true)

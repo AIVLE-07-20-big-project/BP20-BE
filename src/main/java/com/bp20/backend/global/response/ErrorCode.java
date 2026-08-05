@@ -18,6 +18,9 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "온라인 상품 등록 또는 해제 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_DISCOUNT(HttpStatus.BAD_REQUEST, "할인 설정이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_COUPON(HttpStatus.BAD_REQUEST, "쿠폰 발급 또는 상태 변경 요청이 올바르지 않습니다."),
+    BAD_REQUEST_PRIVACY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "필수 개인정보 수집 및 이용 동의가 필요합니다."),
+    BAD_REQUEST_CAPTCHA_REQUIRED(HttpStatus.BAD_REQUEST, "자동입력 방지 확인이 필요합니다."),
+    BAD_REQUEST_INVALID_CAPTCHA(HttpStatus.BAD_REQUEST, "자동입력 방지 확인에 실패했습니다. 다시 시도해 주세요."),
 
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     UNAUTHORIZED_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
@@ -34,6 +37,9 @@ public enum ErrorCode {
     FORBIDDEN_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "관리자 권한이 필요합니다."),
     FORBIDDEN_SUPER_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "최상위 관리자 권한이 필요합니다."),
     FORBIDDEN_STORE_OWNER_REQUIRED(HttpStatus.FORBIDDEN, "점주 권한이 필요합니다."),
+    FORBIDDEN_PASSWORD_EXPIRED(HttpStatus.FORBIDDEN, "비밀번호 사용 기간이 만료되었습니다. 관리자에게 재설정을 요청해 주세요."),
+
+    LOCKED_LOGIN_ACCOUNT(HttpStatus.LOCKED, "로그인 실패 횟수를 초과해 계정이 일시적으로 잠겼습니다."),
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     NOT_FOUND_INVITATION(HttpStatus.NOT_FOUND, "초대를 찾을 수 없습니다."),
@@ -59,6 +65,7 @@ public enum ErrorCode {
 
     OCR_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "OCR/분석 서비스와 통신할 수 없습니다."),
     PRODUCT_IMAGE_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "AI 상품 이미지 생성 서비스와 통신할 수 없습니다."),
+    SERVICE_UNAVAILABLE_CAPTCHA(HttpStatus.SERVICE_UNAVAILABLE, "자동입력 방지 확인 서비스를 사용할 수 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
