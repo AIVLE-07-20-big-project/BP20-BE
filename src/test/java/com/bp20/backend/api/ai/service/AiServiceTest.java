@@ -221,18 +221,18 @@ class AiServiceTest {
                 "thread_id", "thread-1",
                 "상태", "완료",
                 "scm_result", Map.of("counterfactual", "x"),
-                "ope_result", Map.of("score", 0.9),
+                "candidate_safety", Map.of("브랜드 SNS 캠페인", Map.of("passed", true)),
                 "대기중_승인", Map.of("방안_후보", java.util.List.of())
         );
         when(client.getAgentRun("thread-1", 7L)).thenReturn(full);
 
         Map<String, Object> result = service.getAgentRun(7L, "thread-1");
 
-        assertThat(result).doesNotContainKeys("scm_result", "ope_result");
-        assertThat(result).containsKey("대기중_승인");
+        assertThat(result).doesNotContainKey("candidate_safety");
+        assertThat(result).containsKeys("scm_result", "대기중_승인");
         assertThat(result.get("상태")).isEqualTo("완료");
         verify(runRepository).save(argThat((AiRecommendationRun saved) ->
-                saved.getResultJson().contains("scm_result")));
+                saved.getResultJson().contains("candidate_safety")));
     }
 
     @Test
@@ -241,13 +241,13 @@ class AiServiceTest {
                 "thread-2",
                 AiAnalysis.create("analysis-2", user, store, "1", "A", 20261, "{}"),
                 user,
-                "{\"상태\":\"완료\",\"scm_result\":{\"counterfactual\":\"x\"}}"
+                "{\"상태\":\"완료\",\"candidate_safety\":{\"pass\":true}}"
         );
         when(runRepository.findByThreadIdAndUser_Id("thread-2", 7L)).thenReturn(Optional.of(run));
 
         Map<String, Object> result = service.getAgentRunDetail(7L, "thread-2");
 
-        assertThat(result).containsKey("scm_result");
+        assertThat(result).containsKey("candidate_safety");
     }
 
     @Test
