@@ -1,11 +1,11 @@
 package com.bp20.backend.api.order.service;
 
-import com.bp20.backend.api.order.domain.MenuItem;
 import com.bp20.backend.api.order.domain.Order;
 import com.bp20.backend.api.order.domain.OrderItem;
-import com.bp20.backend.api.order.repository.MenuItemRepository;
 import com.bp20.backend.api.order.repository.OrderItemRepository;
 import com.bp20.backend.api.order.repository.OrderRepository;
+import com.bp20.backend.api.product.domain.Product;
+import com.bp20.backend.api.product.repository.ProductRepository;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.global.exception.ApiException;
@@ -30,29 +30,41 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 매출(Order/OrderItem)·메뉴(MenuItem) CSV를 로그인한 점주 기준으로 업로드한다.
+ * 매출(Order/OrderItem)·메뉴(Product) CSV를 로그인한 점주 기준으로 업로드한다.
  *
  * 기존 api/csv 패키지의 CsvDataService는 발주 추천(AI 재고 예측) 학습용 CSV를 다루고,
  * 이 서비스가 저장하는 데이터는 그것과 완전히 별개로 AI 가계부 리포트(ReceiptAnalyticsService)가
  * 실제로 조회하는 "정식" 매출 데이터다. CSV 파싱 방식(Apache Commons CSV + BOM 처리)만 동일하게 맞췄다.
+ *
+ * PR #35 리뷰 코멘트 반영: 메뉴는 더 이상 별도 MenuItem 엔티티가 아니라 Product를 그대로 쓴다.
+ * OrderItem이 Product를 FK로 참조하므로, 재업로드 시 기존 MenuItem처럼 전체 삭제 후 재삽입하면
+ * 안 되고(참조 중인 OrderItem이 끊어짐) (store, sourceProductId) 기준으로 upsert한다.
  */
 @Service
 @RequiredArgsConstructor
 public class OrderCsvImportService {
 
     private final StoreRepository storeRepository;
-    private final MenuItemRepository menuItemRepository;
+    private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
     /**
      * cafe_products.csv (ProductID,StoreID,ProductName,Category,Price,DiscountRate) 업로드.
      * CSV의 StoreID 컬럼은 신뢰하지 않고, 항상 로그인한 점주의 매장으로 귀속시킨다.
+     * DiscountRate 컬럼은 더 이상 Product에 저장하지 않는다 - 할인이 필요하면 Discount
+     * 테이블에 별도로 등록한다(PR #35 리뷰 코멘트).
      */
     @Transactional
     public int loadMenuItems(Long ownerId, MultipartFile file) {
         Store store = requireOwnedStore(ownerId);
-        List<MenuItem> result = new ArrayList<>();
+        Map<Long, Product> existingBySourceId = productRepository.findByStoreIdOrderByIdDesc(store.getId())
+                .stream()
+                .filter(product -> product.getSourceProductId() != null)
+                .collect(Collectors.toMap(Product::getSourceProductId, product -> product, (a, b) -> a));
+
+        List<Product> created = new ArrayList<>();
+        int updatedCount = 0;
 
         try (
                 BufferedReader reader = createReader(file);
@@ -61,20 +73,22 @@ public class OrderCsvImportService {
             validateHeaders(parser, "ProductID", "ProductName", "Price");
 
             for (CSVRecord record : parser) {
-                result.add(MenuItem.create(
-                        store,
-                        parseLong(record, "ProductID"),
-                        record.get("ProductName").trim(),
-                        getNullable(record, "Category"),
-                        parseLong(record, "Price"),
-                        (int) getLongOrDefault(record, "DiscountRate", 0)
-                ));
+                Long sourceProductId = parseLong(record, "ProductID");
+                String name = record.get("ProductName").trim();
+                String category = getNullable(record, "Category");
+                long price = parseLong(record, "Price");
+
+                Product existing = existingBySourceId.get(sourceProductId);
+                if (existing != null) {
+                    existing.updateFromCsv(name, category, price);
+                    updatedCount++;
+                } else {
+                    created.add(Product.createFromCsv(store, sourceProductId, name, category, price));
+                }
             }
 
-            menuItemRepository.deleteAllByStoreId(store.getId());
-            menuItemRepository.flush();
-            menuItemRepository.saveAll(result);
-            return result.size();
+            productRepository.saveAll(created);
+            return created.size() + updatedCount;
 
         } catch (ApiException e) {
             throw e;
@@ -127,18 +141,24 @@ public class OrderCsvImportService {
 
     /**
      * cafe_sales_order_items.csv (OrderItemID,OrderID,ProductID,ProductName,Quantity,UnitPrice,TotalPrice) 업로드.
-     * 반드시 loadOrders()로 주문을 먼저 올린 뒤 호출해야 한다 (OrderID로 이미 저장된 주문을 찾아 연결한다).
+     * 반드시 loadOrders()와 loadMenuItems()를 먼저 올린 뒤 호출해야 한다 (OrderID로 이미 저장된
+     * 주문을, ProductID로 이미 저장된 상품을 찾아 연결한다 - 이제 Product FK가 필수라 메뉴 CSV가
+     * order-items보다 먼저 있어야 한다).
      */
     @Transactional
     public int loadOrderItems(Long ownerId, MultipartFile file) {
         Store store = requireOwnedStore(ownerId);
         List<OrderItem> result = new ArrayList<>();
 
-        // CSV 한 줄마다 DB에서 주문을 찾으면 수만 건 규모에서 매우 느려진다(N+1 쿼리).
-        // 매장의 주문을 한 번에 전부 불러와 메모리에서 sourceOrderId로 찾도록 한다.
+        // CSV 한 줄마다 DB에서 주문/상품을 찾으면 수만 건 규모에서 매우 느려진다(N+1 쿼리).
+        // 매장의 주문/상품을 한 번에 전부 불러와 메모리에서 source id로 찾도록 한다.
         Map<Long, Order> ordersBySourceId = orderRepository.findByStoreIdOrderByOrderedDateDesc(store.getId())
                 .stream()
                 .collect(Collectors.toMap(Order::getSourceOrderId, order -> order, (a, b) -> a));
+        Map<Long, Product> productsBySourceId = productRepository.findByStoreIdOrderByIdDesc(store.getId())
+                .stream()
+                .filter(product -> product.getSourceProductId() != null)
+                .collect(Collectors.toMap(Product::getSourceProductId, product -> product, (a, b) -> a));
 
         try (
                 BufferedReader reader = createReader(file);
@@ -159,10 +179,21 @@ public class OrderCsvImportService {
                     );
                 }
 
+                long sourceProductId = parseLong(record, "ProductID");
+                Product product = productsBySourceId.get(sourceProductId);
+                if (product == null) {
+                    throw new ApiException(
+                            ErrorCode.BAD_REQUEST_INVALID_INPUT,
+                            new IllegalArgumentException(
+                                    "주문상세 CSV의 ProductID(" + sourceProductId + ")에 해당하는 상품이 없습니다. "
+                                            + "메뉴(cafe_products.csv)를 먼저 업로드해주세요."
+                            )
+                    );
+                }
+
                 result.add(OrderItem.create(
                         order,
-                        parseLong(record, "ProductID"),
-                        record.get("ProductName").trim(),
+                        product,
                         (int) parseLong(record, "Quantity"),
                         parseLong(record, "UnitPrice"),
                         parseLong(record, "TotalPrice")
@@ -185,7 +216,7 @@ public class OrderCsvImportService {
     public Map<String, Long> getStatus(Long ownerId) {
         Store store = requireOwnedStore(ownerId);
         return Map.of(
-                "menuItemCount", menuItemRepository.countByStoreId(store.getId()),
+                "menuItemCount", productRepository.countByStoreIdAndSourceProductIdIsNotNull(store.getId()),
                 "orderCount", orderRepository.countByStoreId(store.getId()),
                 "orderItemCount", orderItemRepository.countByOrder_Store_Id(store.getId())
         );

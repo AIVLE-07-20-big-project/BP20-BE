@@ -1,5 +1,6 @@
 package com.bp20.backend.api.order.domain;
 
+import com.bp20.backend.api.product.domain.Product;
 import com.bp20.backend.global.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,8 +19,10 @@ import lombok.NoArgsConstructor;
 /**
  * 주문(Order) 1건에 속한 품목 1줄. 현재 AI 가계부 리포트 계산 자체에는 쓰이지 않지만
  * (매출 합계는 Order.totalAmount만 사용), 향후 메뉴별 판매량 분석 등에 대비해 같이 저장한다.
- * MenuItem과 엄격한 FK 제약은 걸지 않는다 - 주문상세 CSV를 메뉴 CSV보다 먼저 올려도
- * 깨지지 않게 하기 위함이며, sourceProductId/productName은 참고용으로만 보관한다.
+ *
+ * PR #35 리뷰 코멘트 반영: product FK로 상품을 직접 참조한다(이전에는 productName 문자열만
+ * 보관). 주문상세 CSV는 반드시 메뉴(Product) CSV를 먼저 올린 뒤 업로드해야 하며,
+ * OrderCsvImportService.loadOrderItems()가 sourceProductId로 Product를 찾아 연결한다.
  */
 @Getter
 @Entity
@@ -39,11 +42,9 @@ public class OrderItem extends BaseTimeEntity {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "source_product_id", nullable = false)
-    private Long sourceProductId;
-
-    @Column(name = "product_name", nullable = false, length = 100)
-    private String productName;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     @Column(nullable = false)
     private int quantity;
@@ -56,15 +57,13 @@ public class OrderItem extends BaseTimeEntity {
 
     private OrderItem(
             Order order,
-            Long sourceProductId,
-            String productName,
+            Product product,
             int quantity,
             long unitPrice,
             long totalPrice
     ) {
         this.order = order;
-        this.sourceProductId = sourceProductId;
-        this.productName = productName;
+        this.product = product;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.totalPrice = totalPrice;
@@ -72,12 +71,11 @@ public class OrderItem extends BaseTimeEntity {
 
     public static OrderItem create(
             Order order,
-            Long sourceProductId,
-            String productName,
+            Product product,
             int quantity,
             long unitPrice,
             long totalPrice
     ) {
-        return new OrderItem(order, sourceProductId, productName, quantity, unitPrice, totalPrice);
+        return new OrderItem(order, product, quantity, unitPrice, totalPrice);
     }
 }

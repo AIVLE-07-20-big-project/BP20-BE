@@ -42,7 +42,8 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponse> getMine(Long ownerId) {
         Store store = requireOwnedStore(ownerId);
-        return productRepository.findByStoreIdOrderByIdDesc(store.getId()).stream()
+        // CSV로 임포트된 메뉴 행은 판매 상품 목록에 노출하지 않는다 (Product.sourceProductId 주석 참고).
+        return productRepository.findByStoreIdAndSourceProductIdIsNullOrderByIdDesc(store.getId()).stream()
                 .map(ProductResponse::from)
                 .toList();
     }
