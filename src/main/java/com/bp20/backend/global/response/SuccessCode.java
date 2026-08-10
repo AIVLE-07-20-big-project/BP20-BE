@@ -22,6 +22,7 @@ public enum SuccessCode {
     SUCCESS_INVITATION_GET(HttpStatus.OK, "초대 목록을 조회했습니다."),
     SUCCESS_INVITATION_REVOKE(HttpStatus.OK, "초대를 취소했습니다."),
     SUCCESS_IAM_LOG_GET(HttpStatus.OK, "IAM 로그를 조회했습니다."),
+    SUCCESS_PERSONAL_DATA_REVEAL(HttpStatus.OK, "재인증 후 개인정보 원문을 조회했습니다."),
     SUCCESS_NOTICE_CREATE(HttpStatus.CREATED, "공지를 작성했습니다."),
     SUCCESS_NOTICE_GET(HttpStatus.OK, "공지 목록을 조회했습니다."),
     SUCCESS_NOTICE_UPDATE(HttpStatus.OK, "공지를 수정했습니다."),
