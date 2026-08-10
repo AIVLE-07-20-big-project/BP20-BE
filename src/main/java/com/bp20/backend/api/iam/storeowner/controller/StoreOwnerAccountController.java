@@ -2,6 +2,8 @@ package com.bp20.backend.api.iam.storeowner.controller;
 
 import com.bp20.backend.api.iam.storeowner.dto.request.ChangeStoreOwnerStatusRequest;
 import com.bp20.backend.api.iam.storeowner.dto.response.StoreOwnerAccountResponse;
+import com.bp20.backend.api.iam.storeowner.dto.response.StoreOwnerPersonalDataResponse;
+import com.bp20.backend.api.iam.dto.request.ReauthenticationRequest;
 import com.bp20.backend.api.iam.storeowner.service.StoreOwnerAccountService;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.response.SuccessCode;
@@ -16,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -75,6 +78,25 @@ public class StoreOwnerAccountController {
                         storeOwnerId,
                         request.currentPassword(),
                         servletRequest.getRemoteAddr()
+                )
+        );
+    }
+
+    @PostMapping("/{storeOwnerId}/personal-data/reveal")
+    @Operation(
+            summary = "점주 개인정보 원문 일시 조회",
+            description = "현재 비밀번호로 재인증한 뒤 점주 개인정보 원문을 60초간 표시할 수 있도록 반환하며 IAM 로그를 기록합니다."
+    )
+    public ResponseEntity<ApiResponse<StoreOwnerPersonalDataResponse>> revealPersonalData(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable Long storeOwnerId,
+            @Valid @RequestBody ReauthenticationRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.successNoStore(
+                SuccessCode.SUCCESS_PERSONAL_DATA_REVEAL,
+                storeOwnerAccountService.revealPersonalData(
+                        currentUser.id(), storeOwnerId, request.currentPassword(), servletRequest.getRemoteAddr()
                 )
         );
     }

@@ -3,6 +3,7 @@ package com.bp20.backend.global.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 
 @Builder
@@ -32,6 +33,18 @@ public class ApiResponse<T> {
                 .data(data)
                 .build();
         return ResponseEntity.status(status.getStatusCode()).body(response);
+    }
+
+    public static <T> ResponseEntity<ApiResponse<T>> successNoStore(SuccessCode status, T data) {
+        ApiResponse<T> response = ApiResponse.<T>builder()
+                .status(status.getStatusCode())
+                .success(true)
+                .message(status.getMessage())
+                .data(data)
+                .build();
+        return ResponseEntity.status(status.getStatusCode())
+                .cacheControl(CacheControl.noStore())
+                .body(response);
     }
 
     /**

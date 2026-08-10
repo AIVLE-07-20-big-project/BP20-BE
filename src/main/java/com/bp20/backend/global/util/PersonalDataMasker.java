@@ -39,6 +39,17 @@ public final class PersonalDataMasker {
                 + normalized.substring(normalized.length() - 4);
     }
 
+    public static String businessNumber(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        String normalized = value.replaceAll("[^0-9]", "");
+        if (normalized.length() != 10) {
+            return "***-**-*****";
+        }
+        return normalized.substring(0, 3) + "-**-*****";
+    }
+
     public static String ipAddress(String value) {
         if (value == null || value.isBlank()) {
             return value;
