@@ -11,6 +11,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ReviewAnalysisRepository extends JpaRepository<ReviewAnalysis, Long> {
+
+    List<ReviewAnalysis> findByReview_Store_IdAndReview_ReviewedDateGreaterThanEqualAndReview_ReviewedDateLessThan(
+            Long storeId,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    );
     
     @Query("SELECT new com.bp20.backend.api.review.dto.AspectScoreDto(" +
            "  ra.aspect, " +

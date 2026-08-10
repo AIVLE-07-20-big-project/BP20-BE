@@ -3,6 +3,7 @@ package com.bp20.backend.api.store.service;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.dto.request.CreateStoreRequest;
 import com.bp20.backend.api.store.dto.request.UpdateStoreRequest;
+import com.bp20.backend.api.store.dto.response.InnerStoreResponseDto;
 import com.bp20.backend.api.store.dto.response.StoreResponse;
 import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.api.user.domain.User;
@@ -72,6 +73,13 @@ public class StoreService {
     private Store requireOwnedStore(Long ownerId) {
         return storeRepository.findByOwnerId(ownerId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+    }
+
+    @Transactional(readOnly = true)
+    public InnerStoreResponseDto getStoreContext(Long storeId) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+        return InnerStoreResponseDto.from(store);
     }
 
     private String normalizeBusinessNumber(String businessNumber) {

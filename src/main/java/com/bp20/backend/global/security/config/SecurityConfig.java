@@ -2,6 +2,7 @@ package com.bp20.backend.global.security.config;
 
 import com.bp20.backend.api.auth.session.RefreshTokenProperties;
 import com.bp20.backend.global.security.authorization.Permission;
+import com.bp20.backend.global.security.filter.InternalApiKeyFilter;
 import com.bp20.backend.global.security.filter.JwtAuthenticationFilter;
 import com.bp20.backend.global.security.handler.JsonAccessDeniedHandler;
 import com.bp20.backend.global.security.handler.JsonAuthenticationEntryPoint;
@@ -33,6 +34,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final InternalApiKeyFilter internalApiKeyFilter;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
     private final JsonAccessDeniedHandler accessDeniedHandler;
 
@@ -63,6 +65,7 @@ public class SecurityConfig {
                                 "/api/auth/signup",
                                 "/api/auth/token/refresh",
                                 "/api/auth/logout",
+                                "/api/internal/**",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/swagger-ui.html",
@@ -85,6 +88,7 @@ public class SecurityConfig {
                             .anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(internalApiKeyFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 

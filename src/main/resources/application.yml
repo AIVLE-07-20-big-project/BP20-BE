@@ -99,6 +99,12 @@ effect-verification:
     zone: ${EFFECT_VERIFICATION_SCHEDULER_ZONE:Asia/Seoul}
     max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}
 
+review-analysis:
+  scheduler:
+    enabled: ${REVIEW_ANALYSIS_SCHEDULER_ENABLED:true}
+    fixed-delay-ms: ${REVIEW_ANALYSIS_SCHEDULER_FIXED_DELAY_MS:60000}
+    initial-delay-ms: ${REVIEW_ANALYSIS_SCHEDULER_INITIAL_DELAY_MS:60000}
+
 # 영수증 OCR 및 원가 분석 서비스
 ocr-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
@@ -106,6 +112,10 @@ ocr-service:
 # AI 상품 이미지 생성 서비스 연동 설정
 product-image-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+
+# AI 서버 -> BE 내부 API 인증키
+internal-api:
+  key: ${INTERNAL_API_KEY}
 
 app:
   jwt:
