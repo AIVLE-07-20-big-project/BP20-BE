@@ -1,6 +1,8 @@
 package com.bp20.backend.api.receipt.client;
 
 import com.bp20.backend.api.budget.domain.Budget;
+import com.bp20.backend.api.order.domain.Order;
+import com.bp20.backend.api.product.domain.Product;
 import com.bp20.backend.api.receipt.domain.Receipt;
 import com.bp20.backend.api.receipt.domain.ReceiptItem;
 import com.bp20.backend.api.receipt.dto.response.BudgetOverageResponse;
@@ -26,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 영수증 OCR + 가계부/원가분석 Python 마이크로서비스 호출 클라이언트.
@@ -161,20 +164,31 @@ public class OcrServiceClient {
     /**
      * 통합 HTML 리포트(경영 장부) 생성. 월간/연간/총기간 중 선택.
      *
-     * ⚠️ Product/Order 엔티티가 아직 이 백엔드에 없어서, 매출·원가율 관련 부분은
-     * 빈 데이터로 채워 보낸다. Python 쪽에서 이 경우를 정상 처리하도록 이미 보강해뒀다
-     * (매출 0원으로 표시, 원가율 섹션은 빈 테이블로 표시 - 에러 없이 정상 동작).
-     * 나중에 Order/Product 엔티티가 추가되면 이 메서드의 orders/products 인자를 채워주면 된다.
+     * products/orders는 각각 ProductRepository/OrderRepository에서 매장 기준으로 조회한 값을
+     * 그대로 받아 Python 쪽이 기대하는 camelCase 필드(productId, orderedDate 등)로 변환해 보낸다.
+     * discountRatesByProductId는 ReceiptAnalyticsService가 DiscountRepository로 조회한 "상품별
+     * 현재 활성 할인율"(PR #35 리뷰 코멘트 - 예전 MenuItem.discountRate 대체)이며, 값이 없는
+     * 상품은 0%로 취급한다. 두 값이 비어 있으면(아직 CSV를 업로드하지 않은 매장) Python 쪽에서
+     * 매출 0원/빈 원가율 테이블로 안전하게 처리한다 - 그 방어 로직은 그대로 유지된다.
      */
     public String getReport(List<Receipt> receipts, List<Budget> budgets, List<ReceiptItem> items,
+                             List<Product> products, List<Order> orders,
+                             Map<Long, Integer> discountRatesByProductId,
                              String storeName, String reportType, Integer year, Integer month) {
         List<ReceiptPayload> receiptPayload = receipts.stream().map(ReceiptPayload::from).toList();
         List<BudgetPayload> budgetPayload = budgets.stream().map(BudgetPayload::from).toList();
         List<ReceiptItemPayload> itemPayload = items.stream().map(ReceiptItemPayload::from).toList();
+        List<ProductPayload> productPayload = products.stream()
+                .map(product -> ProductPayload.from(
+                        product,
+                        discountRatesByProductId.getOrDefault(product.getId(), 0)
+                ))
+                .toList();
+        List<OrderPayload> orderPayload = orders.stream().map(OrderPayload::from).toList();
 
         ReportRequest request = new ReportRequest(
                 receiptPayload, budgetPayload, itemPayload,
-                List.of(), List.of(),  // products, orders - 아직 미구현 (위 설명 참고)
+                productPayload, orderPayload,
                 storeName, reportType, year, month
         );
 
@@ -203,7 +217,7 @@ public class OcrServiceClient {
     }
 
     private record ReportRequest(List<ReceiptPayload> receipts, List<BudgetPayload> budgets,
-                                  List<ReceiptItemPayload> items, List<Object> products, List<Object> orders,
+                                  List<ReceiptItemPayload> items, List<ProductPayload> products, List<OrderPayload> orders,
                                   String storeName, String reportType, Integer year, Integer month) {
     }
 }

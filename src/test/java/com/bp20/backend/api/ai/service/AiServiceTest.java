@@ -4,6 +4,7 @@ import com.bp20.backend.api.ai.client.FastApiClient;
 import com.bp20.backend.api.ai.domain.AiAnalysis;
 import com.bp20.backend.api.ai.domain.AiRecommendationRun;
 import com.bp20.backend.api.ai.domain.AiStoreProfile;
+import com.bp20.backend.api.ai.dto.request.AgentRunResumeRequest;
 import com.bp20.backend.api.ai.repository.AiAnalysisRepository;
 import com.bp20.backend.api.ai.repository.AiRecommendationRunRepository;
 import com.bp20.backend.api.ai.repository.AiStoreProfileRepository;
@@ -205,5 +206,74 @@ class AiServiceTest {
 
         assertThat(result).hasSize(1);
         verify(runRepository).findAllByUser_IdOrderByCreatedAtDesc(7L);
+    }
+
+    @Test
+    void getAgentRunHidesHeavyFieldsButPersistsFullResult() {
+        AiRecommendationRun run = AiRecommendationRun.create(
+                "thread-1",
+                AiAnalysis.create("analysis-1", user, store, "1", "A", 20261, "{}"),
+                user,
+                "{}"
+        );
+        when(runRepository.findByThreadIdAndUser_Id("thread-1", 7L)).thenReturn(Optional.of(run));
+        Map<String, Object> full = Map.of(
+                "thread_id", "thread-1",
+                "상태", "완료",
+                "scm_result", Map.of("counterfactual", "x"),
+                "candidate_safety", Map.of("브랜드 SNS 캠페인", Map.of("passed", true)),
+                "대기중_승인", Map.of("방안_후보", java.util.List.of())
+        );
+        when(client.getAgentRun("thread-1", 7L)).thenReturn(full);
+
+        Map<String, Object> result = service.getAgentRun(7L, "thread-1");
+
+        assertThat(result).doesNotContainKey("candidate_safety");
+        assertThat(result).containsKeys("scm_result", "대기중_승인");
+        assertThat(result.get("상태")).isEqualTo("완료");
+        verify(runRepository).save(argThat((AiRecommendationRun saved) ->
+                saved.getResultJson().contains("candidate_safety")));
+    }
+
+    @Test
+    void getAgentRunDetailReturnsFullStoredResultIncludingHeavyFields() {
+        AiRecommendationRun run = AiRecommendationRun.create(
+                "thread-2",
+                AiAnalysis.create("analysis-2", user, store, "1", "A", 20261, "{}"),
+                user,
+                "{\"상태\":\"완료\",\"candidate_safety\":{\"pass\":true}}"
+        );
+        when(runRepository.findByThreadIdAndUser_Id("thread-2", 7L)).thenReturn(Optional.of(run));
+
+        Map<String, Object> result = service.getAgentRunDetail(7L, "thread-2");
+
+        assertThat(result).containsKey("candidate_safety");
+    }
+
+    @Test
+    void resumeAgentRunHidesHeavyFieldsButPersistsFullResult() {
+        AiRecommendationRun run = AiRecommendationRun.create(
+                "thread-3",
+                AiAnalysis.create("analysis-3", user, store, "1", "A", 20261, "{}"),
+                user,
+                "{}"
+        );
+        when(runRepository.findByThreadIdAndUser_Id("thread-3", 7L)).thenReturn(Optional.of(run));
+        Map<String, Object> full = Map.of(
+                "thread_id", "thread-3",
+                "상태", "완료",
+                "shadow_report", Map.of("policy", "shadow")
+        );
+        when(client.resumeAgentRun(org.mockito.ArgumentMatchers.eq("thread-3"),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(7L)))
+                .thenReturn(full);
+        AgentRunResumeRequest request =
+                new AgentRunResumeRequest(AgentRunResumeRequest.Decision.reject, "사유");
+
+        Map<String, Object> result = service.resumeAgentRun(7L, "thread-3", request);
+
+        assertThat(result).doesNotContainKey("shadow_report");
+        verify(runRepository).save(argThat((AiRecommendationRun saved) ->
+                saved.getResultJson().contains("shadow_report")));
     }
 }

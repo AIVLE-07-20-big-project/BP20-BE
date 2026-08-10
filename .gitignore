@@ -52,6 +52,11 @@ ocr_service/
 cafe_synthetic_data/
 
 import_csv_to_backend.py
+fix_hero_store_encoding.sql
+seed_hero_store_test_data.sql
 
 ### Local development docs ###
 /docs/
+
+### 로컬 디스크 저장 모드 상품 이미지 (생성물, 커밋 대상 아님) ###
+/uploads/
