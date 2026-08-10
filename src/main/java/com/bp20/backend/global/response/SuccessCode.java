@@ -36,6 +36,19 @@ public enum SuccessCode {
     SUCCESS_STORE_CREATE(HttpStatus.CREATED, "매장을 생성했습니다."),
     SUCCESS_STORE_GET(HttpStatus.OK, "매장 정보를 조회했습니다."),
     SUCCESS_STORE_UPDATE(HttpStatus.OK, "매장 정보를 수정했습니다."),
+    SUCCESS_STORE_REGISTRY_GET(HttpStatus.OK, "가맹점 레지스트리를 조회했습니다."),
+    SUCCESS_SALES_TARGET_GET(HttpStatus.OK, "영업 타겟 후보를 조회했습니다."),
+    SUCCESS_SALES_TARGET_STATUS_UPDATE(HttpStatus.OK, "파이프라인 상태를 변경했습니다."),
+    SUCCESS_SALES_TARGET_BULK_UPSERT(HttpStatus.OK, "영업 타겟 배치 결과를 반영했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_START(HttpStatus.OK, "영업 타겟 배치 실행을 시작했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_LIST(HttpStatus.OK, "영업 타겟 배치 실행 목록을 조회했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_GET(HttpStatus.OK, "영업 타겟 배치 실행 상태를 조회했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_APPROVE(HttpStatus.OK, "영업 타겟 배치를 승인했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_REJECT(HttpStatus.OK, "영업 타겟 배치를 반려했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_CLEANUP(HttpStatus.OK, "방치된 영업 타겟 배치를 정리했습니다."),
+    SUCCESS_SALES_TARGET_BATCH_DELETE(HttpStatus.OK, "영업 타겟 배치 이력을 삭제했습니다."),
+    SUCCESS_SALES_TARGET_EXCLUDED_ADDRESSES(HttpStatus.OK, "제외 처리된 영업 타겟 주소 목록을 조회했습니다."),
+    SUCCESS_SALES_TARGET_DELETE_ALL(HttpStatus.OK, "영업 타겟 후보를 전체 삭제했습니다."),
 
     SUCCESS_AI_ANALYSIS_CREATE(HttpStatus.OK, "매출 분석을 완료했습니다."),
     SUCCESS_AI_ANALYSIS_JOB_ACCEPTED(HttpStatus.ACCEPTED, "매출 분석 요청을 접수했습니다."),
@@ -45,10 +58,13 @@ public enum SuccessCode {
     SUCCESS_AI_RECOMMENDATION_CREATE(HttpStatus.OK, "고객 대응방안 추천과 검증을 시작했습니다."),
     SUCCESS_AI_RECOMMENDATION_GET(HttpStatus.OK, "AI 전략 추천 이력을 조회했습니다."),
     SUCCESS_AI_AGENT_RUN_GET(HttpStatus.OK, "AI 에이전트 실행을 조회했습니다."),
+    SUCCESS_AI_AGENT_RUN_DETAIL_GET(HttpStatus.OK, "AI 에이전트 실행 상세 결과를 조회했습니다."),
     SUCCESS_AI_AGENT_RUN_RESUME(HttpStatus.OK, "AI 에이전트 실행을 재개했습니다."),
     SUCCESS_RECEIPT_PARSE(HttpStatus.OK, "영수증 OCR 인식이 완료되었습니다."),
     SUCCESS_RECEIPT_CREATE(HttpStatus.CREATED, "영수증을 저장했습니다."),
     SUCCESS_RECEIPT_GET(HttpStatus.OK, "영수증 정보를 조회했습니다."),
+    SUCCESS_RECEIPT_UPDATE(HttpStatus.OK, "영수증을 수정했습니다."),
+    SUCCESS_RECEIPT_DELETE(HttpStatus.OK, "영수증을 삭제했습니다."),
 
     SUCCESS_ANALYTICS_EXPENSE_ANOMALIES(HttpStatus.OK, "이상 지출 탐지 결과를 조회했습니다."),
     SUCCESS_ANALYTICS_BUDGET_OVERAGE(HttpStatus.OK, "예산 초과 확인 결과를 조회했습니다."),
@@ -72,7 +88,13 @@ public enum SuccessCode {
     SUCCESS_CUSTOMER_CREATE(HttpStatus.CREATED, "고객을 등록했습니다."),
     SUCCESS_CUSTOMER_GET(HttpStatus.OK, "고객을 조회했습니다."),
 
-    SUCCESS_PRODUCT_IMAGE_CATEGORIES(HttpStatus.OK, "지원 메뉴 목록을 조회했습니다.");
+    SUCCESS_PRODUCT_IMAGE_CATEGORIES(HttpStatus.OK, "지원 메뉴 목록을 조회했습니다."),
+    SUCCESS_PRODUCT_IMAGE_GENERATE(HttpStatus.OK, "상품 이미지를 생성했습니다."),
+
+    SUCCESS_MENU_ITEM_CSV_UPLOAD(HttpStatus.OK, "메뉴 CSV 업로드가 완료되었습니다."),
+    SUCCESS_ORDER_CSV_UPLOAD(HttpStatus.OK, "주문 CSV 업로드가 완료되었습니다."),
+    SUCCESS_ORDER_ITEM_CSV_UPLOAD(HttpStatus.OK, "주문상세 CSV 업로드가 완료되었습니다."),
+    SUCCESS_ORDER_CSV_STATUS(HttpStatus.OK, "매출 CSV 저장 현황을 조회했습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

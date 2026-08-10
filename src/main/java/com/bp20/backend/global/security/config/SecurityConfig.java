@@ -7,6 +7,9 @@ import com.bp20.backend.global.security.filter.JwtAuthenticationFilter;
 import com.bp20.backend.global.security.handler.JsonAccessDeniedHandler;
 import com.bp20.backend.global.security.handler.JsonAuthenticationEntryPoint;
 import com.bp20.backend.global.security.jwt.JwtProperties;
+import com.bp20.backend.global.security.account.AccountSecurityProperties;
+import com.bp20.backend.global.security.captcha.CaptchaProperties;
+import com.bp20.backend.global.security.crypto.PersonalDataEncryptionProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,7 +32,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties({JwtProperties.class, RefreshTokenProperties.class})
+@EnableConfigurationProperties({
+        JwtProperties.class,
+        RefreshTokenProperties.class,
+        AccountSecurityProperties.class,
+        CaptchaProperties.class,
+        PersonalDataEncryptionProperties.class
+})
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -71,6 +80,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
+                                // 로컬 디스크에 저장된 상품 이미지 정적 서빙 - <img> 태그는 Authorization 헤더를
+                                // 못 보내므로 공개 접근을 허용한다 (S3를 쓰면 이 경로 자체가 안 쓰인다).
+                                "/product-images/**",
                                 "/api/notices/**"
                         ).permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/iam/invitation/store-owner")

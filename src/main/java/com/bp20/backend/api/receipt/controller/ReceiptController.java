@@ -1,27 +1,31 @@
 package com.bp20.backend.api.receipt.controller;
 
 import com.bp20.backend.api.receipt.dto.request.ReceiptCreateRequest;
+import com.bp20.backend.api.receipt.dto.request.ReceiptUpdateRequest;
 import com.bp20.backend.api.receipt.dto.response.OcrParseResponse;
 import com.bp20.backend.api.receipt.dto.response.ReceiptResponse;
 import com.bp20.backend.api.receipt.service.ReceiptService;
 import com.bp20.backend.global.response.ApiResponse;
+import com.bp20.backend.global.response.PageResponse;
 import com.bp20.backend.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
+import com.bp20.backend.global.security.principal.SecurityPrincipal;
 
 @Tag(name = "Receipt", description = "영수증 OCR/저장/조회 API")
 @RestController
@@ -38,9 +42,10 @@ public class ReceiptController {
      */
     @PostMapping(value = "/parse", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<OcrParseResponse>> parse(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
             @RequestPart("file") MultipartFile file
     ) {
-        OcrParseResponse result = receiptService.parse(file);
+        OcrParseResponse result = receiptService.parse(currentUser.id(), file);
         return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_PARSE, result);
     }
 
@@ -62,9 +67,34 @@ public class ReceiptController {
         return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_GET, result);
     }
 
+    /**
+     * 업로드 내역 목록. page는 0부터 시작하며, size 기본값은 30건이다.
+     */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ReceiptResponse>>> list(@RequestParam Long storeId) {
-        List<ReceiptResponse> result = receiptService.listReceipts(storeId);
+    public ResponseEntity<ApiResponse<PageResponse<ReceiptResponse>>> list(
+            @RequestParam Long storeId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size
+    ) {
+        PageResponse<ReceiptResponse> result = receiptService.listReceipts(storeId, page, size);
         return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_GET, result);
+    }
+
+    /**
+     * 업로드 내역에서 점주가 직접 수정한다.
+     */
+    @PutMapping("/{receiptId}")
+    public ResponseEntity<ApiResponse<ReceiptResponse>> update(
+            @PathVariable Long receiptId,
+            @Valid @RequestBody ReceiptUpdateRequest request
+    ) {
+        ReceiptResponse result = receiptService.updateReceipt(receiptId, request);
+        return ApiResponse.success(SuccessCode.SUCCESS_RECEIPT_UPDATE, result);
+    }
+
+    @DeleteMapping("/{receiptId}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long receiptId) {
+        receiptService.deleteReceipt(receiptId);
+        return ApiResponse.successOnly(SuccessCode.SUCCESS_RECEIPT_DELETE);
     }
 }

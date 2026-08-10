@@ -19,9 +19,16 @@ public record LoginRequest(
         String password,
 
         @Schema(description = "브라우저 종료 후에도 로그인 상태를 유지할지 여부", example = "false")
-        boolean rememberMe
+        boolean rememberMe,
+
+        @Schema(description = "로그인 직전에 발급한 Google reCAPTCHA v3 응답 토큰. CAPTCHA가 비활성화된 환경에서는 생략할 수 있습니다.")
+        String captchaToken
 ) {
     public LoginRequest(String email, String password) {
-        this(email, password, false);
+        this(email, password, false, null);
+    }
+
+    public LoginRequest(String email, String password, boolean rememberMe) {
+        this(email, password, rememberMe, null);
     }
 }

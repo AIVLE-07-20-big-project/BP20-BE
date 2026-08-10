@@ -54,9 +54,13 @@ public class AuthController implements AuthApiDocs {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest request,
+            HttpServletRequest servletRequest,
             HttpServletResponse servletResponse
     ) {
-        AuthenticatedSession<LoginResponse> session = loginService.login(request);
+        AuthenticatedSession<LoginResponse> session = loginService.login(
+                request,
+                servletRequest.getRemoteAddr()
+        );
         writeRefreshTokenCookie(servletResponse, session);
         return ApiResponse.success(SuccessCode.SUCCESS_AUTH_LOGIN, session.response());
     }

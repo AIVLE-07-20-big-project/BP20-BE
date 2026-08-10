@@ -18,6 +18,9 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "온라인 상품 등록 또는 해제 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_DISCOUNT(HttpStatus.BAD_REQUEST, "할인 설정이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_COUPON(HttpStatus.BAD_REQUEST, "쿠폰 발급 또는 상태 변경 요청이 올바르지 않습니다."),
+    BAD_REQUEST_PRIVACY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "필수 개인정보 수집 및 이용 동의가 필요합니다."),
+    BAD_REQUEST_CAPTCHA_REQUIRED(HttpStatus.BAD_REQUEST, "자동입력 방지 확인이 필요합니다."),
+    BAD_REQUEST_INVALID_CAPTCHA(HttpStatus.BAD_REQUEST, "자동입력 방지 확인에 실패했습니다. 다시 시도해 주세요."),
 
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     UNAUTHORIZED_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
@@ -25,7 +28,7 @@ public enum ErrorCode {
     UNAUTHORIZED_EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     UNAUTHORIZED_TOKEN_EMPTY(HttpStatus.UNAUTHORIZED, "토큰이 비어 있습니다."),
     UNAUTHORIZED_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 올바르지 않습니다."),
-    UNAUTHORIZED_INVALID_INTERNAL_API_KEY(HttpStatus.UNAUTHORIZED, "내부 API 키가 올바르지 않습니다."),
+    UNAUTHORIZED_INVALID_INTERNAL_API_KEY(HttpStatus.UNAUTHORIZED, "내부 서비스 인증키가 올바르지 않습니다."),
     UNAUTHORIZED_REFRESH_TOKEN_REQUIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 필요합니다."),
     UNAUTHORIZED_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 올바르지 않습니다."),
     UNAUTHORIZED_EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
@@ -35,6 +38,9 @@ public enum ErrorCode {
     FORBIDDEN_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "관리자 권한이 필요합니다."),
     FORBIDDEN_SUPER_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "최상위 관리자 권한이 필요합니다."),
     FORBIDDEN_STORE_OWNER_REQUIRED(HttpStatus.FORBIDDEN, "점주 권한이 필요합니다."),
+    FORBIDDEN_PASSWORD_EXPIRED(HttpStatus.FORBIDDEN, "비밀번호 사용 기간이 만료되었습니다. 관리자에게 재설정을 요청해 주세요."),
+
+    LOCKED_LOGIN_ACCOUNT(HttpStatus.LOCKED, "로그인 실패 횟수를 초과해 계정이 일시적으로 잠겼습니다."),
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     NOT_FOUND_INVITATION(HttpStatus.NOT_FOUND, "초대를 찾을 수 없습니다."),
@@ -47,6 +53,8 @@ public enum ErrorCode {
     NOT_FOUND_COUPON(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
     NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
+    NOT_FOUND_SALES_TARGET(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟입니다."),
+    NOT_FOUND_SALES_TARGET_BATCH_RUN(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟 배치 실행입니다."),
     NOT_FOUND_NOTICE(HttpStatus.NOT_FOUND, "공지를 찾을 수 없습니다."),
 
     CONFLICT_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
@@ -57,9 +65,11 @@ public enum ErrorCode {
     CONFLICT_EXPIRED_SIGNUP_INVITATION(HttpStatus.CONFLICT, "회원가입 초대가 만료되었거나 더 이상 유효하지 않습니다."),
     CONFLICT_INVITATION_NOT_REVOCABLE(HttpStatus.CONFLICT, "대기 중인 초대만 취소할 수 있습니다."),
     CONFLICT_DUPLICATE_RECEIPT(HttpStatus.CONFLICT, "동일한 거래로 보이는 영수증이 이미 등록되어 있습니다."),
+    CONFLICT_SALES_TARGET_BATCH_STILL_PENDING(HttpStatus.CONFLICT, "승인 대기 중인 배치는 삭제할 수 없습니다. 먼저 승인하거나 반려해 주세요."),
 
     OCR_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "OCR/분석 서비스와 통신할 수 없습니다."),
     PRODUCT_IMAGE_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "AI 상품 이미지 생성 서비스와 통신할 수 없습니다."),
+    SERVICE_UNAVAILABLE_CAPTCHA(HttpStatus.SERVICE_UNAVAILABLE, "자동입력 방지 확인 서비스를 사용할 수 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

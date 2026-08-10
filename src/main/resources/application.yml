@@ -21,12 +21,6 @@ spring:
       max-file-size: 20MB
       max-request-size: 50MB
 
-storage:
-  s3:
-    bucket: ${S3_BUCKET_NAME:}
-    region: ${AWS_REGION:ap-southeast-2}
-    upload-prefix: ${UPLOAD_S3_PREFIX:uploads/v1}
-
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -35,6 +29,12 @@ storage:
       timeout: 2s
       repositories:
         enabled: false
+
+storage:
+  s3:
+    bucket: ${S3_BUCKET_NAME:}
+    region: ${AWS_REGION:ap-southeast-2}
+    upload-prefix: ${UPLOAD_S3_PREFIX:uploads/v1}
 
 server:
   port: 8080
@@ -104,6 +104,14 @@ review-analysis:
     enabled: ${REVIEW_ANALYSIS_SCHEDULER_ENABLED:true}
     fixed-delay-ms: ${REVIEW_ANALYSIS_SCHEDULER_FIXED_DELAY_MS:60000}
     initial-delay-ms: ${REVIEW_ANALYSIS_SCHEDULER_INITIAL_DELAY_MS:60000}
+# 신규 가맹점 영업 타겟 배치 — AI_Agent_전환_가이드라인.md 4단계(운영 정리 정책).
+# stale-days일 이상 관리자가 승인/반려하지 않고 방치한 배치를 자동 반려한다.
+sales-target:
+  batch-cleanup:
+    enabled: ${SALES_TARGET_BATCH_CLEANUP_ENABLED:true}
+    cron: ${SALES_TARGET_BATCH_CLEANUP_CRON:0 0 3 * * *}
+    zone: ${SALES_TARGET_BATCH_CLEANUP_ZONE:Asia/Seoul}
+    stale-days: ${SALES_TARGET_BATCH_CLEANUP_STALE_DAYS:3}
 
 # 영수증 OCR 및 원가 분석 서비스
 ocr-service:
@@ -113,9 +121,20 @@ ocr-service:
 product-image-service:
   base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
 
-# AI 서버 -> BE 내부 API 인증키
+# AI 서버 -> BE 내부 API 인증키 (신규 가맹점 영업 타겟 추천용 자사 가맹점 레지스트리 조회)
 internal-api:
   key: ${INTERNAL_API_KEY}
+
+# 생성된 상품 이미지 저장소. product-image-storage.s3.bucket이 설정되어 있으면 S3,
+# 없으면 로컬 디스크에 저장한다. (storage.s3.*는 main이 추가한 범용 오브젝트 스토리지 전용이라
+# 이름 충돌을 피하려고 별도 네임스페이스를 쓴다.)
+product-image-storage:
+  local:
+    dir: ${STORAGE_LOCAL_DIR:uploads/product-images}
+    base-url: ${STORAGE_LOCAL_BASE_URL:http://localhost:8080/product-images}
+  s3:
+    bucket: ${STORAGE_S3_BUCKET:}
+    region: ${STORAGE_S3_REGION:ap-northeast-2}
 
 app:
   jwt:
@@ -123,6 +142,17 @@ app:
     expiration-seconds: ${JWT_EXPIRATION_SECONDS}
     admin-expiration-seconds: ${JWT_ADMIN_EXPIRATION_SECONDS}
   auth:
+    account-security:
+      password-max-age-days: ${PASSWORD_MAX_AGE_DAYS:90}
+      max-failed-login-attempts: ${MAX_FAILED_LOGIN_ATTEMPTS:5}
+      account-lock-minutes: ${ACCOUNT_LOCK_MINUTES:15}
+    captcha:
+      enabled: ${CAPTCHA_ENABLED:false}
+      secret-key: ${CAPTCHA_SECRET_KEY:}
+      verify-url: ${CAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+      minimum-score: ${CAPTCHA_MIN_SCORE:0.5}
+      expected-action: ${CAPTCHA_EXPECTED_ACTION:login}
+      allowed-hostnames: ${CAPTCHA_ALLOWED_HOSTNAMES:}
     refresh-token:
       store: ${REFRESH_TOKEN_STORE:redis}
       expiration-seconds: ${REFRESH_TOKEN_EXPIRATION_SECONDS:604800}
@@ -136,3 +166,6 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
   fastapi:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+  security:
+    personal-data:
+      encryption-key: ${PERSONAL_DATA_ENCRYPTION_KEY:${JWT_SECRET}}

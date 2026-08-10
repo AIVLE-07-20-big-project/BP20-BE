@@ -4,7 +4,11 @@ import com.bp20.backend.api.effectverification.domain.EffectVerificationResult;
 import com.bp20.backend.api.effectverification.dto.request.RecommendationType;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationRoiResponse;
 import com.bp20.backend.api.effectverification.repository.EffectVerificationResultRepository;
+import com.bp20.backend.api.ai.repository.AiAnalysisRepository;
+import com.bp20.backend.api.ai.repository.AiRecommendationRunRepository;
 import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class EffectVerificationRoiServiceTests {
@@ -24,8 +29,24 @@ class EffectVerificationRoiServiceTests {
     @Mock
     private EffectVerificationResultRepository resultRepository;
 
+    @Mock
+    private StoreRepository storeRepository;
+
+    @Mock
+    private AiAnalysisRepository analysisRepository;
+
+    @Mock
+    private AiRecommendationRunRepository recommendationRunRepository;
+
     @InjectMocks
     private EffectVerificationRoiService service;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(storeRepository.count()).thenReturn(0L);
+        when(analysisRepository.findAll()).thenReturn(List.of());
+        when(recommendationRunRepository.findAll()).thenReturn(List.of());
+    }
 
     @Test
     void aggregatesOverallStoreTypeAndRecentStatistics() {

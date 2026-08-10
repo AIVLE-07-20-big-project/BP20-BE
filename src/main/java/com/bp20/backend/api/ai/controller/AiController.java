@@ -114,6 +114,18 @@ public class AiController {
         );
     }
 
+    // SCM/OPE/RAG/승인 검증 로그 등 상세 화면에서만 필요한 전체 원본 결과를 조회한다.
+    @GetMapping("/agent-runs/{threadId}/detail")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAgentRunDetail(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable String threadId
+    ) {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_AI_AGENT_RUN_DETAIL_GET,
+                aiService.getAgentRunDetail(currentUser.id(), threadId)
+        );
+    }
+
     @PostMapping("/agent-runs/{threadId}/resume")
     public ResponseEntity<ApiResponse<Map<String, Object>>> resumeAgentRun(
             @AuthenticationPrincipal SecurityPrincipal currentUser,

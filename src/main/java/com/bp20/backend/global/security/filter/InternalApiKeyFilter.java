@@ -19,6 +19,11 @@ import java.nio.charset.StandardCharsets;
 /**
  * AI 서버(FastAPI)가 호출하는 /api/internal/** 경로를 보호하는 필터.
  * 점주/관리자 JWT가 아니라 서비스 간 고정 키(X-Internal-Api-Key 헤더)로 인증한다.
+ *
+ * SecurityConfig에서:
+ *  - 이 필터를 JwtAuthenticationFilter보다 먼저 태우고
+ *  - "/api/internal/**" 경로는 permitAll로 열어둔다
+ * (JWT가 없는 서비스 간 호출이라 permitAll이 맞다 — 실질적인 인증은 이 필터가 담당한다.)
  */
 @Component
 @RequiredArgsConstructor
