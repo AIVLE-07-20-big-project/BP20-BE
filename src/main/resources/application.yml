@@ -127,14 +127,15 @@ internal-api:
 
 # 생성된 상품 이미지 저장소. product-image-storage.s3.bucket이 설정되어 있으면 S3,
 # 없으면 로컬 디스크에 저장한다. (storage.s3.*는 main이 추가한 범용 오브젝트 스토리지 전용이라
-# 이름 충돌을 피하려고 별도 네임스페이스를 쓴다.)
+# 이름 충돌을 피하려고 별도 네임스페이스를 쓴다. env var 이름도 STORAGE_S3_*를 쓰면 Spring의
+# relaxed binding으로 storage.s3.* 프로퍼티와 충돌하므로 PRODUCT_IMAGE_S3_*를 쓴다.)
 product-image-storage:
   local:
     dir: ${STORAGE_LOCAL_DIR:uploads/product-images}
     base-url: ${STORAGE_LOCAL_BASE_URL:http://localhost:8080/product-images}
   s3:
-    bucket: ${STORAGE_S3_BUCKET:}
-    region: ${STORAGE_S3_REGION:ap-northeast-2}
+    bucket: ${PRODUCT_IMAGE_S3_BUCKET:}
+    region: ${PRODUCT_IMAGE_S3_REGION:ap-northeast-2}
 
 app:
   jwt:
