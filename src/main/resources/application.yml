@@ -33,7 +33,7 @@ spring:
 storage:
   s3:
     bucket: ${S3_BUCKET_NAME:}
-    region: ${AWS_REGION:ap-southeast-2}
+    region: ${AWS_REGION:ap-northeast-2}
     upload-prefix: ${UPLOAD_S3_PREFIX:uploads/v1}
 
 server:
