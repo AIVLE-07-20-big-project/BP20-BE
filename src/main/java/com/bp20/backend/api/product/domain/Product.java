@@ -75,8 +75,8 @@ public class Product extends BaseTimeEntity {
     @Column(nullable = false)
     private long price;
 
-    @Column(name = "stock_quantity", nullable = false)
-    private int stockQuantity;
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity;
 
     @Column(name = "image_url", length = 500)
     private String imageUrl;
@@ -94,8 +94,9 @@ public class Product extends BaseTimeEntity {
             String name,
             String description,
             long price,
-            int stockQuantity,
-            String imageUrl
+            Integer stockQuantity,
+            String imageUrl,
+            ProductStatus status
     ) {
         this.store = store;
         this.name = name;
@@ -103,7 +104,7 @@ public class Product extends BaseTimeEntity {
         this.price = price;
         this.stockQuantity = stockQuantity;
         this.imageUrl = imageUrl;
-        this.status = stockQuantity == 0 ? ProductStatus.SOLD_OUT : ProductStatus.ACTIVE;
+        this.status = status;
         this.onlineSalesStatus = OnlineSalesStatus.NOT_REGISTERED;
     }
 
@@ -112,8 +113,9 @@ public class Product extends BaseTimeEntity {
             String name,
             String description,
             long price,
-            int stockQuantity,
-            String imageUrl
+            Integer stockQuantity,
+            String imageUrl,
+            ProductStatus status
     ) {
         return new Product(
                 store,
@@ -121,7 +123,8 @@ public class Product extends BaseTimeEntity {
                 description,
                 price,
                 stockQuantity,
-                imageUrl
+                imageUrl,
+                status
         );
     }
 
@@ -173,22 +176,19 @@ public class Product extends BaseTimeEntity {
             String name,
             String description,
             long price,
-            int stockQuantity,
-            String imageUrl
+            Integer stockQuantity,
+            String imageUrl,
+            ProductStatus status
     ) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.stockQuantity = stockQuantity;
         this.imageUrl = imageUrl;
+        this.status = status;
 
-        if (stockQuantity == 0) {
-            this.status = ProductStatus.SOLD_OUT;
-            if (this.onlineSalesStatus == OnlineSalesStatus.ON_SALE) {
-                unregisterOnline();
-            }
-        } else if (this.status == ProductStatus.SOLD_OUT) {
-            this.status = ProductStatus.ACTIVE;
+        if (status != ProductStatus.ACTIVE && onlineSalesStatus == OnlineSalesStatus.ON_SALE) {
+            unregisterOnline();
         }
     }
 
@@ -212,5 +212,20 @@ public class Product extends BaseTimeEntity {
 
     public boolean isRegisteredOnline() {
         return onlineSalesStatus != OnlineSalesStatus.NOT_REGISTERED;
+    }
+
+    public boolean hasStockQuantity() {
+        return stockQuantity != null;
+    }
+
+    public void decreaseStock(int quantity) {
+        if (stockQuantity == null) {
+            return;
+        }
+        this.stockQuantity -= quantity;
+        if (this.stockQuantity == 0) {
+            this.status = ProductStatus.SOLD_OUT;
+            unregisterOnline();
+        }
     }
 }

@@ -27,6 +27,8 @@ public class ProductService {
     @Transactional
     public ProductResponse create(Long ownerId, CreateProductRequest request) {
         Store store = requireOwnedStore(ownerId);
+        ProductStatus status = resolveStatus(request.status(), request.stockQuantity());
+        validateStockStatus(request.stockQuantity(), status);
 
         Product product = productRepository.save(Product.create(
                 store,
@@ -34,7 +36,8 @@ public class ProductService {
                 trimToNull(request.description()),
                 request.price(),
                 request.stockQuantity(),
-                trimToNull(request.imageUrl())
+                trimToNull(request.imageUrl()),
+                status
         ));
         return ProductResponse.from(product);
     }
@@ -56,13 +59,16 @@ public class ProductService {
     @Transactional
     public ProductResponse update(Long ownerId, Long productId, UpdateProductRequest request) {
         Product product = requireOwnedProduct(ownerId, productId);
+        ProductStatus status = resolveStatus(request.status(), request.stockQuantity());
+        validateStockStatus(request.stockQuantity(), status);
 
         product.update(
                 request.name().trim(),
                 trimToNull(request.description()),
                 request.price(),
                 request.stockQuantity(),
-                trimToNull(request.imageUrl())
+                trimToNull(request.imageUrl()),
+                status
         );
         return ProductResponse.from(product);
     }
@@ -70,10 +76,9 @@ public class ProductService {
     @Transactional
     public ProductResponse changeStatus(Long ownerId, Long productId, ProductStatusRequest request) {
         Product product = requireOwnedProduct(ownerId, productId);
-        if (request.status() == ProductStatus.ACTIVE && product.getStockQuantity() == 0) {
-            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_PRODUCT_STATUS);
-        }
-        if (request.status() == ProductStatus.SOLD_OUT && product.getStockQuantity() > 0) {
+        if (request.status() == ProductStatus.ACTIVE
+                && product.hasStockQuantity()
+                && product.getStockQuantity() == 0) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_PRODUCT_STATUS);
         }
         product.changeStatus(request.status());
@@ -92,5 +97,26 @@ public class ProductService {
 
     private String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private ProductStatus resolveStatus(
+            ProductStatus requestedStatus,
+            Integer stockQuantity
+    ) {
+        if (requestedStatus != null) {
+            return requestedStatus;
+        }
+        return stockQuantity != null && stockQuantity == 0
+                ? ProductStatus.SOLD_OUT
+                : ProductStatus.ACTIVE;
+    }
+
+    private void validateStockStatus(
+            Integer stockQuantity,
+            ProductStatus status
+    ) {
+        if (stockQuantity != null && stockQuantity == 0 && status == ProductStatus.ACTIVE) {
+            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_PRODUCT_STATUS);
+        }
     }
 }
