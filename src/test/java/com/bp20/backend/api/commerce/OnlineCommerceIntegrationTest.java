@@ -1,6 +1,7 @@
 package com.bp20.backend.api.commerce;
 
 import com.bp20.backend.api.commerce.domain.CouponStatus;
+import com.bp20.backend.api.commerce.domain.CouponUsageChannel;
 import com.bp20.backend.api.commerce.domain.DiscountStatus;
 import com.bp20.backend.api.commerce.domain.DiscountType;
 import com.bp20.backend.api.commerce.dto.request.CreateDiscountRequest;
@@ -12,6 +13,9 @@ import com.bp20.backend.api.commerce.dto.response.DiscountResponse;
 import com.bp20.backend.api.commerce.service.CouponService;
 import com.bp20.backend.api.commerce.service.DiscountService;
 import com.bp20.backend.api.commerce.service.OnlineSalesService;
+import com.bp20.backend.api.commerce.order.dto.request.CreateOnlinePurchaseRequest;
+import com.bp20.backend.api.commerce.order.dto.response.OnlinePurchaseResponse;
+import com.bp20.backend.api.commerce.order.service.OnlinePurchaseService;
 import com.bp20.backend.api.customer.domain.Customer;
 import com.bp20.backend.api.customer.dto.request.CreateCustomerRequest;
 import com.bp20.backend.api.customer.dto.response.CustomerResponse;
@@ -20,6 +24,7 @@ import com.bp20.backend.api.customer.service.CustomerService;
 import com.bp20.backend.api.product.domain.OnlineSalesStatus;
 import com.bp20.backend.api.product.domain.ProductStatus;
 import com.bp20.backend.api.product.dto.request.CreateProductRequest;
+import com.bp20.backend.api.product.dto.request.ProductStatusRequest;
 import com.bp20.backend.api.product.dto.request.UpdateProductRequest;
 import com.bp20.backend.api.product.dto.response.ProductResponse;
 import com.bp20.backend.api.product.service.ProductService;
@@ -52,6 +57,9 @@ class OnlineCommerceIntegrationTest {
 
     @Autowired
     private OnlineSalesService onlineSalesService;
+
+    @Autowired
+    private OnlinePurchaseService onlinePurchaseService;
 
     @Autowired
     private ProductService productService;
@@ -184,6 +192,36 @@ class OnlineCommerceIntegrationTest {
     }
 
     @Test
+    void productWithoutStockQuantityCanBeSoldAndManuallyMarkedSoldOut() {
+        User owner = createOwner("unmanaged-stock-owner@example.com");
+        createStore(owner, "188-29-34567");
+
+        ProductResponse product = productService.create(
+                owner.getId(),
+                new CreateProductRequest(
+                        "아메리카노",
+                        "수량을 별도로 관리하지 않는 카페 메뉴",
+                        4_500,
+                        null,
+                        null,
+                        ProductStatus.ACTIVE
+                )
+        );
+        ProductResponse registered = onlineSalesService.registerProduct(owner.getId(), product.id());
+        ProductResponse soldOut = productService.changeStatus(
+                owner.getId(),
+                product.id(),
+                new ProductStatusRequest(ProductStatus.SOLD_OUT)
+        );
+
+        assertThat(product.stockQuantity()).isNull();
+        assertThat(product.status()).isEqualTo(ProductStatus.ACTIVE);
+        assertThat(registered.onlineSalesStatus()).isEqualTo(OnlineSalesStatus.ON_SALE);
+        assertThat(soldOut.status()).isEqualTo(ProductStatus.SOLD_OUT);
+        assertThat(soldOut.onlineSalesStatus()).isEqualTo(OnlineSalesStatus.NOT_REGISTERED);
+    }
+
+    @Test
     void storeOwnerCanIssueCouponToCustomerWhosePrivateInfoIsSeparated() {
         User owner = createOwner("coupon-owner@example.com");
         createStore(owner, "555-66-77777");
@@ -203,7 +241,9 @@ class OnlineCommerceIntegrationTest {
                         "신규 고객 3,000원 쿠폰",
                         DiscountType.FIXED_AMOUNT,
                         3_000,
-                        LocalDateTime.now().plusDays(7)
+                        LocalDateTime.now().plusDays(7),
+                        CouponUsageChannel.ONLINE_ONLY,
+                        null
                 )
         );
 
@@ -216,9 +256,80 @@ class OnlineCommerceIntegrationTest {
                 com.bp20.backend.global.util.PersonalDataMasker.email("customer@example.com")
         );
         assertThat(coupon.discountValue()).isEqualTo(3_000);
+        assertThat(coupon.usageChannel()).isEqualTo(CouponUsageChannel.ONLINE_ONLY);
+        assertThatThrownBy(() -> couponService.use(owner.getId(), coupon.id()))
+                .isInstanceOf(ApiException.class)
+                .extracting(exception -> ((ApiException) exception).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST_INVALID_COUPON);
         assertThat(customerService.getMine(owner.getId())).singleElement()
                 .extracting(CustomerResponse::id)
                 .isEqualTo(customer.id());
+    }
+
+    @Test
+    void onlinePurchaseCanLeadToOneOfflineVisitCoupon() {
+        User owner = createOwner("o2o-owner@example.com");
+        createStore(owner, "159-37-24680");
+        ProductResponse product = createProduct(owner, "브런치 샌드위치", 6_000);
+        registerOnline(owner, product.id());
+        onlineSalesService.changeStatus(
+                owner.getId(),
+                new OnlineSalesStatusRequest(com.bp20.backend.api.store.domain.OnlineSalesStatus.OPEN)
+        );
+        CustomerResponse customer = customerService.create(
+                owner.getId(),
+                new CreateCustomerRequest("o2o-customer@example.com", "방문고객", "010-3456-7890")
+        );
+
+        OnlinePurchaseResponse purchase = onlinePurchaseService.record(
+                owner.getId(),
+                new CreateOnlinePurchaseRequest(
+                        customer.id(),
+                        LocalDateTime.now().minusMinutes(1),
+                        List.of(new CreateOnlinePurchaseRequest.Item(product.id(), 2))
+                )
+        );
+        CouponResponse coupon = couponService.issue(
+                owner.getId(),
+                new IssueCouponRequest(
+                        customer.id(),
+                        "온라인 구매 고객 매장 방문 쿠폰",
+                        DiscountType.FIXED_AMOUNT,
+                        2_000,
+                        LocalDateTime.now().plusDays(14),
+                        CouponUsageChannel.OFFLINE_ONLY,
+                        purchase.id()
+                )
+        );
+
+        assertThat(purchase.totalAmount()).isEqualTo(12_000);
+        assertThat(purchase.items()).singleElement()
+                .satisfies(item -> {
+                    assertThat(item.productId()).isEqualTo(product.id());
+                    assertThat(item.quantity()).isEqualTo(2);
+                });
+        assertThat(productService.getOne(owner.getId(), product.id()).stockQuantity()).isEqualTo(8);
+        assertThat(coupon.usageChannel()).isEqualTo(CouponUsageChannel.OFFLINE_ONLY);
+        assertThat(coupon.sourceOnlinePurchaseId()).isEqualTo(purchase.id());
+        CouponResponse usedCoupon = couponService.use(owner.getId(), coupon.id());
+        assertThat(usedCoupon.status()).isEqualTo(CouponStatus.USED);
+        assertThat(usedCoupon.usedAt()).isNotNull();
+
+        assertThatThrownBy(() -> couponService.issue(
+                owner.getId(),
+                new IssueCouponRequest(
+                        customer.id(),
+                        "중복 방문 쿠폰",
+                        DiscountType.RATE,
+                        10,
+                        LocalDateTime.now().plusDays(7),
+                        CouponUsageChannel.OFFLINE_ONLY,
+                        purchase.id()
+                )
+        ))
+                .isInstanceOf(ApiException.class)
+                .extracting(exception -> ((ApiException) exception).getErrorCode())
+                .isEqualTo(ErrorCode.CONFLICT_OFFLINE_COUPON_ALREADY_ISSUED);
     }
 
     @Test
@@ -258,7 +369,9 @@ class OnlineCommerceIntegrationTest {
                         "다른 매장 쿠폰",
                         DiscountType.RATE,
                         10,
-                        LocalDateTime.now().plusDays(7)
+                        LocalDateTime.now().plusDays(7),
+                        CouponUsageChannel.OFFLINE_ONLY,
+                        null
                 )
         ))
                 .isInstanceOf(ApiException.class)

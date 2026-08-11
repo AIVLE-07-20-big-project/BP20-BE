@@ -77,6 +77,8 @@ public enum SuccessCode {
     SUCCESS_PRODUCT_UPDATE(HttpStatus.OK, "상품을 수정했습니다."),
     SUCCESS_ONLINE_PRODUCT_REGISTER(HttpStatus.CREATED, "상품을 온라인 판매에 등록했습니다."),
     SUCCESS_ONLINE_PRODUCT_UNREGISTER(HttpStatus.OK, "상품의 온라인 판매 등록을 해제했습니다."),
+    SUCCESS_ONLINE_PURCHASE_CREATE(HttpStatus.CREATED, "온라인 구매 이력을 기록했습니다."),
+    SUCCESS_ONLINE_PURCHASE_GET(HttpStatus.OK, "온라인 구매 이력을 조회했습니다."),
 
     SUCCESS_DISCOUNT_CREATE(HttpStatus.CREATED, "할인을 등록했습니다."),
     SUCCESS_DISCOUNT_GET(HttpStatus.OK, "할인을 조회했습니다."),

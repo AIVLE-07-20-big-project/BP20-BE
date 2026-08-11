@@ -1,5 +1,6 @@
 package com.bp20.backend.api.commerce.domain;
 
+import com.bp20.backend.api.commerce.order.domain.OnlinePurchase;
 import com.bp20.backend.api.customer.domain.Customer;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.global.domain.BaseTimeEntity;
@@ -15,6 +16,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +27,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "coupons",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_coupons_source_online_purchase",
+                columnNames = "source_online_purchase_id"
+        ),
         indexes = {
                 @Index(name = "idx_coupons_store_status", columnList = "store_id,status"),
                 @Index(name = "idx_coupons_customer_status", columnList = "customer_id,status")
@@ -46,6 +52,10 @@ public class Coupon extends BaseTimeEntity {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_online_purchase_id")
+    private OnlinePurchase sourceOnlinePurchase;
+
     @Column(nullable = false, length = 120)
     private String name;
 
@@ -55,6 +65,10 @@ public class Coupon extends BaseTimeEntity {
 
     @Column(name = "discount_value", nullable = false)
     private long discountValue;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "usage_channel", nullable = false, length = 20)
+    private CouponUsageChannel usageChannel;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -78,6 +92,8 @@ public class Coupon extends BaseTimeEntity {
             String name,
             DiscountType discountType,
             long discountValue,
+            CouponUsageChannel usageChannel,
+            OnlinePurchase sourceOnlinePurchase,
             LocalDateTime issuedAt,
             LocalDateTime expiresAt
     ) {
@@ -86,6 +102,8 @@ public class Coupon extends BaseTimeEntity {
         this.name = name;
         this.discountType = discountType;
         this.discountValue = discountValue;
+        this.usageChannel = usageChannel;
+        this.sourceOnlinePurchase = sourceOnlinePurchase;
         this.status = CouponStatus.ISSUED;
         this.issuedAt = issuedAt;
         this.expiresAt = expiresAt;
@@ -97,6 +115,8 @@ public class Coupon extends BaseTimeEntity {
             String name,
             DiscountType discountType,
             long discountValue,
+            CouponUsageChannel usageChannel,
+            OnlinePurchase sourceOnlinePurchase,
             LocalDateTime issuedAt,
             LocalDateTime expiresAt
     ) {
@@ -106,6 +126,8 @@ public class Coupon extends BaseTimeEntity {
                 name,
                 discountType,
                 discountValue,
+                usageChannel,
+                sourceOnlinePurchase,
                 issuedAt,
                 expiresAt
         );
