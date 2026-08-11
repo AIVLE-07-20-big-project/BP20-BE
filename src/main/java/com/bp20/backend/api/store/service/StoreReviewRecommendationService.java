@@ -44,6 +44,7 @@ public class StoreReviewRecommendationService {
                 .store(store)
                 .executiveSummary(report.executiveSummary())
                 .actionItems(actionItems)
+                .reportMonth(null)
                 .build();
         return storeReviewRecommendationRepository.save(recommendation);
     }

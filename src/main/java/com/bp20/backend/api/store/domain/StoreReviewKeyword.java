@@ -5,8 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -36,6 +40,11 @@ public class StoreReviewKeyword {
 
     @Column(nullable = false)
     private Integer count;
+
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "matched_review_ids", columnDefinition = "json")
+    private List<Long> matchedReviewIds = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDateTime analyzedAt;
