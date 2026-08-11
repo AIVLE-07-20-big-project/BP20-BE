@@ -29,7 +29,7 @@ public class ProductImageService {
 
     public ProductImageResponse generateAndStore(MultipartFile file, String category, String prompt) {
         byte[] imageBytes = productImageServiceClient.generateProductImage(file, category, prompt);
-        String filename = category.replaceAll("\\s+", "") + "-" + UUID.randomUUID() + ".png";
+        String filename = UUID.randomUUID() + ".png";
         String imageUrl = imageStorage.store(imageBytes, filename);
         return new ProductImageResponse(imageUrl);
     }

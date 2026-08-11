@@ -6,8 +6,11 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -50,6 +53,21 @@ public class S3ImageStorage implements ImageStorage {
                         .build(),
                 RequestBody.fromBytes(data)
         );
-        return s3Client.utilities().getUrl(b -> b.bucket(bucket).key(filename)).toString();
+        return "/api/public/product-images/" + filename;
+    }
+
+    @Override
+    public StoredImage load(String filename) {
+        ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(
+                GetObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(filename)
+                        .build()
+        );
+        String contentType = response.response().contentType();
+        return new StoredImage(
+                response.asByteArray(),
+                contentType == null || contentType.isBlank() ? "image/png" : contentType
+        );
     }
 }

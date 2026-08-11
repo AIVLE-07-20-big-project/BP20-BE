@@ -80,6 +80,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
+                                "/api/public/product-images/**",
                                 // 로컬 디스크에 저장된 상품 이미지 정적 서빙 - <img> 태그는 Authorization 헤더를
                                 // 못 보내므로 공개 접근을 허용한다 (S3를 쓰면 이 경로 자체가 안 쓰인다).
                                 "/product-images/**",
