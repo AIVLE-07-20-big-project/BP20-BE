@@ -9,10 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Runs one 30-review analysis batch for each store that has enough pending reviews.
- * Manual analysis remains available for stores with fewer than 30 pending reviews.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor

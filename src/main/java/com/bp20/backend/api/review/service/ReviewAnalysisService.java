@@ -77,10 +77,6 @@ public class ReviewAnalysisService {
         analyzeAndSaveReviews(storeId, requestDtos);
     }
 
-    /**
-     * Reuses the ABSA results saved for reviews written in targetMonth.
-     * The FastAPI monthly endpoint therefore runs clustering and improvement planning only.
-     */
     @Transactional
     public void generateMonthlyRecommendation(Long storeId, YearMonth targetMonth) {
         String reportMonth = targetMonth.toString();

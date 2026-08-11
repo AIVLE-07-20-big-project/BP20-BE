@@ -14,9 +14,7 @@ public record StoreReviewKeywordResponseDto(
         Integer count,
         Double changeRate,
         LocalDateTime analyzedAt,
-//        TODO: 리뷰 키워드 원문 리스트 보여주는 페이지..........
         @JsonProperty("matched_review_ids") List<Long> matchedReviewIds
-//        List<String> originalExpressions
 ) {
     public static StoreReviewKeywordResponseDto of(StoreReviewKeyword entity, Double changeRate) {
         return new StoreReviewKeywordResponseDto(
