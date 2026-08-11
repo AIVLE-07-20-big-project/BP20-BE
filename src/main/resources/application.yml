@@ -99,6 +99,11 @@ effect-verification:
     zone: ${EFFECT_VERIFICATION_SCHEDULER_ZONE:Asia/Seoul}
     max-attempts: ${EFFECT_VERIFICATION_MAX_ATTEMPTS:3}
 
+review-analysis:
+  scheduler:
+    enabled: ${REVIEW_ANALYSIS_SCHEDULER_ENABLED:true}
+    fixed-delay-ms: ${REVIEW_ANALYSIS_SCHEDULER_FIXED_DELAY_MS:60000}
+    initial-delay-ms: ${REVIEW_ANALYSIS_SCHEDULER_INITIAL_DELAY_MS:60000}
 # 신규 가맹점 영업 타겟 배치 — AI_Agent_전환_가이드라인.md 4단계(운영 정리 정책).
 # stale-days일 이상 관리자가 승인/반려하지 않고 방치한 배치를 자동 반려한다.
 sales-target:

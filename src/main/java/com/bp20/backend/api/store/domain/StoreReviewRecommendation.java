@@ -10,7 +10,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "store_review_recommendation")
+@Table(
+        name = "store_review_recommendation",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_store_review_recommendation_month",
+                columnNames = {"store_id", "report_month"}
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,11 +41,20 @@ public class StoreReviewRecommendation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "report_month", length = 7)
+    private String reportMonth;
+
     @Builder
-    public StoreReviewRecommendation(Store store, String executiveSummary, List<ActionItem> actionItems) {
+    public StoreReviewRecommendation(
+            Store store,
+            String executiveSummary,
+            List<ActionItem> actionItems,
+            String reportMonth
+    ) {
         this.store = store;
         this.executiveSummary = executiveSummary;
         this.actionItems = actionItems;
+        this.reportMonth = reportMonth;
         this.createdAt = LocalDateTime.now();
     }
 

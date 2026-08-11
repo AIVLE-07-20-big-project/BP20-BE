@@ -4,12 +4,16 @@ import com.bp20.backend.api.review.domain.Review;
 import com.bp20.backend.api.review.domain.ReviewAnalysis;
 import com.bp20.backend.api.review.dto.*;
 import com.bp20.backend.api.review.dto.request.BatchReviewRequestDto;
+import com.bp20.backend.api.review.dto.request.MonthlyReviewReportRequestDto;
 import com.bp20.backend.api.review.dto.response.ABSAAgentResponseDto;
 import com.bp20.backend.api.review.dto.response.AspectRadarResponseDto;
 import com.bp20.backend.api.review.dto.response.AspectStatResponseDto;
+import com.bp20.backend.api.review.dto.response.MonthlyReportStatusResponseDto;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import com.bp20.backend.api.review.repository.ReviewAnalysisRepository;
 import com.bp20.backend.api.review.repository.ReviewRepository;
@@ -61,7 +65,7 @@ public class ReviewAnalysisService {
     @Transactional
     public void analyzeUnanalyzedReviews(Long storeId) {
         List<Review> unanalyzedReviews =
-                reviewRepository.findTop30ByStore_IdAndIsAnalyzedFalse(storeId);
+                reviewRepository.findTop30ByStore_IdAndIsAnalyzedFalseOrderByReviewedDateAscIdAsc(storeId);
 
         if (unanalyzedReviews.isEmpty())
             return;
@@ -71,6 +75,79 @@ public class ReviewAnalysisService {
                 .toList();
 
         analyzeAndSaveReviews(storeId, requestDtos);
+    }
+
+    @Transactional
+    public void generateMonthlyRecommendation(Long storeId, YearMonth targetMonth) {
+        String reportMonth = targetMonth.toString();
+        if (storeReviewRecommendationRepository.existsByStore_IdAndReportMonth(storeId, reportMonth)) {
+            throw new IllegalStateException("이미 생성된 월간 리뷰 리포트입니다.");
+        }
+
+        LocalDateTime startDate = targetMonth.atDay(1).atStartOfDay();
+        LocalDateTime endDate = targetMonth.plusMonths(1).atDay(1).atStartOfDay();
+        List<ReviewAnalysis> analyses = reviewAnalysisRepository
+                .findByReview_Store_IdAndReview_ReviewedDateGreaterThanEqualAndReview_ReviewedDateLessThan(
+                        storeId, startDate, endDate
+                );
+        if (analyses.isEmpty()) {
+            throw new IllegalArgumentException("선택한 월에 분석된 리뷰가 없습니다.");
+        }
+
+        LinkedHashMap<Long, ReviewItemDto> reviewsById = new LinkedHashMap<>();
+        List<MonthlyPreclassifiedResultDto> preclassifiedResults = analyses.stream()
+                .map(analysis -> {
+                    Review review = analysis.getReview();
+                    reviewsById.putIfAbsent(
+                            review.getId(), new ReviewItemDto(review.getId(), review.getContent())
+                    );
+                    return new MonthlyPreclassifiedResultDto(
+                            review.getId(),
+                            analysis.getAspect(),
+                            analysis.getSentiment(),
+                            analysis.getConfidence(),
+                            review.getContent()
+                    );
+                })
+                .toList();
+
+        ABSAAgentResponseDto response = webClient.post()
+                .uri("/api/v1/review/monthly-report")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new MonthlyReviewReportRequestDto(
+                        storeId, List.copyOf(reviewsById.values()), preclassifiedResults
+                ))
+                .retrieve()
+                .bodyToMono(ABSAAgentResponseDto.class)
+                .block();
+
+        if (response == null || response.improvementReport() == null) {
+            throw new IllegalStateException("월간 개선 리포트를 생성하지 못했습니다.");
+        }
+
+        var report = response.improvementReport();
+        List<StoreReviewRecommendation.ActionItem> actionItems = report.actionItems().stream()
+                .map(item -> new StoreReviewRecommendation.ActionItem(
+                        item.priority(), item.aspect(), item.keyword(), item.trendSummary(),
+                        item.problemCause(), item.actionPlan(), item.expectedOutcome(), null
+                ))
+                .toList();
+
+        StoreReviewRecommendation recommendation = StoreReviewRecommendation.builder()
+                .store(storeRepository.getReferenceById(storeId))
+                .executiveSummary(report.executiveSummary())
+                .actionItems(actionItems)
+                .reportMonth(reportMonth)
+                .build();
+        storeReviewRecommendationRepository.save(recommendation);
+    }
+
+    @Transactional(readOnly = true)
+    public MonthlyReportStatusResponseDto getMonthlyReportStatus(Long storeId, YearMonth targetMonth) {
+        String reportMonth = targetMonth.toString();
+        boolean generated = storeReviewRecommendationRepository
+                .existsByStore_IdAndReportMonth(storeId, reportMonth);
+        return new MonthlyReportStatusResponseDto(reportMonth, generated);
     }
 
     public void analyzeAndSaveReviews(Long storeId, List<ReviewItemDto> requestDtos) {
@@ -113,12 +190,18 @@ public class ReviewAnalysisService {
 
             if (response.clusters() != null) {
                 for (KeywordClusterItemDto cluster : response.clusters()) {
+
+                    List<Long> matchedIds = (cluster.matchedReviewIds() != null)
+                            ? cluster.matchedReviewIds()
+                            : java.util.Collections.emptyList();
+
                     StoreReviewKeyword keywordEntity = StoreReviewKeyword.builder()
                             .store(store)
                             .aspect(cluster.aspect())
                             .sentiment(cluster.sentiment())
                             .keyword(cluster.representativeKeyword())
                             .count(cluster.count())
+                            .matchedReviewIds(matchedIds)
                             .analyzedAt(LocalDateTime.now())
                             .build();
                     keywordEntitiesToSave.add(keywordEntity);
