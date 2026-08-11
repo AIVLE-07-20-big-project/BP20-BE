@@ -8,6 +8,7 @@ import com.bp20.backend.api.store.admin.dto.MerchantMonitoringResponse;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.api.user.domain.UserStatus;
+import com.bp20.backend.global.util.PersonalDataMasker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,8 +64,8 @@ public class MerchantMonitoringService {
                 store.getCategory(),
                 store.getAddress(),
                 store.getOwner().getId(),
-                store.getOwner().getName(),
-                store.getOwner().getEmail(),
+                PersonalDataMasker.name(store.getOwner().getName()),
+                PersonalDataMasker.email(store.getOwner().getEmail()),
                 store.getOwner().getStatus(),
                 store.getCreatedAt(),
                 analyses.size(),

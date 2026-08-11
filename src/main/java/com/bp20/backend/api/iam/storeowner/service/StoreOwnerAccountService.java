@@ -3,6 +3,7 @@ package com.bp20.backend.api.iam.storeowner.service;
 import com.bp20.backend.api.iam.log.domain.IamLogAction;
 import com.bp20.backend.api.iam.log.service.IamLogService;
 import com.bp20.backend.api.iam.storeowner.dto.response.StoreOwnerAccountResponse;
+import com.bp20.backend.api.iam.storeowner.dto.response.StoreOwnerPersonalDataResponse;
 import com.bp20.backend.api.store.domain.Store;
 import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.api.user.domain.User;
@@ -17,12 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class StoreOwnerAccountService {
+
+    private static final long PERSONAL_DATA_REVEAL_SECONDS = 60;
 
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
@@ -72,20 +77,60 @@ public class StoreOwnerAccountService {
         return toResponse(storeOwner);
     }
 
+    @Transactional
+    public StoreOwnerPersonalDataResponse revealPersonalData(
+            Long actorUserId,
+            Long storeOwnerId,
+            String currentPassword,
+            String sourceIp
+    ) {
+        User actor = requireAdmin(actorUserId);
+        User storeOwner = requireStoreOwner(storeOwnerId);
+
+        if (!passwordEncoder.matches(currentPassword, actor.getPasswordHash())) {
+            iamLogService.recordInNewTransaction(
+                    actorUserId,
+                    IamLogAction.STORE_OWNER_PERSONAL_DATA_REVEAL_FAILED,
+                    storeOwner.getId(),
+                    storeOwner.getEmail(),
+                    sourceIp
+            );
+            throw new ApiException(ErrorCode.UNAUTHORIZED_INVALID_PASSWORD);
+        }
+
+        iamLogService.record(
+                actorUserId,
+                IamLogAction.STORE_OWNER_PERSONAL_DATA_REVEALED,
+                storeOwner.getId(),
+                storeOwner.getEmail(),
+                sourceIp
+        );
+        return StoreOwnerPersonalDataResponse.from(
+                storeOwner,
+                storeRepository.findByOwnerId(storeOwner.getId()).orElse(null),
+                Instant.now().plus(PERSONAL_DATA_REVEAL_SECONDS, ChronoUnit.SECONDS)
+        );
+    }
+
     private User requireStoreOwner(Long storeOwnerId) {
         return userRepository.findByIdAndRole(storeOwnerId, UserRole.STORE_OWNER)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_USER));
     }
 
     private void requireAdminAndPassword(Long actorUserId, String currentPassword) {
+        User actor = requireAdmin(actorUserId);
+        if (!passwordEncoder.matches(currentPassword, actor.getPasswordHash())) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED_INVALID_PASSWORD);
+        }
+    }
+
+    private User requireAdmin(Long actorUserId) {
         User actor = userRepository.findByIdWithPrivateInfo(actorUserId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_USER));
         if (actor.getRole() != UserRole.SUPER_ADMIN && actor.getRole() != UserRole.ADMIN) {
             throw new ApiException(ErrorCode.FORBIDDEN_ADMIN_REQUIRED);
         }
-        if (!passwordEncoder.matches(currentPassword, actor.getPasswordHash())) {
-            throw new ApiException(ErrorCode.UNAUTHORIZED_INVALID_PASSWORD);
-        }
+        return actor;
     }
 
     private StoreOwnerAccountResponse toResponse(User storeOwner) {

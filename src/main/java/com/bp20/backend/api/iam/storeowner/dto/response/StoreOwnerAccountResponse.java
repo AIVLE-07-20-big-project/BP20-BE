@@ -23,7 +23,7 @@ public record StoreOwnerAccountResponse(
                 user.getStatus(),
                 store == null ? null : store.getId(),
                 store == null ? null : store.getName(),
-                store == null ? null : store.getBusinessNumber(),
+                store == null ? null : PersonalDataMasker.businessNumber(store.getBusinessNumber()),
                 user.getCreatedAt(), user.getUpdatedAt()
         );
     }

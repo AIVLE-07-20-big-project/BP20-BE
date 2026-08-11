@@ -1,10 +1,13 @@
 package com.bp20.backend.api.iam;
 
 import com.bp20.backend.api.iam.invitation.dto.request.InvitationRequest;
+import com.bp20.backend.api.iam.admin.dto.response.AdminPersonalDataResponse;
+import com.bp20.backend.api.iam.admin.service.AdminAccountService;
 import com.bp20.backend.api.iam.invitation.dto.response.InvitationResponse;
 import com.bp20.backend.api.iam.invitation.dto.response.InvitationSummaryResponse;
 import com.bp20.backend.api.iam.invitation.service.InvitationService;
 import com.bp20.backend.api.iam.storeowner.dto.response.StoreOwnerAccountResponse;
+import com.bp20.backend.api.iam.storeowner.dto.response.StoreOwnerPersonalDataResponse;
 import com.bp20.backend.api.iam.storeowner.service.StoreOwnerAccountService;
 import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.domain.UserRole;
@@ -19,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +44,9 @@ class AccountManagementIntegrationTest {
 
     @Autowired
     private StoreOwnerAccountService storeOwnerAccountService;
+
+    @Autowired
+    private AdminAccountService adminAccountService;
 
     @Test
     void superAdminSeesAllInvitationsAndAdminSeesOnlyStoreOwnerInvitations() {
@@ -143,6 +150,31 @@ class AccountManagementIntegrationTest {
         assertThat(storeOwnerAccountService.getStoreOwners())
                 .extracting(StoreOwnerAccountResponse::email)
                 .contains(com.bp20.backend.global.util.PersonalDataMasker.email("status-owner@example.com"));
+    }
+
+    @Test
+    void authorizedManagersCanTemporarilyRevealAccountPersonalData() {
+        User superAdmin = saveSuperAdmin("reveal-super@example.com");
+        User admin = saveAdmin("reveal-admin@example.com");
+        User owner = userRepository.save(User.createStoreOwner(
+                "reveal-owner@example.com",
+                "Reveal Owner",
+                "010-9876-5432",
+                passwordEncoder.encode(PASSWORD)
+        ));
+
+        AdminPersonalDataResponse adminPersonalData = adminAccountService.revealPersonalData(
+                superAdmin.getId(), admin.getId(), PASSWORD, "127.0.0.1"
+        );
+        StoreOwnerPersonalDataResponse ownerPersonalData = storeOwnerAccountService.revealPersonalData(
+                admin.getId(), owner.getId(), PASSWORD, "127.0.0.1"
+        );
+
+        assertThat(adminPersonalData.email()).isEqualTo("reveal-admin@example.com");
+        assertThat(adminPersonalData.visibleUntil()).isAfter(Instant.now());
+        assertThat(ownerPersonalData.email()).isEqualTo("reveal-owner@example.com");
+        assertThat(ownerPersonalData.phoneNumber()).isEqualTo("01098765432");
+        assertThat(ownerPersonalData.visibleUntil()).isAfter(Instant.now());
     }
 
     private User saveSuperAdmin(String email) {

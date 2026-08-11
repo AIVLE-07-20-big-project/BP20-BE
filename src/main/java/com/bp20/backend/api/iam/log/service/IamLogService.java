@@ -9,6 +9,7 @@ import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -23,6 +24,17 @@ public class IamLogService {
     @Transactional
     public void record(Long actorUserId, IamLogAction action, Long targetUserId,
                        String targetEmail, String sourceIp) {
+        save(actorUserId, action, targetUserId, targetEmail, sourceIp);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordInNewTransaction(Long actorUserId, IamLogAction action, Long targetUserId,
+                                       String targetEmail, String sourceIp) {
+        save(actorUserId, action, targetUserId, targetEmail, sourceIp);
+    }
+
+    private void save(Long actorUserId, IamLogAction action, Long targetUserId,
+                      String targetEmail, String sourceIp) {
         User actorUser = findOptionalUser(actorUserId);
         User targetUser = findOptionalUser(targetUserId);
         iamLogRepository.save(IamLog.of(

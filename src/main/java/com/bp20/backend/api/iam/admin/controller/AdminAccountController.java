@@ -2,6 +2,8 @@ package com.bp20.backend.api.iam.admin.controller;
 
 import com.bp20.backend.api.iam.admin.dto.request.ChangeAdminStatusRequest;
 import com.bp20.backend.api.iam.admin.dto.response.AdminAccountResponse;
+import com.bp20.backend.api.iam.admin.dto.response.AdminPersonalDataResponse;
+import com.bp20.backend.api.iam.dto.request.ReauthenticationRequest;
 import com.bp20.backend.api.iam.admin.service.AdminAccountService;
 import com.bp20.backend.global.response.ApiResponse;
 import com.bp20.backend.global.response.SuccessCode;
@@ -16,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,6 +68,25 @@ public class AdminAccountController {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_ADMIN_STATUS_UPDATE,
                 adminAccountService.activateAdmin(
+                        currentUser.id(), adminId, request.currentPassword(), servletRequest.getRemoteAddr()
+                )
+        );
+    }
+
+    @PostMapping("/{adminId}/personal-data/reveal")
+    @Operation(
+            summary = "관리자 개인정보 원문 일시 조회",
+            description = "현재 비밀번호로 재인증한 뒤 관리자 개인정보 원문을 60초간 표시할 수 있도록 반환하며 IAM 로그를 기록합니다."
+    )
+    public ResponseEntity<ApiResponse<AdminPersonalDataResponse>> revealPersonalData(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable Long adminId,
+            @Valid @RequestBody ReauthenticationRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.successNoStore(
+                SuccessCode.SUCCESS_PERSONAL_DATA_REVEAL,
+                adminAccountService.revealPersonalData(
                         currentUser.id(), adminId, request.currentPassword(), servletRequest.getRemoteAddr()
                 )
         );
