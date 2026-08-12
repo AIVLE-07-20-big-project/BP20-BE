@@ -51,8 +51,8 @@ public class ProductionVerificationMetricCollector
     ) {
         return new SalesMetrics(
                 null,
-                null,
-                null,
+                collectVisitCount(storeId, from, to),
+                collectAverageOrderValue(storeId, from, to),
                 null,
                 percentage(
                         """
@@ -187,6 +187,42 @@ public class ProductionVerificationMetricCollector
                 JOIN stores store ON store.owner_user_id = sales.owner_id
                 WHERE store.store_id = ?
                   AND sales.sale_date >= ? AND sales.sale_date < ?
+                """,
+                storeId,
+                from.toLocalDate(),
+                to.toLocalDate()
+        );
+    }
+
+    private Integer collectVisitCount(
+            Long storeId,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        return integer(
+                """
+                SELECT COUNT(*)
+                FROM orders
+                WHERE store_id = ?
+                  AND ordered_date >= ? AND ordered_date < ?
+                """,
+                storeId,
+                from.toLocalDate(),
+                to.toLocalDate()
+        );
+    }
+
+    private Double collectAverageOrderValue(
+            Long storeId,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        return decimal(
+                """
+                SELECT AVG(total_amount)
+                FROM orders
+                WHERE store_id = ?
+                  AND ordered_date >= ? AND ordered_date < ?
                 """,
                 storeId,
                 from.toLocalDate(),
