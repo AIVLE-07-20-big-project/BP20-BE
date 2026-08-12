@@ -36,6 +36,12 @@ storage:
     region: ${AWS_REGION:ap-northeast-2}
     upload-prefix: ${UPLOAD_S3_PREFIX:uploads/v1}
 
+notice:
+  storage:
+    s3:
+      bucket: ${NOTICE_S3_BUCKET:${S3_BUCKET_NAME:}}
+      prefix: ${NOTICE_S3_PREFIX:uploads/v1/notices}
+
 server:
   port: 8080
   forward-headers-strategy: framework

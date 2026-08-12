@@ -13,6 +13,11 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -28,9 +33,16 @@ public class NoticeAttachmentService {
 
     private final NoticeRepository noticeRepository;
     private final NoticeAttachmentRepository attachmentRepository;
+    private final S3Client s3Client;
 
     @Value("${app.notice-storage-path:uploads/notices}")
     private String storagePath;
+
+    @Value("${notice.storage.s3.bucket:}")
+    private String s3Bucket;
+
+    @Value("${notice.storage.s3.prefix:notices/v1}")
+    private String s3Prefix;
 
     @Transactional
     public NoticeAttachment upload(Long noticeId, MultipartFile file) {
@@ -46,16 +58,16 @@ public class NoticeAttachmentService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_NOTICE));
 
         try {
-            Path directory = Paths.get(storagePath).toAbsolutePath().normalize().resolve(String.valueOf(noticeId));
-            Files.createDirectories(directory);
-            String storedName = UUID.randomUUID() + "." + extension;
-            Files.copy(file.getInputStream(), directory.resolve(storedName), StandardCopyOption.REPLACE_EXISTING);
+            String storedName = buildS3Key(noticeId, extension);
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(requiredS3Bucket())
+                    .key(storedName)
+                    .contentType(file.getContentType() == null ? "application/octet-stream" : file.getContentType())
+                    .build();
+            s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
             attachmentRepository.findByNoticeId(noticeId).ifPresent(old -> {
-                try {
-                    Files.deleteIfExists(directory.resolve(old.getStoredName()));
-                } catch (IOException ignored) {
-                }
+                deleteStoredObject(old);
                 attachmentRepository.delete(old);
             });
             return attachmentRepository.save(NoticeAttachment.create(
@@ -75,6 +87,17 @@ public class NoticeAttachmentService {
     }
 
     public Resource loadResource(NoticeAttachment attachment) {
+        if (isS3Key(attachment.getStoredName())) {
+            try {
+                return new org.springframework.core.io.InputStreamResource(s3Client.getObject(GetObjectRequest.builder()
+                        .bucket(requiredS3Bucket())
+                        .key(attachment.getStoredName())
+                        .build()));
+            } catch (RuntimeException exception) {
+                throw new IllegalStateException("S3 첨부 파일을 읽지 못했습니다.", exception);
+            }
+        }
+
         try {
             Path path = Paths.get(storagePath).toAbsolutePath().normalize()
                     .resolve(String.valueOf(attachment.getNotice().getId()))
@@ -85,6 +108,53 @@ public class NoticeAttachmentService {
         } catch (IOException exception) {
             throw new IllegalStateException("첨부 파일을 읽지 못했습니다.", exception);
         }
+    }
+
+    @Transactional
+    public void deleteByNoticeId(Long noticeId) {
+        attachmentRepository.findByNoticeId(noticeId).ifPresent(attachment -> {
+            deleteStoredObject(attachment);
+            attachmentRepository.delete(attachment);
+        });
+    }
+
+    private String buildS3Key(Long noticeId, String extension) {
+        return normalizePrefix() + "/" + noticeId + "/" + UUID.randomUUID() + "." + extension;
+    }
+
+    private boolean isS3Key(String storedName) {
+        return storedName != null && storedName.startsWith(normalizePrefix() + "/");
+    }
+
+    private void deleteStoredObject(NoticeAttachment attachment) {
+        String storedName = attachment.getStoredName();
+        if (isS3Key(storedName)) {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(requiredS3Bucket())
+                    .key(storedName)
+                    .build());
+            return;
+        }
+
+        try {
+            Path path = Paths.get(storagePath).toAbsolutePath().normalize()
+                    .resolve(String.valueOf(attachment.getNotice().getId()))
+                    .resolve(storedName).normalize();
+            Files.deleteIfExists(path);
+        } catch (IOException ignored) {
+            // Legacy local files are best-effort cleanup targets.
+        }
+    }
+
+    private String requiredS3Bucket() {
+        if (s3Bucket == null || s3Bucket.isBlank()) {
+            throw new IllegalStateException("공지 첨부파일용 S3 버킷이 설정되지 않았습니다. NOTICE_S3_BUCKET 또는 S3_BUCKET_NAME을 설정하세요.");
+        }
+        return s3Bucket;
+    }
+
+    private String normalizePrefix() {
+        return s3Prefix.replaceAll("^/+|/+$", "");
     }
 
     private String extensionOf(String name) {

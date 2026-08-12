@@ -197,6 +197,8 @@ services:
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
       AWS_REGION: ${AWS_REGION:-ap-southeast-2}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      NOTICE_S3_BUCKET: ${NOTICE_S3_BUCKET:-${S3_BUCKET_NAME:-}}
+      NOTICE_S3_PREFIX: ${NOTICE_S3_PREFIX:-uploads/v1/notices}
       UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
       REDIS_HOST: redis
       REDIS_PORT: 6379
