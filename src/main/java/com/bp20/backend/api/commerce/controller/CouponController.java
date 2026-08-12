@@ -33,7 +33,10 @@ public class CouponController {
     private final CouponService couponService;
 
     @PostMapping
-    @Operation(summary = "고객 쿠폰 발급", description = "고객과 할인 조건, 만료 시각을 지정해 쿠폰을 발급합니다.")
+    @Operation(
+            summary = "고객 쿠폰 발급",
+            description = "고객과 할인 조건, 만료 시각 및 온라인·오프라인 전용 사용 채널을 지정해 쿠폰을 발급합니다."
+    )
     public ResponseEntity<ApiResponse<CouponResponse>> issue(
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @Valid @RequestBody IssueCouponRequest request
@@ -76,6 +79,21 @@ public class CouponController {
         return ApiResponse.success(
                 SuccessCode.SUCCESS_COUPON_UPDATE,
                 couponService.revoke(currentUser.id(), couponId)
+        );
+    }
+
+    @PatchMapping("/{couponId}/use")
+    @Operation(
+            summary = "매장 쿠폰 사용 처리",
+            description = "고객이 오프라인 매장에서 제시한 사용 가능한 쿠폰을 사용 완료로 처리합니다."
+    )
+    public ResponseEntity<ApiResponse<CouponResponse>> use(
+            @AuthenticationPrincipal SecurityPrincipal currentUser,
+            @PathVariable Long couponId
+    ) {
+        return ApiResponse.success(
+                SuccessCode.SUCCESS_COUPON_UPDATE,
+                couponService.use(currentUser.id(), couponId)
         );
     }
 }

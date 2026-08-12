@@ -13,9 +13,6 @@ spring:
         format_sql: true
     open-in-view: false
 
-  main:
-    web-application-type: servlet
-
   servlet:
     multipart:
       max-file-size: 20MB
@@ -129,7 +126,7 @@ product-image-service:
 
 # AI 서버 -> BE 내부 API 인증키 (신규 가맹점 영업 타겟 추천용 자사 가맹점 레지스트리 조회)
 internal-api:
-  key: ${INTERNAL_API_KEY}
+  key: ${INTERNAL_API_KEY:}
 
 # 생성된 상품 이미지 저장소. product-image-storage.s3.bucket이 설정되어 있으면 S3,
 # 없으면 로컬 디스크에 저장한다. (storage.s3.*는 main이 추가한 범용 오브젝트 스토리지 전용이라

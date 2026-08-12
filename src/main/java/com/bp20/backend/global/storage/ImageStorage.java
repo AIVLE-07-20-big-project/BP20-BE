@@ -8,4 +8,9 @@ package com.bp20.backend.global.storage;
 public interface ImageStorage {
 
     String store(byte[] data, String filename);
+
+    StoredImage load(String filename);
+
+    record StoredImage(byte[] data, String contentType) {
+    }
 }

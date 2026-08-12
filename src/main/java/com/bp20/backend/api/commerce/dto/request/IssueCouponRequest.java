@@ -1,6 +1,7 @@
 package com.bp20.backend.api.commerce.dto.request;
 
 import com.bp20.backend.api.commerce.domain.DiscountType;
+import com.bp20.backend.api.commerce.domain.CouponUsageChannel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -32,6 +33,17 @@ public record IssueCouponRequest(
         @Schema(description = "쿠폰 만료 일시", example = "2026-08-31T23:59:59")
         @NotNull(message = "쿠폰 만료 시각은 필수입니다.")
         @Future(message = "쿠폰 만료 시각은 현재보다 이후여야 합니다.")
-        LocalDateTime expiresAt
+        LocalDateTime expiresAt,
+
+        @Schema(
+                description = "쿠폰 사용 채널. 온라인 전용 또는 오프라인 전용 중 하나를 선택합니다.",
+                example = "OFFLINE_ONLY",
+                allowableValues = {"ONLINE_ONLY", "OFFLINE_ONLY"}
+        )
+        @NotNull(message = "쿠폰 사용 채널은 필수입니다.")
+        CouponUsageChannel usageChannel,
+
+        @Schema(description = "매장 방문 쿠폰 발급의 근거가 된 온라인 구매 이력 ID", example = "1")
+        Long sourceOnlinePurchaseId
 ) {
 }

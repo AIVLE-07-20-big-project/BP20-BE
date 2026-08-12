@@ -18,6 +18,7 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "온라인 상품 등록 또는 해제 요청이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_DISCOUNT(HttpStatus.BAD_REQUEST, "할인 설정이 올바르지 않습니다."),
     BAD_REQUEST_INVALID_COUPON(HttpStatus.BAD_REQUEST, "쿠폰 발급 또는 상태 변경 요청이 올바르지 않습니다."),
+    BAD_REQUEST_INVALID_ONLINE_PURCHASE(HttpStatus.BAD_REQUEST, "온라인 구매 이력 요청이 올바르지 않습니다."),
     BAD_REQUEST_PRIVACY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "필수 개인정보 수집 및 이용 동의가 필요합니다."),
     BAD_REQUEST_CAPTCHA_REQUIRED(HttpStatus.BAD_REQUEST, "자동입력 방지 확인이 필요합니다."),
     BAD_REQUEST_INVALID_CAPTCHA(HttpStatus.BAD_REQUEST, "자동입력 방지 확인에 실패했습니다. 다시 시도해 주세요."),
@@ -51,6 +52,7 @@ public enum ErrorCode {
     NOT_FOUND_DISCOUNT(HttpStatus.NOT_FOUND, "할인을 찾을 수 없습니다."),
     NOT_FOUND_CUSTOMER(HttpStatus.NOT_FOUND, "고객을 찾을 수 없습니다."),
     NOT_FOUND_COUPON(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
+    NOT_FOUND_ONLINE_PURCHASE(HttpStatus.NOT_FOUND, "온라인 구매 이력을 찾을 수 없습니다."),
     NOT_FOUND_SIGNUP_INVITATION(HttpStatus.NOT_FOUND, "유효한 회원가입 초대를 찾을 수 없습니다."),
     NOT_FOUND_RECEIPT(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
     NOT_FOUND_SALES_TARGET(HttpStatus.NOT_FOUND, "존재하지 않는 영업 타겟입니다."),
@@ -62,6 +64,7 @@ public enum ErrorCode {
     CONFLICT_STORE_OWNER_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "이미 매장에 연결된 점주입니다."),
     CONFLICT_STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "점주에게 이미 등록된 매장이 있습니다."),
     CONFLICT_DUPLICATE_CUSTOMER_EMAIL(HttpStatus.CONFLICT, "해당 매장에 이미 등록된 고객 이메일입니다."),
+    CONFLICT_OFFLINE_COUPON_ALREADY_ISSUED(HttpStatus.CONFLICT, "해당 온라인 구매에 매장 방문 쿠폰이 이미 발급되었습니다."),
     CONFLICT_EXPIRED_SIGNUP_INVITATION(HttpStatus.CONFLICT, "회원가입 초대가 만료되었거나 더 이상 유효하지 않습니다."),
     CONFLICT_INVITATION_NOT_REVOCABLE(HttpStatus.CONFLICT, "대기 중인 초대만 취소할 수 있습니다."),
     CONFLICT_DUPLICATE_RECEIPT(HttpStatus.CONFLICT, "동일한 거래로 보이는 영수증이 이미 등록되어 있습니다."),
@@ -69,6 +72,12 @@ public enum ErrorCode {
 
     OCR_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "OCR/분석 서비스와 통신할 수 없습니다."),
     PRODUCT_IMAGE_SERVICE_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "AI 상품 이미지 생성 서비스와 통신할 수 없습니다."),
+    PRODUCT_IMAGE_MODEL_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "현재 AI 상품 이미지 생성 모델을 사용할 수 없습니다. 관리자에게 문의해 주세요."),
+    PRODUCT_IMAGE_SERVICE_CONFIGURATION_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "AI 상품 이미지 생성 서비스 설정을 확인할 수 없습니다."),
+    PRODUCT_IMAGE_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AI 이미지 생성 요청이 많습니다. 잠시 후 다시 시도해 주세요."),
+    PRODUCT_IMAGE_QUOTA_EXCEEDED(HttpStatus.SERVICE_UNAVAILABLE, "AI 상품 이미지 생성 서비스 사용 한도가 초과되었습니다. 관리자에게 문의해 주세요."),
+    PRODUCT_IMAGE_GENERATION_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI 상품 이미지 생성 시간이 초과되었습니다. 다시 시도해 주세요."),
+    PRODUCT_IMAGE_REQUEST_REJECTED(HttpStatus.UNPROCESSABLE_ENTITY, "상품 이미지 생성 요청을 처리할 수 없습니다. 이미지와 요청 내용을 확인해 주세요."),
     SERVICE_UNAVAILABLE_CAPTCHA(HttpStatus.SERVICE_UNAVAILABLE, "자동입력 방지 확인 서비스를 사용할 수 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

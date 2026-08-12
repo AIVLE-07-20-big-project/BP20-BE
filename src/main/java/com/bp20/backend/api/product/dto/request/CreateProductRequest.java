@@ -1,5 +1,6 @@
 package com.bp20.backend.api.product.dto.request;
 
+import com.bp20.backend.api.product.domain.ProductStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
@@ -21,12 +22,24 @@ public record CreateProductRequest(
         @Positive(message = "판매 가격은 0원보다 커야 합니다.")
         long price,
 
-        @Schema(description = "재고 수량", example = "30")
+        @Schema(description = "재고 수량. 수량을 관리하지 않는 상품은 null", example = "30", nullable = true)
         @PositiveOrZero(message = "재고 수량은 0개 이상이어야 합니다.")
-        int stockQuantity,
+        Integer stockQuantity,
 
         @Schema(description = "상품 이미지 URL", example = "https://cdn.bp20.com/products/club-sandwich.jpg")
         @Size(max = 500, message = "이미지 URL은 500자 이하여야 합니다.")
-        String imageUrl
+        String imageUrl,
+
+        @Schema(description = "초기 판매 상태", example = "ACTIVE", allowableValues = {"ACTIVE", "INACTIVE", "SOLD_OUT"})
+        ProductStatus status
 ) {
+    public CreateProductRequest(
+            String name,
+            String description,
+            long price,
+            Integer stockQuantity,
+            String imageUrl
+    ) {
+        this(name, description, price, stockQuantity, imageUrl, null);
+    }
 }

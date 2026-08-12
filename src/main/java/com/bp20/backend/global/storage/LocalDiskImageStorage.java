@@ -33,6 +33,24 @@ public class LocalDiskImageStorage implements ImageStorage {
         } catch (IOException e) {
             throw new UncheckedIOException("이미지 저장에 실패했습니다: " + filename, e);
         }
-        return baseUrl + "/" + filename;
+        return "/api/public/product-images/" + filename;
+    }
+
+    @Override
+    public StoredImage load(String filename) {
+        Path imagePath = baseDir.resolve(filename).normalize();
+        if (!imagePath.startsWith(baseDir.normalize())) {
+            throw new IllegalArgumentException("올바르지 않은 이미지 경로입니다.");
+        }
+
+        try {
+            String contentType = Files.probeContentType(imagePath);
+            return new StoredImage(
+                    Files.readAllBytes(imagePath),
+                    contentType == null ? "image/png" : contentType
+            );
+        } catch (IOException e) {
+            throw new UncheckedIOException("이미지를 불러올 수 없습니다: " + filename, e);
+        }
     }
 }

@@ -3,6 +3,9 @@ package com.bp20.backend.api.commerce.service;
 import com.bp20.backend.api.commerce.domain.Coupon;
 import com.bp20.backend.api.commerce.domain.CouponStatus;
 import com.bp20.backend.api.commerce.domain.DiscountType;
+import com.bp20.backend.api.commerce.domain.CouponUsageChannel;
+import com.bp20.backend.api.commerce.order.domain.OnlinePurchase;
+import com.bp20.backend.api.commerce.order.repository.OnlinePurchaseRepository;
 import com.bp20.backend.api.commerce.dto.request.IssueCouponRequest;
 import com.bp20.backend.api.commerce.dto.response.CouponResponse;
 import com.bp20.backend.api.commerce.repository.CouponRepository;
@@ -26,6 +29,7 @@ public class CouponService {
     private final StoreRepository storeRepository;
     private final CustomerRepository customerRepository;
     private final CouponRepository couponRepository;
+    private final OnlinePurchaseRepository onlinePurchaseRepository;
 
     @Transactional
     public CouponResponse issue(Long ownerId, IssueCouponRequest request) {
@@ -40,16 +44,51 @@ public class CouponService {
         Customer customer = customerRepository.findOwnedCustomer(request.customerId(), ownerId)
                 .filter(Customer::isActive)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_CUSTOMER));
+        OnlinePurchase sourcePurchase = resolveSourcePurchase(ownerId, customer, request.sourceOnlinePurchaseId());
+        CouponUsageChannel usageChannel = resolveUsageChannel(request.usageChannel(), sourcePurchase);
         Coupon coupon = Coupon.issue(
                 store,
                 customer,
                 request.name().trim(),
                 request.discountType(),
                 request.discountValue(),
+                usageChannel,
+                sourcePurchase,
                 now,
                 request.expiresAt()
         );
         return CouponResponse.from(couponRepository.save(coupon));
+    }
+
+    private OnlinePurchase resolveSourcePurchase(Long ownerId, Customer customer, Long sourcePurchaseId) {
+        if (sourcePurchaseId == null) {
+            return null;
+        }
+        OnlinePurchase purchase = onlinePurchaseRepository.findOwnedPurchase(sourcePurchaseId, ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_ONLINE_PURCHASE));
+        if (!purchase.getCustomer().getId().equals(customer.getId())) {
+            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
+        }
+        if (couponRepository.existsBySourceOnlinePurchaseId(sourcePurchaseId)) {
+            throw new ApiException(ErrorCode.CONFLICT_OFFLINE_COUPON_ALREADY_ISSUED);
+        }
+        return purchase;
+    }
+
+    private CouponUsageChannel resolveUsageChannel(
+            CouponUsageChannel requestedChannel,
+            OnlinePurchase sourcePurchase
+    ) {
+        if (sourcePurchase != null) {
+            if (requestedChannel != CouponUsageChannel.OFFLINE_ONLY) {
+                throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
+            }
+            return CouponUsageChannel.OFFLINE_ONLY;
+        }
+        if (requestedChannel == null) {
+            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
+        }
+        return requestedChannel;
     }
 
     @Transactional
@@ -77,6 +116,18 @@ public class CouponService {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
         }
         coupon.revoke(now);
+        return CouponResponse.from(coupon);
+    }
+
+    @Transactional
+    public CouponResponse use(Long ownerId, Long couponId) {
+        Coupon coupon = requireOwnedCoupon(ownerId, couponId);
+        LocalDateTime now = LocalDateTime.now();
+        expireIfNecessary(coupon, now);
+        if (coupon.getUsageChannel() != CouponUsageChannel.OFFLINE_ONLY || !coupon.isUsable(now)) {
+            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_COUPON);
+        }
+        coupon.use(now);
         return CouponResponse.from(coupon);
     }
 

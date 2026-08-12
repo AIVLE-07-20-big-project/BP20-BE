@@ -13,6 +13,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByStoreIdOrderByIdDesc(Long storeId);
 
+    List<Product> findByStore_Owner_IdOrderByIdAsc(Long ownerId);
+
     /**
      * "내 상품"(온라인 판매 관리) 목록용 - CSV로 임포트된 메뉴 행(sourceProductId != null)은
      * 판매 상품 목록에 섞이면 안 되므로 제외한다.

@@ -1,6 +1,7 @@
 package com.bp20.backend.api.csv.domain;
 
 import com.bp20.backend.api.recommendation.dto.ProductDataRequest;
+import com.bp20.backend.api.product.domain.Product;
 import com.bp20.backend.api.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -17,9 +19,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "csv_products", uniqueConstraints = @UniqueConstraint(
-        name = "uk_csv_product_owner_code", columnNames = {"owner_id", "product_code"}
-))
+@Table(
+        name = "csv_products",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_csv_product_owner_code",
+                        columnNames = {"owner_id", "product_code"}
+                ),
+                @UniqueConstraint(
+                        name = "uk_csv_product_owner_product",
+                        columnNames = {"owner_id", "product_id"}
+                )
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CsvProduct {
@@ -28,6 +40,11 @@ public class CsvProduct {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
+
     @Column(name = "product_code", nullable = false, length = 50)
     private String productCode;
 
@@ -39,8 +56,9 @@ public class CsvProduct {
     @Column(length = 100) private String ingredient4;
     @Column(length = 100) private String ingredient5;
 
-    public CsvProduct(User owner, ProductDataRequest value) {
+    public CsvProduct(User owner, Product product, ProductDataRequest value) {
         this.owner = owner;
+        this.product = product;
         this.productCode = value.productCode();
         this.productName = value.productName();
         this.ingredient1 = value.ingredient1();
@@ -51,6 +69,14 @@ public class CsvProduct {
     }
 
     public ProductDataRequest toDto() {
-        return new ProductDataRequest(productCode, productName, ingredient1, ingredient2, ingredient3, ingredient4, ingredient5);
+        return new ProductDataRequest(
+                productCode,
+                product == null ? productName : product.getName(),
+                ingredient1,
+                ingredient2,
+                ingredient3,
+                ingredient4,
+                ingredient5
+        );
     }
 }
