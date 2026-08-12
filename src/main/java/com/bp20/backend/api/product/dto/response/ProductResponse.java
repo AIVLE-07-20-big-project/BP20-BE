@@ -11,7 +11,7 @@ public record ProductResponse(
         String name,
         String description,
         long price,
-        int stockQuantity,
+        Integer stockQuantity,
         String imageUrl,
         ProductStatus status,
         OnlineSalesStatus onlineSalesStatus,

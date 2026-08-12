@@ -21,6 +21,7 @@ services:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}" ]
       interval: 10s
       timeout: 5s
+      start_period: 60s
       retries: 5
 
   # Redis — Celery 브로커/결과 백엔드. 추후 Spring 캐시/세션도 공용 예정.
@@ -67,6 +68,7 @@ services:
 
   # FastAPI — 매출 분석·전략 추천·OCR (BP20-AI)
   fastapi:
+    image: bp20-ai:local
     build:
       context: ${BP20_AI_PATH:-../BP20-AI}
     container_name: fastapi_bp20
@@ -76,11 +78,16 @@ services:
     env_file:
       - .env
     environment:
+      CONTAINER_ROLE: api
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       HF_TOKEN: ${HF_TOKEN:-${ROBERTA_HF_TOKEN:-}}
-      AI_DATABASE_URL: ${AI_DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}}
-      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      AI_DB_HOST: mysql
+      AI_DB_PORT: "3306"
+      AI_DB_NAME: ${MYSQL_DATABASE}
+      AI_DB_USERNAME: ${MYSQL_USER}
+      AI_DB_PASSWORD: ${MYSQL_PASSWORD}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
       MODEL_S3_PREFIX: ${MODEL_S3_PREFIX:-models/v1}
       RAG_S3_PREFIX: ${RAG_S3_PREFIX:-rag/v1}
@@ -88,12 +95,14 @@ services:
       UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
       FEEDBACK_S3_PREFIX: ${FEEDBACK_S3_PREFIX:-feedback/v1}
       BANDIT_S3_PREFIX: ${BANDIT_S3_PREFIX:-bandit/v1}
-      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs/v2}
+      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs}
     volumes:
       - ${BP20_AI_PATH:-../BP20-AI}/data:/app/data
       - ${BP20_AI_PATH:-../BP20-AI}/model:/app/model
       - paddlex_models:/root/.paddlex  # PaddleOCR 모델 캐시(없으면 재생성마다 재다운로드)
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -103,11 +112,12 @@ services:
       interval: 30s
       timeout: 5s
       # PaddleOCR/ABSA 모델 최초 로딩 시간이 길어 초기 healthcheck 실패 방지
-      start_period: 180s
+      start_period: 300s
       retries: 3
 
   # Celery 워커 — 무거운 매출 분석 오프로드. 동시성 2(워커당 RSS 약 531MB 기준)
   celery-worker:
+    image: bp20-ai:local
     build:
       context: ${BP20_AI_PATH:-../BP20-AI}
     container_name: celery_worker_bp20
@@ -116,11 +126,16 @@ services:
     env_file:
       - .env
     environment:
+      CONTAINER_ROLE: worker
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       HF_TOKEN: ${HF_TOKEN:-${ROBERTA_HF_TOKEN:-}}
-      AI_DATABASE_URL: ${AI_DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}}
-      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      AI_DB_HOST: mysql
+      AI_DB_PORT: "3306"
+      AI_DB_NAME: ${MYSQL_DATABASE}
+      AI_DB_USERNAME: ${MYSQL_USER}
+      AI_DB_PASSWORD: ${MYSQL_PASSWORD}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
       MODEL_S3_PREFIX: ${MODEL_S3_PREFIX:-models/v1}
       RAG_S3_PREFIX: ${RAG_S3_PREFIX:-rag/v1}
@@ -128,11 +143,13 @@ services:
       UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
       FEEDBACK_S3_PREFIX: ${FEEDBACK_S3_PREFIX:-feedback/v1}
       BANDIT_S3_PREFIX: ${BANDIT_S3_PREFIX:-bandit/v1}
-      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs/v2}
+      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs}
     volumes:
       - ${BP20_AI_PATH:-../BP20-AI}/data:/app/data
       - ${BP20_AI_PATH:-../BP20-AI}/model:/app/model
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -146,6 +163,7 @@ services:
 
   # Celery beat — 정체된 queued/running 잡 청소 스케줄러
   celery-beat:
+    image: bp20-ai:local
     build:
       context: ${BP20_AI_PATH:-../BP20-AI}
     container_name: celery_beat_bp20
@@ -154,11 +172,16 @@ services:
     env_file:
       - .env
     environment:
+      CONTAINER_ROLE: beat
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       HF_TOKEN: ${HF_TOKEN:-${ROBERTA_HF_TOKEN:-}}
-      AI_DATABASE_URL: ${AI_DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}}
-      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      AI_DB_HOST: mysql
+      AI_DB_PORT: "3306"
+      AI_DB_NAME: ${MYSQL_DATABASE}
+      AI_DB_USERNAME: ${MYSQL_USER}
+      AI_DB_PASSWORD: ${MYSQL_PASSWORD}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
       MODEL_S3_PREFIX: ${MODEL_S3_PREFIX:-models/v1}
       RAG_S3_PREFIX: ${RAG_S3_PREFIX:-rag/v1}
@@ -166,8 +189,10 @@ services:
       UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
       FEEDBACK_S3_PREFIX: ${FEEDBACK_S3_PREFIX:-feedback/v1}
       BANDIT_S3_PREFIX: ${BANDIT_S3_PREFIX:-bandit/v1}
-      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs/v2}
+      CAMPAIGN_LOGS_S3_PREFIX: ${CAMPAIGN_LOGS_S3_PREFIX:-logs}
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -195,9 +220,11 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       FASTAPI_BASE_URL: http://fastapi:8000
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
-      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
       UPLOAD_S3_PREFIX: ${UPLOAD_S3_PREFIX:-uploads/v1}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-ap-northeast-2}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:

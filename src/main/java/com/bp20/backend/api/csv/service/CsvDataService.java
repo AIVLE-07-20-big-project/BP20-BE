@@ -7,9 +7,14 @@ import com.bp20.backend.api.csv.repository.CsvDailySalesRepository;
 import com.bp20.backend.api.csv.repository.CsvInventoryRepository;
 import com.bp20.backend.api.csv.repository.CsvProductRepository;
 import com.bp20.backend.api.ai.service.AiSalesFeedbackService;
+import com.bp20.backend.api.product.domain.Product;
+import com.bp20.backend.api.product.domain.ProductStatus;
+import com.bp20.backend.api.product.repository.ProductRepository;
 import com.bp20.backend.api.recommendation.dto.DailySalesDto;
 import com.bp20.backend.api.recommendation.dto.InventoryDataRequest;
 import com.bp20.backend.api.recommendation.dto.ProductDataRequest;
+import com.bp20.backend.api.store.domain.Store;
+import com.bp20.backend.api.store.repository.StoreRepository;
 import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
@@ -28,14 +33,19 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class CsvDataService {
 
-    private final CsvProductRepository productRepository;
+    private final CsvProductRepository csvProductRepository;
+    private final ProductRepository productRepository;
+    private final StoreRepository storeRepository;
     private final CsvDailySalesRepository salesRepository;
     private final CsvInventoryRepository inventoryRepository;
     private final UserRepository userRepository;
@@ -47,7 +57,12 @@ public class CsvDataService {
     @Transactional
     public int loadProducts(Long ownerId, MultipartFile file) {
         User owner = findOwner(ownerId);
-        List<ProductDataRequest> result = new ArrayList<>();
+        Store store = storeRepository.findByOwnerId(ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND_STORE));
+        Map<String, Product> registeredProductsByName = getRegisteredProductsByName(ownerId);
+        List<CsvProduct> result = new ArrayList<>();
+        Set<String> productCodes = new HashSet<>();
+        Set<String> productNames = new HashSet<>();
 
         try (
                 BufferedReader reader = createReader(file);
@@ -57,6 +72,7 @@ public class CsvDataService {
                     parser,
                     "product_code",
                     "product_name",
+                    "price",
                     "ingredient1",
                     "ingredient2",
                     "ingredient3",
@@ -65,9 +81,40 @@ public class CsvDataService {
             );
 
             for (CSVRecord record : parser) {
+                String productCode = getRequired(record, "product_code");
+                String productName = getRequired(record, "product_name");
+                long price = getPositiveLong(record, "price");
+                Integer stockQuantity = getNullableNonNegativeInteger(record, "stock_quantity");
+                String description = getNullable(record, "description");
+                String imageUrl = getNullable(record, "image_url");
+
+                if (!productCodes.add(productCode)) {
+                    throw new IllegalArgumentException("상품 코드가 중복되었습니다: " + productCode);
+                }
+                if (!productNames.add(productName)) {
+                    throw new IllegalArgumentException("상품명이 중복되었습니다: " + productName);
+                }
+
+                Product registeredProduct = registeredProductsByName.get(productName);
+                if (registeredProduct == null) {
+                    ProductStatus status = stockQuantity != null && stockQuantity == 0
+                            ? ProductStatus.SOLD_OUT
+                            : ProductStatus.ACTIVE;
+                    registeredProduct = productRepository.save(Product.create(
+                            store,
+                            productName,
+                            description,
+                            price,
+                            stockQuantity,
+                            imageUrl,
+                            status
+                    ));
+                    registeredProductsByName.put(productName, registeredProduct);
+                }
+
                 ProductDataRequest product = new ProductDataRequest(
-                        record.get("product_code"),
-                        record.get("product_name"),
+                        productCode,
+                        productName,
                         getNullable(record, "ingredient1"),
                         getNullable(record, "ingredient2"),
                         getNullable(record, "ingredient3"),
@@ -75,7 +122,7 @@ public class CsvDataService {
                         getNullable(record, "ingredient5")
                 );
 
-                result.add(product);
+                result.add(new CsvProduct(owner, registeredProduct, product));
             }
 
             /*
@@ -84,13 +131,9 @@ public class CsvDataService {
              *
              * 파일 처리 도중 오류가 발생하면 기존 데이터가 유지된다.
              */
-            productRepository.deleteAllByOwner_Id(ownerId);
-            productRepository.flush();
-            productRepository.saveAll(
-                    result.stream()
-                            .map(value -> new CsvProduct(owner, value))
-                            .toList()
-            );
+            csvProductRepository.deleteAllByOwner_Id(ownerId);
+            csvProductRepository.flush();
+            csvProductRepository.saveAll(result);
             return result.size();
 
         } catch (Exception e) {
@@ -327,6 +370,50 @@ public class CsvDataService {
         return value.trim();
     }
 
+    private String getRequired(CSVRecord record, String header) {
+        String value = record.get(header);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("필수 값이 비어 있습니다: " + header);
+        }
+        return value.trim();
+    }
+
+    private long getPositiveLong(CSVRecord record, String header) {
+        long value = Long.parseLong(getRequired(record, header));
+        if (value <= 0) {
+            throw new IllegalArgumentException(header + " 값은 0보다 커야 합니다.");
+        }
+        return value;
+    }
+
+    private Integer getNullableNonNegativeInteger(CSVRecord record, String header) {
+        String value = getNullable(record, header);
+        if (value == null) {
+            return null;
+        }
+
+        int parsed = Integer.parseInt(value);
+        if (parsed < 0) {
+            throw new IllegalArgumentException(header + " 값은 0 이상이어야 합니다.");
+        }
+        return parsed;
+    }
+
+    private Map<String, Product> getRegisteredProductsByName(Long ownerId) {
+        Map<String, Product> productsByName = new LinkedHashMap<>();
+
+        for (Product product : productRepository.findByStore_Owner_IdOrderByIdAsc(ownerId)) {
+            String productName = product.getName().trim();
+            if (productsByName.putIfAbsent(productName, product) != null) {
+                throw new IllegalArgumentException(
+                        "같은 이름의 매장 상품이 여러 개 있어 CSV 상품을 연결할 수 없습니다: " + productName
+                );
+            }
+        }
+
+        return productsByName;
+    }
+
     /**
      * 선택 헤더의 숫자 값을 읽는다.
      *
@@ -355,7 +442,7 @@ public class CsvDataService {
      */
     @Transactional(readOnly = true)
     public List<ProductDataRequest> getProducts(Long ownerId) {
-        return productRepository.findAllByOwner_IdOrderByProductCode(ownerId)
+        return csvProductRepository.findAllByOwner_IdOrderByProductCode(ownerId)
                 .stream().map(CsvProduct::toDto).toList();
     }
 
@@ -380,7 +467,7 @@ public class CsvDataService {
     @Transactional(readOnly = true)
     public Map<String, Long> getStatus(Long ownerId) {
         return Map.of(
-                "productCount", productRepository.countByOwner_Id(ownerId),
+                "productCount", csvProductRepository.countByOwner_Id(ownerId),
                 "salesCount", salesRepository.countByOwner_Id(ownerId),
                 "inventoryCount", inventoryRepository.countByOwner_Id(ownerId)
         );
