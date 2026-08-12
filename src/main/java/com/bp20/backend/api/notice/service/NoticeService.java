@@ -6,6 +6,7 @@ import com.bp20.backend.api.notice.dto.request.NoticeRequest;
 import com.bp20.backend.api.notice.dto.response.NoticeResponse;
 import com.bp20.backend.api.notice.repository.NoticeRepository;
 import com.bp20.backend.api.notice.attachment.repository.NoticeAttachmentRepository;
+import com.bp20.backend.api.notice.attachment.service.NoticeAttachmentService;
 import com.bp20.backend.api.user.domain.User;
 import com.bp20.backend.api.user.repository.UserRepository;
 import com.bp20.backend.global.exception.ApiException;
@@ -23,6 +24,7 @@ public class NoticeService {
     private final NoticeRepository noticeRepository;
     private final UserRepository userRepository;
     private final NoticeAttachmentRepository attachmentRepository;
+    private final NoticeAttachmentService noticeAttachmentService;
 
     @Transactional(readOnly = true)
     public List<NoticeResponse> getNotices() {
@@ -65,7 +67,7 @@ public class NoticeService {
     @Transactional
     public void delete(Long noticeId) {
         Notice notice = getNotice(noticeId);
-        attachmentRepository.findByNoticeId(noticeId).ifPresent(attachmentRepository::delete);
+        noticeAttachmentService.deleteByNoticeId(noticeId);
         noticeRepository.delete(notice);
     }
 
