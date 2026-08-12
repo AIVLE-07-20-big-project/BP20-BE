@@ -1,6 +1,7 @@
 package com.bp20.backend.api.csv.controller;
 
 import com.bp20.backend.api.csv.service.CsvDataService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import com.bp20.backend.global.security.principal.SecurityPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +20,7 @@ import com.bp20.backend.api.recommendation.dto.InventoryDataRequest;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/csv")
+@SecurityRequirement(name = "bearerAuth")
 public class CsvUploadController {
 
     private final CsvDataService csvDataService;

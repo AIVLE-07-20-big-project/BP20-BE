@@ -16,6 +16,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
@@ -35,14 +37,17 @@ import java.io.IOException;
 public class ProductImageServiceClient {
 
     private final RestClient productImageRestClient;
+    private final ObjectMapper objectMapper;
 
     public ProductImageServiceClient(
             RestClient.Builder externalRestClientBuilder,
-            ProductImageServiceProperties properties
+            ProductImageServiceProperties properties,
+            ObjectMapper objectMapper
     ) {
         this.productImageRestClient = externalRestClientBuilder.clone()
                 .baseUrl(properties.baseUrl())
                 .build();
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -102,12 +107,51 @@ public class ProductImageServiceClient {
         } catch (IOException e) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_INPUT, e);
         } catch (RestClientResponseException e) {
-            log.error("[ProductImageServiceClient] 상품 이미지 생성 실패 - status={}, body={}",
-                    e.getStatusCode(), e.getResponseBodyAsString());
-            throw new ApiException(ErrorCode.PRODUCT_IMAGE_SERVICE_UNAVAILABLE, e);
+            ErrorCode errorCode = resolveErrorCode(e.getStatusCode().value(), e.getResponseBodyAsString());
+            log.error("[ProductImageServiceClient] 상품 이미지 생성 실패 - status={}, upstreamCode={}",
+                    e.getStatusCode(), extractUpstreamErrorCode(e.getResponseBodyAsString()));
+            throw new ApiException(errorCode, e);
         } catch (RestClientException e) {
             log.error("[ProductImageServiceClient] 상품 이미지 생성 요청 실패 (연결 불가)", e);
             throw new ApiException(ErrorCode.PRODUCT_IMAGE_SERVICE_UNAVAILABLE, e);
+        }
+    }
+
+    ErrorCode resolveErrorCode(int statusCode, String responseBody) {
+        String upstreamCode = extractUpstreamErrorCode(responseBody);
+        if (upstreamCode != null) {
+            return switch (upstreamCode) {
+                case "OPENAI_MODEL_UNAVAILABLE", "OPENAI_RESOURCE_NOT_FOUND" ->
+                        ErrorCode.PRODUCT_IMAGE_MODEL_UNAVAILABLE;
+                case "OPENAI_AUTHENTICATION_FAILED", "OPENAI_ACCESS_DENIED", "OPENAI_CONFIGURATION_ERROR" ->
+                        ErrorCode.PRODUCT_IMAGE_SERVICE_CONFIGURATION_ERROR;
+                case "OPENAI_RATE_LIMITED" -> ErrorCode.PRODUCT_IMAGE_RATE_LIMITED;
+                case "OPENAI_QUOTA_EXCEEDED" -> ErrorCode.PRODUCT_IMAGE_QUOTA_EXCEEDED;
+                case "OPENAI_TIMEOUT" -> ErrorCode.PRODUCT_IMAGE_GENERATION_TIMEOUT;
+                case "OPENAI_REQUEST_REJECTED", "UNSUPPORTED_IMAGE_FILE" ->
+                        ErrorCode.PRODUCT_IMAGE_REQUEST_REJECTED;
+                default -> ErrorCode.PRODUCT_IMAGE_SERVICE_UNAVAILABLE;
+            };
+        }
+
+        return switch (statusCode) {
+            case 400, 413, 415, 422 -> ErrorCode.PRODUCT_IMAGE_REQUEST_REJECTED;
+            case 429 -> ErrorCode.PRODUCT_IMAGE_RATE_LIMITED;
+            case 504 -> ErrorCode.PRODUCT_IMAGE_GENERATION_TIMEOUT;
+            default -> ErrorCode.PRODUCT_IMAGE_SERVICE_UNAVAILABLE;
+        };
+    }
+
+    private String extractUpstreamErrorCode(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode code = root.path("error").path("code");
+            return code.isTextual() ? code.asText() : null;
+        } catch (RuntimeException ignored) {
+            return null;
         }
     }
 }

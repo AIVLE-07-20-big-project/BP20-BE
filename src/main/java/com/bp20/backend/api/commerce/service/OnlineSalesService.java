@@ -47,7 +47,7 @@ public class OnlineSalesService {
         Product product = requireOwnedProduct(ownerId, productId);
         if (product.isRegisteredOnline()
                 || product.getStatus() != ProductStatus.ACTIVE
-                || product.getStockQuantity() == 0) {
+                || (product.hasStockQuantity() && product.getStockQuantity() == 0)) {
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_ONLINE_PRODUCT_STATUS);
         }
         product.registerOnline();

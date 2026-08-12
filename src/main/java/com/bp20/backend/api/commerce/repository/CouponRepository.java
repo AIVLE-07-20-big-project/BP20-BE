@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface CouponRepository extends JpaRepository<Coupon, Long> {
 
+    boolean existsBySourceOnlinePurchaseId(Long sourceOnlinePurchaseId);
+
     @Query("select c from Coupon c "
             + "join fetch c.store s "
             + "join fetch c.customer customer "

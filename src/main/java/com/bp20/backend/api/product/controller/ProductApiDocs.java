@@ -34,7 +34,8 @@ public interface ProductApiDocs {
                                                       "name": "아메리카노",
                                                       "description": "고소한 원두로 내린 시그니처 아메리카노입니다.",
                                                       "price": 4500,
-                                                      "stockQuantity": 100,
+                                                      "stockQuantity": null,
+                                                      "status": "ACTIVE",
                                                       "imageUrl": "https://cdn.bp20.com/products/americano.jpg"
                                                     }
                                                     """
@@ -48,6 +49,7 @@ public interface ProductApiDocs {
                                                       "description": "신선한 채소와 닭가슴살을 넣은 클럽 샌드위치입니다.",
                                                       "price": 6000,
                                                       "stockQuantity": 30,
+                                                      "status": "ACTIVE",
                                                       "imageUrl": "https://cdn.bp20.com/products/club-sandwich.jpg"
                                                     }
                                                     """
