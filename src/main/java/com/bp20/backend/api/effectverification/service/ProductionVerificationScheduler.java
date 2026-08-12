@@ -25,6 +25,7 @@ public class ProductionVerificationScheduler {
 
     private final EffectVerificationExecutionRepository executionRepository;
     private final AutomaticVerificationProcessor processor;
+    private final EffectVerificationSchedulerLock schedulerLock;
 
     @Value("${effect-verification.scheduler.enabled:true}")
     private boolean enabled;
@@ -41,6 +42,13 @@ public class ProductionVerificationScheduler {
             return;
         }
 
+        boolean acquired = schedulerLock.runWithLock(this::processDueExecutions);
+        if (!acquired) {
+            log.debug("Effect verification scheduler skipped because another task owns the lock");
+        }
+    }
+
+    private void processDueExecutions() {
         List<EffectVerificationExecution> executions = executionRepository
                 .findByStatusInAndVerificationDueAtLessThanEqualOrderByVerificationDueAtAsc(
                         List.of(
