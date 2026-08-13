@@ -3,6 +3,7 @@ package com.bp20.backend.api.review.repository;
 import com.bp20.backend.api.review.domain.ReviewAnalysis;
 import com.bp20.backend.api.review.dto.AspectScoreDto;
 import com.bp20.backend.api.review.dto.response.AspectStatResponseDto;
+import com.bp20.backend.api.review.dto.response.ReviewTrendResponseDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -45,4 +46,24 @@ public interface ReviewAnalysisRepository extends JpaRepository<ReviewAnalysis, 
             "WHERE ra.review.store.id = :storeId " +
             "GROUP BY ra.aspect")
     List<AspectStatResponseDto> findAspectStatsByStoreId(@Param("storeId") Long storeId);
+
+    @Query("SELECT new com.bp20.backend.api.review.dto.response.ReviewTrendResponseDto(" +
+            "  CAST(FUNCTION('DATE_FORMAT', r.reviewedDate, '%x-%v') AS string), " +
+            "  ROUND(AVG(r.rating), 1), " +
+            "  COUNT(DISTINCT ra.review.id) " +
+            ") " +
+            "FROM Review r " +
+            "LEFT JOIN ReviewAnalysis ra " +
+            "  ON ra.review = r AND ra.sentiment = '부정' " +
+            "WHERE r.store.id = :storeId " +
+            "  AND r.reviewedDate >= :startDate " +
+            "  AND r.reviewedDate < :endDate " +
+            "GROUP BY CAST(FUNCTION('DATE_FORMAT', r.reviewedDate, '%x-%v') AS string) " +
+            "ORDER BY CAST(FUNCTION('DATE_FORMAT', r.reviewedDate, '%x-%v') AS string)")
+    List<ReviewTrendResponseDto> findWeeklyTrendByStoreId(
+            @Param("storeId") Long storeId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
 }

@@ -5,10 +5,7 @@ import com.bp20.backend.api.review.domain.ReviewAnalysis;
 import com.bp20.backend.api.review.dto.*;
 import com.bp20.backend.api.review.dto.request.BatchReviewRequestDto;
 import com.bp20.backend.api.review.dto.request.MonthlyReviewReportRequestDto;
-import com.bp20.backend.api.review.dto.response.ABSAAgentResponseDto;
-import com.bp20.backend.api.review.dto.response.AspectRadarResponseDto;
-import com.bp20.backend.api.review.dto.response.AspectStatResponseDto;
-import com.bp20.backend.api.review.dto.response.MonthlyReportStatusResponseDto;
+import com.bp20.backend.api.review.dto.response.*;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -274,5 +271,22 @@ public class ReviewAnalysisService {
     @Transactional(readOnly = true)
     public List<AspectStatResponseDto> getAspectStats(Long storeId) {
         return reviewAnalysisRepository.findAspectStatsByStoreId(storeId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReviewTrendResponseDto> getWeeklyTrend(Long storeId) {
+        LocalDateTime endDate = LocalDateTime.now();
+
+        LocalDateTime startDate = endDate
+                .toLocalDate()
+                .with(java.time.DayOfWeek.MONDAY)
+                .atStartOfDay()
+                .minusWeeks(4);
+
+        return reviewAnalysisRepository.findWeeklyTrendByStoreId(
+                storeId,
+                startDate,
+                endDate
+        );
     }
 }
