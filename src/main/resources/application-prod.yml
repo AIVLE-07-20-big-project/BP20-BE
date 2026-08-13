@@ -27,8 +27,8 @@ storage:
 
 product-image-storage:
   s3:
-    bucket: ${STORAGE_S3_BUCKET}
-    region: ${STORAGE_S3_REGION:ap-northeast-2}
+    bucket: ${PRODUCT_IMAGE_S3_BUCKET}
+    region: ${PRODUCT_IMAGE_S3_REGION:ap-northeast-2}
 
 logging:
   level:

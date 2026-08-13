@@ -64,6 +64,21 @@ class CaptchaVerificationServiceTest {
     }
 
     @Test
+    void rejectsResponseWithoutScoreAsInvalidCaptcha() {
+        CaptchaVerificationService service = createService(0.5, "login", List.of("localhost"));
+        respondWith("""
+                {
+                  "success": false,
+                  "score": null,
+                  "hostname": "localhost",
+                  "error-codes": ["invalid-input-response"]
+                }
+                """);
+
+        assertInvalidCaptcha(() -> service.verify("invalid-token", "127.0.0.1"));
+    }
+
+    @Test
     void rejectsUnexpectedAction() {
         CaptchaVerificationService service = createService(0.5, "login", List.of("localhost"));
         respondWith("""

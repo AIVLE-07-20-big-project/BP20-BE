@@ -4,6 +4,7 @@ import com.bp20.backend.api.effectverification.dto.request.EffectVerificationFro
 import com.bp20.backend.api.effectverification.dto.request.EffectVerificationRequest;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationFromAnalysesResponse;
 import com.bp20.backend.api.effectverification.dto.response.EffectVerificationResponse;
+import com.bp20.backend.api.effectverification.exception.EffectVerificationAiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -26,9 +27,7 @@ public class EffectVerificationApiClient {
     public EffectVerificationResponse verifyEffect(
             EffectVerificationRequest request
     ) {
-
         try {
-
             EffectVerificationResponse response = restClient.post()
                     .uri("/effect-verification/verify")
                     .body(request)
@@ -36,18 +35,15 @@ public class EffectVerificationApiClient {
                     .body(EffectVerificationResponse.class);
 
             if (response == null) {
-                throw new IllegalStateException(
-                        "AI 서버가 빈 응답을 반환했습니다."
+                throw new EffectVerificationAiException(
+                        "효과 검증 AI 서버가 빈 응답을 반환했습니다."
                 );
             }
-
             return response;
-
-        } catch (RestClientException e) {
-
-            throw new IllegalStateException(
-                    "Effect Verification AI 호출 실패",
-                    e
+        } catch (RestClientException exception) {
+            throw new EffectVerificationAiException(
+                    "효과 검증 AI 호출에 실패했습니다.",
+                    exception
             );
         }
     }
@@ -56,7 +52,6 @@ public class EffectVerificationApiClient {
             EffectVerificationFromAnalysesRequest request
     ) {
         try {
-
             EffectVerificationFromAnalysesResponse response = restClient.post()
                     .uri("/effect-verification/verify-from-analyses")
                     .body(request)
@@ -64,18 +59,15 @@ public class EffectVerificationApiClient {
                     .body(EffectVerificationFromAnalysesResponse.class);
 
             if (response == null) {
-                throw new IllegalStateException(
-                        "AI 서버가 빈 응답을 반환했습니다."
+                throw new EffectVerificationAiException(
+                        "효과 검증 AI 서버가 빈 응답을 반환했습니다."
                 );
             }
-
             return response;
-
-        } catch (RestClientException e) {
-
-            throw new IllegalStateException(
-                    "Effect Verification(analyses) AI 호출 실패",
-                    e
+        } catch (RestClientException exception) {
+            throw new EffectVerificationAiException(
+                    "분석 결과 기반 효과 검증 AI 호출에 실패했습니다.",
+                    exception
             );
         }
     }
