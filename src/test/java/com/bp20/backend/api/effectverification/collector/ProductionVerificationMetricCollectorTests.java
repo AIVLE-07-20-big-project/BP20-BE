@@ -141,7 +141,7 @@ class ProductionVerificationMetricCollectorTests {
     @Test
     void countsKoreanAndEnglishNegativeSentiments() {
         jdbcTemplate.update(
-                "INSERT INTO reviews(reveiw_id, store_id, rating, reviewed_date) VALUES (?, ?, ?, ?)",
+                "INSERT INTO reviews(review_id, store_id, rating, reviewed_date) VALUES (?, ?, ?, ?)",
                 1L, 1L, 2.0, "2026-08-01 10:00:00"
         );
         jdbcTemplate.update(
