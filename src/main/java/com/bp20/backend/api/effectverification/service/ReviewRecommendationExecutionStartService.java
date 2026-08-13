@@ -38,6 +38,7 @@ public class ReviewRecommendationExecutionStartService {
         return start(
                 userId,
                 reviewRecommendationService.completeActionItem(
+                        userId,
                         recommendationId,
                         keyword
                 )
@@ -45,7 +46,10 @@ public class ReviewRecommendationExecutionStartService {
     }
 
     private VerificationExecutionResponse start(Long userId, CompletedAction action) {
-        storeAccessService.validateOwner(userId, action.storeId());
+        Long storeId = storeAccessService.resolveOwnedStoreId(
+                userId,
+                action.storeId()
+        );
         if (executionRepository.existsByAiRecommendationId(
                 action.verificationRecommendationId()
         )) {
@@ -72,7 +76,7 @@ public class ReviewRecommendationExecutionStartService {
                 action.targetAspect()
         );
         PeriodMetrics before = metricCollector.collect(
-                action.storeId(),
+                storeId,
                 RecommendationType.REVIEW,
                 action.executedAt().minusDays(DEFAULT_PERIOD_DAYS),
                 action.executedAt(),
@@ -81,7 +85,7 @@ public class ReviewRecommendationExecutionStartService {
 
         ExecutionRegistrationRequest request = new ExecutionRegistrationRequest();
         request.setRecommendationId(action.verificationRecommendationId());
-        request.setStoreId(action.storeId());
+        request.setStoreId(storeId);
         request.setRecommendationType(RecommendationType.REVIEW);
         request.setCondition(condition);
         request.setBefore(before);

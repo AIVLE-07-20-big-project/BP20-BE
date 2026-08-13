@@ -68,6 +68,9 @@ class EffectVerificationRoiServiceTests {
         assertThat(response.inconclusiveCount()).isEqualTo(1);
         assertThat(response.ineffectiveCount()).isEqualTo(1);
         assertThat(response.storeSummaries()).hasSize(2);
+        assertThat(response.storeSummaries())
+                .extracting(EffectVerificationRoiResponse.StoreSummary::storeName)
+                .containsExactly("매장 1", "매장 2");
         assertThat(response.typeSummaries()).hasSize(2);
         assertThat(response.recentResults())
                 .extracting(EffectVerificationRoiResponse.RecentResult::recommendationId)
@@ -117,6 +120,7 @@ class EffectVerificationRoiServiceTests {
     ) {
         Store store = mock(Store.class);
         when(store.getId()).thenReturn(storeId);
+        lenient().when(store.getName()).thenReturn("매장 " + storeId);
         return EffectVerificationResult.builder()
                 .aiRecommendationId(recommendationId)
                 .store(store)

@@ -69,6 +69,7 @@ class RecommendationExecutionStartServiceTests {
         when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
+        when(storeAccessService.resolveOwnedStoreId(10L, 1L)).thenReturn(1L);
         when(campaignExecutionClient.recordExecution(
                 eq("thread-uuid"),
                 eq(10L),
@@ -134,6 +135,7 @@ class RecommendationExecutionStartServiceTests {
         when(executionRepository.existsByRecommendationRun_ThreadId("thread-uuid"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
+        when(storeAccessService.resolveOwnedStoreId(10L, 3L)).thenReturn(3L);
         when(campaignExecutionClient.recordExecution(
                 eq("thread-uuid"),
                 eq(10L),

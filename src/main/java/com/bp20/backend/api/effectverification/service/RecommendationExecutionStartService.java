@@ -81,8 +81,10 @@ public class RecommendationExecutionStartService {
                 treatmentYyquCd(executedAt),
                 executedAt
         );
-        Long storeId = requiredLong(campaign, "store_id");
-        storeAccessService.validateOwner(userId, storeId);
+        Long storeId = storeAccessService.resolveOwnedStoreId(
+                userId,
+                requiredLong(campaign, "store_id")
+        );
         String decisionId = optionalString(campaign, "decision_id");
         String actionId = firstRequiredString(
                 campaign,

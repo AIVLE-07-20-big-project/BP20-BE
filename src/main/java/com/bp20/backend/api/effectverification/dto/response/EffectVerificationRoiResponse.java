@@ -23,6 +23,7 @@ public record EffectVerificationRoiResponse(
 ) {
     public record StoreSummary(
             @JsonProperty("store_id") Long storeId,
+            @JsonProperty("store_name") String storeName,
             @JsonProperty("verified_count") long verifiedCount,
             @JsonProperty("average_effect_score") double averageEffectScore
     ) {
@@ -39,6 +40,7 @@ public record EffectVerificationRoiResponse(
             @JsonProperty("recommendation_id") String recommendationId,
             @JsonProperty("action_name") String actionName,
             @JsonProperty("store_id") Long storeId,
+            @JsonProperty("store_name") String storeName,
             @JsonProperty("recommendation_type") RecommendationType recommendationType,
             @JsonProperty("effect_score") double effectScore,
             String verdict,
