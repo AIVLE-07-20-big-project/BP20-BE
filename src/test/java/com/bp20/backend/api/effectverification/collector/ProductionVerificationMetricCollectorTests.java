@@ -66,7 +66,7 @@ class ProductionVerificationMetricCollectorTests {
                 """);
         jdbcTemplate.execute("""
                 CREATE TABLE reviews (
-                    id BIGINT PRIMARY KEY,
+                    review_id BIGINT PRIMARY KEY,
                     store_id BIGINT NOT NULL,
                     rating DOUBLE NOT NULL,
                     reviewed_date TIMESTAMP NOT NULL
@@ -141,11 +141,11 @@ class ProductionVerificationMetricCollectorTests {
     @Test
     void countsKoreanAndEnglishNegativeSentiments() {
         jdbcTemplate.update(
-                "INSERT INTO reviews(id, store_id, rating, reviewed_date) VALUES (?, ?, ?, ?)",
+                "INSERT INTO reviews(reveiw_id, store_id, rating, reviewed_date) VALUES (?, ?, ?, ?)",
                 1L, 1L, 2.0, "2026-08-01 10:00:00"
         );
         jdbcTemplate.update(
-                "INSERT INTO reviews(id, store_id, rating, reviewed_date) VALUES (?, ?, ?, ?)",
+                "INSERT INTO reviews(review_id, store_id, rating, reviewed_date) VALUES (?, ?, ?, ?)",
                 2L, 1L, 4.0, "2026-08-02 10:00:00"
         );
         jdbcTemplate.update(
