@@ -56,11 +56,12 @@ class ReviewRecommendationExecutionStartServiceTests {
         PeriodMetrics before = new PeriodMetrics();
         VerificationExecutionResponse expected =
                 VerificationExecutionResponse.builder().build();
-        when(recommendationService.completeActionItem(7L, "음식 간이 맞지 않음"))
+        when(recommendationService.completeActionItem(10L, 7L, "음식 간이 맞지 않음"))
                 .thenReturn(action);
         when(executionRepository.existsByAiRecommendationId("review-7-1"))
                 .thenReturn(false);
         when(collectorProvider.getIfAvailable()).thenReturn(collector);
+        when(storeAccessService.resolveOwnedStoreId(10L, 1L)).thenReturn(1L);
         when(collector.collect(
                 eq(1L),
                 eq(RecommendationType.REVIEW),
@@ -116,10 +117,11 @@ class ReviewRecommendationExecutionStartServiceTests {
                 );
         VerificationExecutionResponse expected =
                 VerificationExecutionResponse.builder().build();
-        when(recommendationService.completeActionItem(7L, "keyword"))
+        when(recommendationService.completeActionItem(10L, 7L, "keyword"))
                 .thenReturn(action);
         when(executionRepository.existsByAiRecommendationId("review-7-1"))
                 .thenReturn(true);
+        when(storeAccessService.resolveOwnedStoreId(10L, 1L)).thenReturn(1L);
         when(lifecycleService.getExecution(10L, "review-7-1"))
                 .thenReturn(expected);
 

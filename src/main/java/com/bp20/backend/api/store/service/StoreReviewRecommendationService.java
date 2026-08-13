@@ -77,8 +77,13 @@ public class StoreReviewRecommendationService {
     }
 
     @Transactional
-    public CompletedAction completeActionItem(Long recommendationId, String keyword) {
-        StoreReviewRecommendation recommendation = storeReviewRecommendationRepository.findById(recommendationId)
+    public CompletedAction completeActionItem(
+            Long userId,
+            Long recommendationId,
+            String keyword
+    ) {
+        StoreReviewRecommendation recommendation = storeReviewRecommendationRepository
+                .findByIdAndStore_Owner_Id(recommendationId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 추천사항이 없습니다."));
 
         List<StoreReviewRecommendation.ActionItem> actionItems = recommendation.getActionItems();

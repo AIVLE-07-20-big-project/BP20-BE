@@ -71,6 +71,7 @@ public class EffectVerificationRoiService {
                         .sorted(Map.Entry.comparingByKey())
                         .map(entry -> new EffectVerificationRoiResponse.StoreSummary(
                                 entry.getKey(),
+                                entry.getValue().getFirst().getStore().getName(),
                                 entry.getValue().size(),
                                 averageScore(entry.getValue())
                         ))
@@ -100,6 +101,7 @@ public class EffectVerificationRoiService {
                                 result.getAiRecommendationId(),
                                 actionName(result),
                                 result.getStore().getId(),
+                                result.getStore().getName(),
                                 result.getRecommendationType(),
                                 rounded(result.getEffectScore()),
                                 result.getVerdict(),

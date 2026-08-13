@@ -9,6 +9,11 @@ public interface StoreReviewRecommendationRepository extends JpaRepository<Store
 
     Optional<StoreReviewRecommendation> findTopByStore_IdOrderByCreatedAtDesc(Long storeId);
 
+    Optional<StoreReviewRecommendation> findByIdAndStore_Owner_Id(
+            Long recommendationId,
+            Long ownerId
+    );
+
     boolean existsByStore_IdAndReportMonth(Long storeId, String reportMonth);
 
 }
