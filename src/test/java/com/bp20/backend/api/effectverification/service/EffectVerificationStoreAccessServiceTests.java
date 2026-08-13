@@ -67,6 +67,23 @@ class EffectVerificationStoreAccessServiceTests {
         verify(storeRepository, never()).findById(3L);
     }
 
+    @Test
+    void resolvesAuthenticatedOwnersOnlyStore() {
+        EffectVerificationStoreAccessService service = service(true);
+        when(storeRepository.findByOwnerId(10L)).thenReturn(Optional.of(store));
+        when(store.getId()).thenReturn(1L);
+
+        assertThat(service.resolveOwnedStoreId(10L, 2L)).isEqualTo(1L);
+    }
+
+    @Test
+    void keepsRequestedStoreOnlyForUnauthenticatedMockCall() {
+        EffectVerificationStoreAccessService service = service(true);
+
+        assertThat(service.resolveOwnedStoreId(null, 2L)).isEqualTo(2L);
+        verify(storeRepository, never()).findByOwnerId(10L);
+    }
+
     private EffectVerificationStoreAccessService service(boolean mockPublicAccess) {
         EffectVerificationStoreAccessService service =
                 new EffectVerificationStoreAccessService(storeRepository);

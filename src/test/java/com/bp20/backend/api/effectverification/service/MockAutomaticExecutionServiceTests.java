@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class MockAutomaticExecutionServiceTests {
@@ -49,6 +50,9 @@ class MockAutomaticExecutionServiceTests {
     @Mock
     private MockRecommendationFeedbackService feedbackService;
 
+    @Mock
+    private EffectVerificationStoreAccessService storeAccessService;
+
     private MockAutomaticExecutionService service;
 
     @BeforeEach
@@ -58,8 +62,11 @@ class MockAutomaticExecutionServiceTests {
                 metricCollector,
                 reviewSentimentService,
                 lifecycleService,
-                feedbackService
+                feedbackService,
+                storeAccessService
         );
+        lenient().when(storeAccessService.resolveOwnedStoreId(any(), anyLong()))
+                .thenAnswer(invocation -> invocation.getArgument(1));
     }
 
     @Test
@@ -304,10 +311,10 @@ class MockAutomaticExecutionServiceTests {
     }
 
     @Test
-    void resetDeletesVerificationDataAndLearnedWeights() {
-        when(jdbcTemplate.update("DELETE FROM effect_verification_result"))
+    void resetDeletesOnlyMockVerificationDataAndLearnedWeights() {
+        when(jdbcTemplate.update(MockAutomaticExecutionService.DELETE_MOCK_RESULTS_SQL))
                 .thenReturn(3);
-        when(jdbcTemplate.update("DELETE FROM effect_verification_execution"))
+        when(jdbcTemplate.update(MockAutomaticExecutionService.DELETE_MOCK_EXECUTIONS_SQL))
                 .thenReturn(3);
         when(jdbcTemplate.update("DELETE FROM MockRecommendationStrategyWeight"))
                 .thenReturn(2);

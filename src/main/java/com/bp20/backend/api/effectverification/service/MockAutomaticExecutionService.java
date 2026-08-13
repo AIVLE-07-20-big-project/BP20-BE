@@ -29,12 +29,29 @@ import java.sql.Timestamp;
 public class MockAutomaticExecutionService {
 
     private static final int VERIFICATION_PERIOD_DAYS = 14;
+    static final String DELETE_MOCK_RESULTS_SQL = """
+            DELETE FROM effect_verification_result
+            WHERE AIRecommendationID LIKE 'mock-%'
+               OR AIRecommendationID IN (
+                    SELECT CAST(RecommendationID AS CHAR)
+                    FROM MockRecommendation
+               )
+            """;
+    static final String DELETE_MOCK_EXECUTIONS_SQL = """
+            DELETE FROM effect_verification_execution
+            WHERE AIRecommendationID LIKE 'mock-%'
+               OR AIRecommendationID IN (
+                    SELECT CAST(RecommendationID AS CHAR)
+                    FROM MockRecommendation
+               )
+            """;
 
     private final JdbcTemplate jdbcTemplate;
     private final VerificationMetricCollector metricCollector;
     private final MockReviewSentimentService reviewSentimentService;
     private final EffectVerificationLifecycleService lifecycleService;
     private final MockRecommendationFeedbackService feedbackService;
+    private final EffectVerificationStoreAccessService storeAccessService;
 
     public VerificationExecutionResponse registerAutomatically(Long recommendationId) {
         MockRecommendation recommendation = findRecommendation(recommendationId);
@@ -88,6 +105,12 @@ public class MockAutomaticExecutionService {
         if (existing != null) {
             return existing;
         }
+
+        Long storeId = storeAccessService.resolveOwnedStoreId(
+                userId,
+                input.getStoreId()
+        );
+        input.setStoreId(storeId);
 
         LocalDateTime executedAt = input.getExecutedAt() == null
                 ? latestMockExecutionTime(
@@ -239,12 +262,8 @@ public class MockAutomaticExecutionService {
 
     @Transactional
     public MockResetResult resetVerificationData() {
-        int deletedResults = jdbcTemplate.update(
-                "DELETE FROM effect_verification_result"
-        );
-        int deletedExecutions = jdbcTemplate.update(
-                "DELETE FROM effect_verification_execution"
-        );
+        int deletedResults = jdbcTemplate.update(DELETE_MOCK_RESULTS_SQL);
+        int deletedExecutions = jdbcTemplate.update(DELETE_MOCK_EXECUTIONS_SQL);
         int deletedWeights = jdbcTemplate.update(
                 "DELETE FROM MockRecommendationStrategyWeight"
         );
