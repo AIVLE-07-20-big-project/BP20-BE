@@ -1,8 +1,7 @@
 # BP20 Backend
 
-<!-- 대표 이미지: GitHub Issue에 업로드한 이미지 URL을 아래 src에 입력해주세요. -->
 <p align="center">
-  <img src="여기에_GitHub_Issue_이미지_URL_입력" alt="BP20 대표 이미지" width="800" />
+  <img src="https://github.com/user-attachments/assets/61947619-aa5e-4d38-a2b2-8a65de21f28f" alt="BP20 대표 이미지" width="800" />
 </p>
 
 <p align="center">
@@ -160,10 +159,11 @@ erDiagram
 
 ## 6. 팀원
 
-| 이름 | 역할 | 담당 |
-| --- | --- | --- |
-| 팀원 이름 | BE | 담당 기능 입력 |
-| 팀원 이름 | BE | 담당 기능 입력 |
-| 팀원 이름 | BE | 담당 기능 입력 |
-
-<!-- 팀원의 이름, 역할, 담당 기능을 실제 정보로 교체해주세요. -->
+| GitHub ID | GitHub |
+| --- | --- |
+| `yugyeong2` | [@yugyeong2](https://github.com/yugyeong2) |
+| `Parkhuisang` | [@Parkhuisang](https://github.com/Parkhuisang) |
+| `thadus2` | [@thadus2](https://github.com/thadus2) |
+| `tkdwns` | [@tkdwns](https://github.com/tkdwns) |
+| `Mr-Penguin1` | [@Mr-Penguin1](https://github.com/Mr-Penguin1) |
+| `etkdwns` | [@etkdwns](https://github.com/etkdwns) |
