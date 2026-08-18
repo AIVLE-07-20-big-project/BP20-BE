@@ -155,6 +155,12 @@ erDiagram
 <table>
   <tr>
     <td align="center">
+      <a href="https://github.com/Bakhyoungwoo">
+        <img src="https://github.com/Bakhyoungwoo.png?size=120" width="100" alt="Bakhyoungwoo" />
+        <br />Bakhyoungwoo
+      </a>
+    </td>
+    <td align="center">
       <a href="https://github.com/yugyeong2">
         <img src="https://github.com/yugyeong2.png?size=120" width="100" alt="yugyeong2" />
         <br />yugyeong2
@@ -166,14 +172,14 @@ erDiagram
         <br />Parkhuisang
       </a>
     </td>
+  </tr>
+  <tr>
     <td align="center">
       <a href="https://github.com/thadus2">
         <img src="https://github.com/thadus2.png?size=120" width="100" alt="thadus2" />
         <br />thadus2
       </a>
     </td>
-  </tr>
-  <tr>
     <td align="center">
       <a href="https://github.com/tkdwns">
         <img src="https://github.com/tkdwns.png?size=120" width="100" alt="tkdwns" />
@@ -184,12 +190,6 @@ erDiagram
       <a href="https://github.com/Mr-Penguin1">
         <img src="https://github.com/Mr-Penguin1.png?size=120" width="100" alt="Mr-Penguin1" />
         <br />Mr-Penguin1
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/etkdwns">
-        <img src="https://github.com/etkdwns.png?size=120" width="100" alt="etkdwns" />
-        <br />etkdwns
       </a>
     </td>
   </tr>
