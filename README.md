@@ -152,11 +152,43 @@ erDiagram
 
 ## 6. 팀원
 
-| GitHub ID | GitHub |
-| --- | --- |
-| `yugyeong2` | [@yugyeong2](https://github.com/yugyeong2) |
-| `Parkhuisang` | [@Parkhuisang](https://github.com/Parkhuisang) |
-| `thadus2` | [@thadus2](https://github.com/thadus2) |
-| `tkdwns` | [@tkdwns](https://github.com/tkdwns) |
-| `Mr-Penguin1` | [@Mr-Penguin1](https://github.com/Mr-Penguin1) |
-| `etkdwns` | [@etkdwns](https://github.com/etkdwns) |
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/yugyeong2">
+        <img src="https://github.com/yugyeong2.png?size=120" width="100" alt="yugyeong2" />
+        <br />yugyeong2
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Parkhuisang">
+        <img src="https://github.com/Parkhuisang.png?size=120" width="100" alt="Parkhuisang" />
+        <br />Parkhuisang
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/thadus2">
+        <img src="https://github.com/thadus2.png?size=120" width="100" alt="thadus2" />
+        <br />thadus2
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/tkdwns">
+        <img src="https://github.com/tkdwns.png?size=120" width="100" alt="tkdwns" />
+        <br />tkdwns
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Mr-Penguin1">
+        <img src="https://github.com/Mr-Penguin1.png?size=120" width="100" alt="Mr-Penguin1" />
+        <br />Mr-Penguin1
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/etkdwns">
+        <img src="https://github.com/etkdwns.png?size=120" width="100" alt="etkdwns" />
+        <br />etkdwns
+      </a>
+    </td>
+  </tr>
+</table>
