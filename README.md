@@ -54,7 +54,7 @@ Market Poke의 Backend 애플리케이션 코드를 관리하는 저장소입니
 | [BP20-AI](https://github.com/AIVLE-07-20-big-project/BP20-AI) | FastAPI AI 서버, Celery Worker·Beat |
 | [BP20-INFRA](https://github.com/AIVLE-07-20-big-project/BP20-INFRA) | AWS 인프라 |
 ---
-## 3. 프로젝트 구성
+## 프로젝트 구성
 
 ```text
 BP20-BE/
@@ -96,7 +96,7 @@ BP20-BE/
 └─ .env.example                     # 환경 변수 템플릿
 ```
 
-## 4. 기술 스택
+## 기술 스택
 
 ### Backend
 
@@ -144,7 +144,7 @@ Spring Boot Backend :8080
 
 Docker Compose 기반으로 Spring Boot, MySQL, Redis, BP20-AI FastAPI, Celery Worker/Beat가 구성됩니다.
 
-## 5. 전체 ERD
+## 전체 ERD
 
 BP20-BE의 데이터 모델은 사용자·매장·상품을 중심으로 주문/매출, 고객, 리뷰, AI 분석 결과가 연결되는 구조입니다. 영수증과 예산은 AI 가계부 영역에서 관리하며, 관리자 기능과 추천 효과 검증 데이터는 별도 도메인으로 분리되어 있습니다.
 
@@ -188,7 +188,7 @@ erDiagram
 
 상세한 도메인별 ERD와 테이블 설명은 [DB 설계 문서](docs/db/README.md)에서 확인할 수 있습니다.
 
-## 6. 팀원
+## 팀원
 
 <table>
   <tr>
