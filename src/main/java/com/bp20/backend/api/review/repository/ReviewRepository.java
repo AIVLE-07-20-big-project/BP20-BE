@@ -13,11 +13,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findTop30ByStore_IdAndIsAnalyzedFalseOrderByReviewedDateAscIdAsc(Long storeId);
 
-    @Query("SELECT DISTINCT r.store.id FROM Review r WHERE r.isAnalyzed = false")
-    List<Long> findStoreIdWithUnanalyzedReviews();
-
-    long countByStore_IdAndIsAnalyzedFalse(Long storeId);
-
     @Query("""
             SELECT r.store.id
             FROM Review r

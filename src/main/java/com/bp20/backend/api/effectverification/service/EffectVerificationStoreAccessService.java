@@ -42,4 +42,24 @@ public class EffectVerificationStoreAccessService {
             );
         }
     }
+
+    @Transactional(readOnly = true)
+    public Long resolveOwnedStoreId(Long userId, Long requestedStoreId) {
+        if (userId == null) {
+            if (mockPublicAccess) {
+                return requestedStoreId;
+            }
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authentication is required"
+            );
+        }
+
+        return storeRepository.findByOwnerId(userId)
+                .map(Store::getId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Store not found for authenticated owner"
+                ));
+    }
 }

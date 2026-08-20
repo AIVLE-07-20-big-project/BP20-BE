@@ -3,6 +3,7 @@ package com.bp20.backend.global.security.captcha;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.bp20.backend.global.exception.ApiException;
 import com.bp20.backend.global.response.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 
 @Service
+@Slf4j
 public class CaptchaVerificationService {
 
     private final CaptchaProperties properties;
@@ -59,11 +61,28 @@ public class CaptchaVerificationService {
         } catch (RuntimeException exception) {
             throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE_CAPTCHA);
         }
-        if (response == null
-                || !response.success()
+        if (response == null) {
+            log.warn("reCAPTCHA verification returned an empty response. expectedAction={}", expectedAction);
+            throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_CAPTCHA);
+        }
+
+        boolean allowedHostname = isAllowedHostname(response.hostname());
+        if (!response.success()
+                || response.score() == null
                 || response.score() < properties.minimumScore()
                 || !expectedAction.equals(response.action())
-                || !isAllowedHostname(response.hostname())) {
+                || !allowedHostname) {
+            // CAPTCHA 응답 토큰과 Secret은 민감 정보이므로 로그에 남기지 않습니다.
+            log.warn(
+                    "reCAPTCHA verification rejected. success={}, score={}, action={}, expectedAction={}, hostname={}, allowedHostname={}, errorCodes={}",
+                    response.success(),
+                    response.score(),
+                    response.action(),
+                    expectedAction,
+                    response.hostname(),
+                    allowedHostname,
+                    response.errorCodes()
+            );
             throw new ApiException(ErrorCode.BAD_REQUEST_INVALID_CAPTCHA);
         }
     }
@@ -78,7 +97,7 @@ public class CaptchaVerificationService {
 
     private record CaptchaVerificationResponse(
             boolean success,
-            double score,
+            Double score,
             String action,
             @JsonProperty("challenge_ts") String challengeTimestamp,
             String hostname,

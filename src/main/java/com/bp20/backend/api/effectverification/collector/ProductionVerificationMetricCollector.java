@@ -51,8 +51,8 @@ public class ProductionVerificationMetricCollector
     ) {
         return new SalesMetrics(
                 null,
-                null,
-                null,
+                collectVisitCount(storeId, from, to),
+                collectAverageOrderValue(storeId, from, to),
                 null,
                 percentage(
                         """
@@ -109,9 +109,9 @@ public class ProductionVerificationMetricCollector
                 ),
                 percentage(
                         """
-                        SELECT COUNT(DISTINCT r.id)
+                        SELECT COUNT(DISTINCT r.review_id)
                         FROM reviews r
-                        JOIN review_analysis ra ON ra.review_id = r.id
+                        JOIN review_analysis ra ON ra.review_id = r.review_id
                         WHERE r.store_id = ? AND r.reviewed_date >= ? AND r.reviewed_date < ?
                           AND (LOWER(ra.sentiment) = 'negative' OR ra.sentiment = '부정')
                         """,
@@ -128,7 +128,7 @@ public class ProductionVerificationMetricCollector
                         """
                         SELECT COUNT(*)
                         FROM review_analysis ra
-                        JOIN reviews r ON r.id = ra.review_id
+                        JOIN reviews r ON r.review_id = ra.review_id
                         WHERE r.store_id = ? AND r.reviewed_date >= ? AND r.reviewed_date < ?
                           AND ra.aspect = ?
                         """,
@@ -138,7 +138,7 @@ public class ProductionVerificationMetricCollector
                         """
                         SELECT COUNT(*)
                         FROM review_analysis ra
-                        JOIN reviews r ON r.id = ra.review_id
+                        JOIN reviews r ON r.review_id = ra.review_id
                         WHERE r.store_id = ? AND r.reviewed_date >= ? AND r.reviewed_date < ?
                           AND ra.aspect = ?
                           AND (LOWER(ra.sentiment) = 'negative' OR ra.sentiment = '부정')
@@ -146,7 +146,7 @@ public class ProductionVerificationMetricCollector
                         """
                         SELECT COUNT(*)
                         FROM review_analysis ra
-                        JOIN reviews r ON r.id = ra.review_id
+                        JOIN reviews r ON r.review_id = ra.review_id
                         WHERE r.store_id = ? AND r.reviewed_date >= ? AND r.reviewed_date < ?
                           AND ra.aspect = ?
                         """,
@@ -156,7 +156,7 @@ public class ProductionVerificationMetricCollector
                         """
                         SELECT AVG(ra.confidence)
                         FROM review_analysis ra
-                        JOIN reviews r ON r.id = ra.review_id
+                        JOIN reviews r ON r.review_id = ra.review_id
                         WHERE r.store_id = ? AND r.reviewed_date >= ? AND r.reviewed_date < ?
                           AND ra.aspect = ?
                         """,
@@ -187,6 +187,42 @@ public class ProductionVerificationMetricCollector
                 JOIN stores store ON store.owner_user_id = sales.owner_id
                 WHERE store.store_id = ?
                   AND sales.sale_date >= ? AND sales.sale_date < ?
+                """,
+                storeId,
+                from.toLocalDate(),
+                to.toLocalDate()
+        );
+    }
+
+    private Integer collectVisitCount(
+            Long storeId,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        return integer(
+                """
+                SELECT COUNT(*)
+                FROM orders
+                WHERE store_id = ?
+                  AND ordered_date >= ? AND ordered_date < ?
+                """,
+                storeId,
+                from.toLocalDate(),
+                to.toLocalDate()
+        );
+    }
+
+    private Double collectAverageOrderValue(
+            Long storeId,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        return decimal(
+                """
+                SELECT AVG(total_amount)
+                FROM orders
+                WHERE store_id = ?
+                  AND ordered_date >= ? AND ordered_date < ?
                 """,
                 storeId,
                 from.toLocalDate(),

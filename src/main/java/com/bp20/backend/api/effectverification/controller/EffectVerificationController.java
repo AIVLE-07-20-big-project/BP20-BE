@@ -60,7 +60,10 @@ public class EffectVerificationController {
             @AuthenticationPrincipal SecurityPrincipal currentUser,
             @Valid @RequestBody ExecutionRegistrationRequest request
     ) {
-        storeAccessService.validateOwner(userId(currentUser), request.getStoreId());
+        request.setStoreId(storeAccessService.resolveOwnedStoreId(
+                userId(currentUser),
+                request.getStoreId()
+        ));
         return ResponseEntity.ok(
                 lifecycleService.registerExecution(userId(currentUser), request)
         );
